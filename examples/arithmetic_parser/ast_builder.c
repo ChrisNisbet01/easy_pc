@@ -178,7 +178,9 @@ static void
 ast_list_append(ast_builder_data_t * data, ast_list_t * list, ast_node_t * item)
 {
     if (data->has_error)
+    {
         return;
+    }
     ast_list_node_t * new_node = (ast_list_node_t *)calloc(1, sizeof(*new_node));
     if (new_node == NULL)
     {

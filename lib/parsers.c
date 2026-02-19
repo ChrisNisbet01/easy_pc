@@ -75,6 +75,7 @@ parser_data_free(parser_data_type_st * data)
         case PARSER_DATA_TYPE_COUNT:
         case PARSER_DATA_TYPE_BETWEEN:
         case PARSER_DATA_TYPE_DELIMITED:
+        case PARSER_DATA_TYPE_LEXEME:
             /* Nothing to do. */
             break;
 
@@ -300,6 +301,33 @@ parser_get_expected_str(epc_parser_ctx_t * ctx, epc_parser_t * p)
         return "Unnamed parser";
     }
 }
+
+#define WITH_PARSE_DEBUG 0
+
+// Parser helper function
+static epc_parse_result_t
+parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * input)
+{
+#if WITH_PARSE_DEBUG
+    fprintf(stderr, "parsing: name: %s. input: `%s`\n", self->name, input);
+#endif
+
+    epc_parse_result_t result = self->parse_fn(self, ctx, input);
+
+#if WITH_PARSE_DEBUG
+    if (result.is_error)
+    {
+        fprintf(stderr, "\tfailed to parse: name: %s\n", self->name);
+    }
+    else
+    {
+        fprintf(stderr, "matched: %s (%.*s)\n", self->name, (int)result.data.success->len, input);
+    }
+#endif
+
+    return result;
+}
+
 
 // --- Terminal Parser Implementations ---
 
@@ -869,7 +897,7 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * in
         epc_parser_t * current_parser = alternatives->parsers[i];
         if (current_parser)
         {
-            epc_parse_result_t child_result = current_parser->parse_fn(current_parser, ctx, input);
+            epc_parse_result_t child_result = parse(current_parser, ctx, input);
             if (!child_result.is_error)
             {
                 // Return the child's success, but mark the CPT node with this 'or' parser
@@ -1033,7 +1061,7 @@ pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * i
         if (current_parser)
         {
             epc_parse_result_t child_result =
-                current_parser->parse_fn(current_parser, ctx, current_input);
+                parse(current_parser, ctx, current_input);
             if (child_result.is_error)
             {
                 failed_child_result = child_result;
@@ -1144,7 +1172,7 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * 
     while (1)
     {
         epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-        epc_parse_result_t child_result = parser_to_skip->parse_fn(parser_to_skip, ctx, current_input);
+        epc_parse_result_t child_result = parse(parser_to_skip, ctx, current_input);
         if (child_result.is_error)
         {
             parser_furthest_error_restore(ctx, &original_furthest_error);
@@ -1208,7 +1236,7 @@ pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * 
     int children_count = 0;
     const char * plus_start_input = input;
 
-    epc_parse_result_t first_child_result = parser_to_repeat->parse_fn(parser_to_repeat, ctx, current_input);
+    epc_parse_result_t first_child_result = parse(parser_to_repeat, ctx, current_input);
     if (first_child_result.is_error)
     {
         return first_child_result;
@@ -1219,7 +1247,7 @@ pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * 
 
     while (children_count < 128)
     {
-        epc_parse_result_t child_result = parser_to_repeat->parse_fn(parser_to_repeat, ctx, current_input);
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input);
         if (!child_result.is_error)
         {
             temp_children[children_count++] = child_result.data.success;
@@ -1288,7 +1316,7 @@ ppassthru_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const cha
         return epc_parser_error_result(ctx, input, "p_passthru received NULL child parser", self->name, "NULL");
     }
 
-    return child_parser->parse_fn(child_parser, ctx, input);
+    return parse(child_parser, ctx, input);
 }
 
 epc_parser_t *
@@ -1466,7 +1494,7 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * 
 
     while (children_count < 128) // Loop as long as child parser matches
     {
-        epc_parse_result_t child_result = parser_to_repeat->parse_fn(parser_to_repeat, ctx, current_input);
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input);
         if (child_result.is_error)
         {
             /*
@@ -1559,7 +1587,7 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char *
 
     for (int i = 0; i < num_to_match; ++i)
     {
-        epc_parse_result_t child_result = parser_to_repeat->parse_fn(parser_to_repeat, ctx, current_input);
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input);
         if (child_result.is_error)
         {
             // Child parser failed to match required number of times
@@ -1635,7 +1663,7 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
     original_furthest_error = parser_furthest_error_copy(ctx);
 
     // 1. Match 'open'
-    epc_parse_result_t open_result = p_open->parse_fn(p_open, ctx, current_input);
+    epc_parse_result_t open_result = parse(p_open, ctx, current_input);
     if (open_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
@@ -1647,7 +1675,7 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
     epc_parser_result_cleanup(&open_result);
 
     // 2. Match 'wrapped' parser
-    epc_parse_result_t wrapped_result = p_wrapped->parse_fn(p_wrapped, ctx, current_input);
+    epc_parse_result_t wrapped_result = parse(p_wrapped, ctx, current_input);
     if (wrapped_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
@@ -1658,7 +1686,7 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
     /* Don't clean up the wrapped result as that is what gets returned on success. */
 
     // 3. Match 'close'
-    epc_parse_result_t close_result = p_close->parse_fn(p_close, ctx, current_input);
+    epc_parse_result_t close_result = parse(p_close, ctx, current_input);
     if (close_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
@@ -1736,7 +1764,7 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const ch
     const char * delimited_start_input = input;
 
     // First item (must match)
-    epc_parse_result_t first_item_result = item_parser->parse_fn(item_parser, ctx, current_input);
+    epc_parse_result_t first_item_result = parse(item_parser, ctx, current_input);
 
     if (first_item_result.is_error)
     {
@@ -1751,7 +1779,7 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const ch
         if (delimiter_parser != NULL)
         {
             epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-            epc_parse_result_t delim_result = delimiter_parser->parse_fn(delimiter_parser, ctx, current_input);
+            epc_parse_result_t delim_result = parse(delimiter_parser, ctx, current_input);
 
             if (delim_result.is_error)
             {
@@ -1766,7 +1794,7 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const ch
         }
         {
             epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-            epc_parse_result_t item_result = item_parser->parse_fn(item_parser, ctx, current_input);
+            epc_parse_result_t item_result = parse(item_parser, ctx, current_input);
             if (item_result.is_error)
             {
                 if (delimiter_parser != NULL)
@@ -1855,7 +1883,7 @@ poptional_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const cha
     }
 
     original_furthest_error = parser_furthest_error_copy(ctx); // Save before child parse
-    epc_parse_result_t child_result = child_parser->parse_fn(child_parser, ctx, input);
+    epc_parse_result_t child_result = parse(child_parser, ctx, input);
 
     if (!child_result.is_error)
     {
@@ -1924,7 +1952,7 @@ plookahead_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const ch
     }
 
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-    epc_parse_result_t child_result = child_parser->parse_fn(child_parser, ctx, input);
+    epc_parse_result_t child_result = parse(child_parser, ctx, input);
 
     parser_furthest_error_restore(ctx, &original_furthest_error);
 
@@ -1974,7 +2002,7 @@ pnot_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * i
     }
 
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx); // Save before child parse
-    epc_parse_result_t child_result = child_parser->parse_fn(child_parser, ctx, input);
+    epc_parse_result_t child_result = parse(child_parser, ctx, input);
 
     parser_furthest_error_restore(ctx, &original_furthest_error);
 
@@ -2176,26 +2204,52 @@ epc_one_of(char const * name, const char * chars_to_match)
     return p;
 }
 
-
 static size_t
-consume_whitespace(const char *input)
+consume_whitespace(const char *input, bool consume_comments)
 {
     if (input == NULL)
     {
         return 0;
     }
     size_t len = 0;
-    while (input[len] != '\0' && isspace(input[len]))
-    {
-        len++;
-    }
+    bool consumed_something;
+
+    do {
+        consumed_something = false;
+
+        // Consume standard whitespace
+        while (input[len] != '\0' && isspace(input[len]))
+        {
+            len++;
+            consumed_something = true;
+        }
+
+        // Consume C++ style single-line comments "//"
+        if (consume_comments && input[len] == '/' && input[len+1] == '/')
+        {
+            len += 2; // Skip "//"
+            while (input[len] != '\0' && input[len] != '\n')
+            {
+                len++; // Skip characters until newline or EOF
+            }
+            if (input[len] == '\n')
+            {
+                len++; // Skip the newline character itself
+            }
+            consumed_something = true;
+        }
+    } while (consumed_something); // Loop if any whitespace or comment was consumed in this pass
+
     return len;
 }
 
 static epc_parse_result_t
 plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * input)
 {
-    epc_parser_t * child_parser = (epc_parser_t *)self->data.other;
+    lexeme_data_t * data = &self->data.lexeme;
+    epc_parser_t * child_parser = data->parser;
+    bool consume_comments = data->consume_comments;
+
     if (child_parser == NULL)
     {
         return epc_parser_error_result(ctx, input, "epc_lexeme received NULL child parser", self->name, "NULL");
@@ -2206,11 +2260,11 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char 
     const char * lexeme_start_input = input;
 
     // 1. Consume leading whitespace
-    size_t leading_ws_len = consume_whitespace(current_input);
+    size_t leading_ws_len = consume_whitespace(current_input, consume_comments);
     current_input += leading_ws_len;
 
     // 2. Parse the actual item
-    epc_parse_result_t item_result = child_parser->parse_fn(child_parser, ctx, current_input);
+    epc_parse_result_t item_result = parse(child_parser, ctx, current_input);
     if (item_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
@@ -2219,7 +2273,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char 
     current_input += item_result.data.success->len;
 
     // 3. Consume trailing whitespace
-    size_t trailing_ws_len = consume_whitespace(current_input);
+    size_t trailing_ws_len = consume_whitespace(current_input, consume_comments);
     current_input += trailing_ws_len;
 
     // Success - create a node for 'lexeme'
@@ -2263,8 +2317,9 @@ epc_lexeme(char const * name, epc_parser_t * p)
         return NULL;
     }
     lex->parse_fn = plexeme_parse_fn;
-    lex->data.data_type = PARSER_DATA_TYPE_OTHER;
-    lex->data.other = p;
+    lex->data.data_type = PARSER_DATA_TYPE_LEXEME;
+    lex->data.lexeme.parser = p;
+    lex->data.lexeme.consume_comments = true;
 
     return lex;
 }
@@ -2286,7 +2341,7 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
 
     // Parse the first item (must succeed)
-    left_result = item_parser->parse_fn(item_parser, ctx, current_input);
+    left_result = parse(item_parser, ctx, current_input);
     if (left_result.is_error)
     {
         epc_parser_error_free(original_furthest_error); // Cleanup in error path
@@ -2298,7 +2353,7 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
     while (1)
     {
         epc_parser_error_t * loop_furthest_error = parser_furthest_error_copy(ctx); // Save for loop iteration
-        epc_parse_result_t op_result = op_parser->parse_fn(op_parser, ctx, current_input);
+        epc_parse_result_t op_result = parse(op_parser, ctx, current_input);
         if (op_result.is_error)
         {
             epc_parser_result_cleanup(&op_result);
@@ -2308,7 +2363,7 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
         epc_parser_error_free(loop_furthest_error); // Operator matched, clear previous furthest error
         current_input += op_result.data.success->len;
 
-        epc_parse_result_t right_result = item_parser->parse_fn(item_parser, ctx, current_input);
+        epc_parse_result_t right_result = parse(item_parser, ctx, current_input);
         if (right_result.is_error)
         {
             epc_parser_result_cleanup(&op_result); // op succeeded, but not used in a final success
@@ -2397,7 +2452,7 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx); // Declare here
 
     // Parse the first item (must succeed)
-    first_item_result = item_parser->parse_fn(item_parser, ctx, current_input);
+    first_item_result = parse(item_parser, ctx, current_input);
     if (first_item_result.is_error)
     {
         epc_parser_error_free(original_furthest_error); // Cleanup in error path
@@ -2419,7 +2474,7 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
     while (1)
     {
         epc_parser_error_t * loop_furthest_error = parser_furthest_error_copy(ctx); // Save for loop iteration
-        epc_parse_result_t op_result = op_parser->parse_fn(op_parser, ctx, current_input);
+        epc_parse_result_t op_result = parse(op_parser, ctx, current_input);
         if (op_result.is_error)
         {
             epc_parser_result_cleanup(&op_result);
@@ -2429,7 +2484,7 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char
         epc_parser_error_free(loop_furthest_error); // Operator matched, clear previous furthest error
         current_input += op_result.data.success->len;
 
-        epc_parse_result_t item_result = item_parser->parse_fn(item_parser, ctx, current_input);
+        epc_parse_result_t item_result = parse(item_parser, ctx, current_input);
         if (item_result.is_error)
         {
             epc_parser_result_cleanup(&op_result);
@@ -2605,6 +2660,7 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
         case PARSER_DATA_TYPE_COUNT:
         case PARSER_DATA_TYPE_BETWEEN:
         case PARSER_DATA_TYPE_DELIMITED:
+        case PARSER_DATA_TYPE_LEXEME:
             dst->data = src->data;
             break;
 

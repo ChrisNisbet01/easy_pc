@@ -171,10 +171,11 @@ epc_parser_t* my_char_parser = epc_char_l(list, "my_char", 'A');
 
 The `easy_pc` library comes with several example applications demonstrating its usage and capabilities. You can explore their source code to understand how to build parsers for different scenarios.
 
+*   **GDL Compiler:** A tool located in `tools/gdl_compiler/` that allows you to define grammars using the Grammar Definition Language (GDL) and automatically generates C parser code. This simplifies the process of creating complex parsers without writing boilerplate `easy_pc` code by hand.
+    *   [Learn more about the GDL Language and its usage here.](docs/GDL_Language_Description.md)
+
 *   **Arithmetic Parser:** Located in [examples/arithmetic_parser/](examples/arithmetic_parser/)
     This example demonstrates how to build a parser for simple arithmetic expressions, including support for basic operations (+, -, *, /), parentheses, and integer/double numbers. It also includes an AST builder and evaluator.
 
 *   **JSON Parser:** Located in [examples/json_parser/](examples/json_parser/)
     This example showcases how to create a parser for a subset of the JSON specification. It illustrates parsing complex data structures like objects and arrays, and handling string, number, boolean, and null literals.
-
-

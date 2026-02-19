@@ -1,3 +1,3 @@
 add_subdirectory(arithmetic_parser)
 add_subdirectory(json_parser)
-
+add_subdirectory(code_gen)

@@ -361,71 +361,89 @@ TEST(CombinatorParsersNew, Succeed_AlwaysSucceedsConsumingNoContent)
 // --- epc_lexeme tests ---
 TEST(CombinatorParsersNew, Lexeme_ParsesWithLeadingAndTrailingSpaces)
 {
-    epc_parser_t* p_word = epc_string("word", "hello");
-    epc_parser_t* p_lex = epc_lexeme(NULL, p_word);
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", p_word);
     epc_parse_session_t session = epc_parse_input(p_lex, "   hello   world");
     check_success(session, "lexeme", "   hello   ", 11, 1);
-    epc_parsers_free(2, p_word, p_lex);
     epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
 }
 
 TEST(CombinatorParsersNew, Lexeme_ParsesWithoutSpaces)
 {
-    epc_parser_t* p_word = epc_string("word", "hello");
-    epc_parser_t* p_lex = epc_lexeme(NULL, p_word);
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", p_word);
     epc_parse_session_t session = epc_parse_input(p_lex, "helloworld");
     check_success(session, "lexeme", "hello", 5, 1);
-    epc_parsers_free(2, p_word, p_lex);
     epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
 }
 
 TEST(CombinatorParsersNew, Lexeme_ParsesWithOnlyLeadingSpaces)
 {
-    epc_parser_t* p_word = epc_string("word", "hello");
-    epc_parser_t* p_lex = epc_lexeme(NULL, p_word);
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", p_word);
     epc_parse_session_t session = epc_parse_input(p_lex, "   hello");
     check_success(session, "lexeme", "   hello", 8, 1);
-    epc_parsers_free(2, p_word, p_lex);
     epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
 }
 
 TEST(CombinatorParsersNew, Lexeme_ParsesWithOnlyTrailingSpaces)
 {
-    epc_parser_t* p_word = epc_string("word", "hello");
-    epc_parser_t* p_lex = epc_lexeme(NULL, p_word);
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", p_word);
     epc_parse_session_t session = epc_parse_input(p_lex, "hello   ");
     check_success(session, "lexeme", "hello   ", 8, 1);
-    epc_parsers_free(2, p_word, p_lex);
     epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
 }
 
 TEST(CombinatorParsersNew, Lexeme_FailsIfWrappedParserFails)
 {
-    epc_parser_t* p_word = epc_string("word", "hello");
-    epc_parser_t* p_lex = epc_lexeme(NULL, p_word);
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", p_word);
     epc_parse_session_t session = epc_parse_input(p_lex, "   world   ");
     check_failure(session, "Unexpected string");
-    epc_parsers_free(2, p_word, p_lex);
     epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
 }
 
 TEST(CombinatorParsersNew, Lexeme_EmptyInputFailsWrappedParser)
 {
-    epc_parser_t* p_word = epc_string("word", "hello");
-    epc_parser_t* p_lex = epc_lexeme(NULL, p_word);
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", p_word);
     epc_parse_session_t session = epc_parse_input(p_lex, "");
     check_failure(session, "Unexpected end of input");
-    epc_parsers_free(2, p_word, p_lex);
     epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
 }
 
 TEST(CombinatorParsersNew, Lexeme_NullChildParserFails)
 {
-    epc_parser_t* p_lex = epc_lexeme(NULL, NULL);
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", NULL);
     epc_parse_session_t session = epc_parse_input(p_lex, "abc");
     check_failure(session, "epc_lexeme received NULL child parser");
-    epc_parsers_free(1, p_lex);
     epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
+}
+
+TEST(CombinatorParsersNew, Lexeme_ParsesWithCppStyleComments)
+{
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parser_t* p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t* p_lex = epc_lexeme_l(list, "lexeme", p_word);
+    epc_parse_session_t session = epc_parse_input(p_lex, "//comment\n   hello   //another comment\nworld");
+    check_success(session, "lexeme", "//comment\n   hello   //another comment\n", 39, 1);
+    epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
 }
 
 // Helper to check CPT for chainl1/chainr1.

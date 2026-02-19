@@ -1,0 +1,192 @@
+// GDL Grammar Definition (Self-referential)
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 1. Basic Terminals and Structural Characters
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Raw Characters - directly matching single characters
+RawLBracket = lexeme('[');
+RawRBracket = lexeme(']');
+RawLParen = lexeme('(');
+RawRParen = lexeme(')');
+RawComma = lexeme(',');
+RawEqualsChar = lexeme('=');
+RawSemicolonChar = lexeme(';');
+RawPipeChar = lexeme('|');
+RawAtSign = lexeme('@');
+RawMinusChar = lexeme('-'); // Used in char ranges
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 2. Core Lexical Elements
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Identifier: (alpha | underscore) (alpha | digit | underscore)*
+IdentifierStartChar = alpha | underscore;
+IdentifierContChar = alpha | digit | underscore;
+IdentifierRest = IdentifierContChar*;
+Identifier = lexeme(IdentifierStartChar IdentifierRest) @AST_ACTION_CREATE_IDENTIFIER_REF;
+
+// StringLiteral: '\"' (char | '"' | '')* '\"'
+RawStringQuote = lexeme('\"');
+EscapedDoubleQuote = lexeme('\\\"'); // Backslash followed by double quote
+EscapedBackslashStr = lexeme("\\\\"); // Backslash followed by backslash
+AnyCharExceptQuoteBackslash = none_of_chars("\"\\");
+StringCharOption = EscapedDoubleQuote | EscapedBackslashStr | AnyCharExceptQuoteBackslash;
+StringContent = StringCharOption*;
+StringLiteral = lexeme(RawStringQuote StringContent RawStringQuote) @AST_ACTION_CREATE_STRING_LITERAL;
+
+// CharLiteral: "'" (char | '\'') "'"
+RawCharQuote = lexeme('\'');
+EscapedSingleQuote = lexeme('\\\''); // Backslash followed by single quote
+EscapedBackslashChar = lexeme('\\'); // Backslash followed by backslash
+EscapedN = lexeme('\n');
+EscapedT = lexeme('\t');
+EscapedR = lexeme('\r');
+AnyCharExceptSingleQuoteBackslash = none_of_chars("\'\\");
+CharLiteralContentElement = EscapedSingleQuote | EscapedBackslashChar | EscapedN | EscapedT | EscapedR | AnyCharExceptSingleQuoteBackslash;
+CharLiteralContent = CharLiteralContentElement; // Must be exactly one character
+CharLiteral = lexeme(RawCharQuote CharLiteralContent RawCharQuote) @AST_ACTION_CREATE_CHAR_LITERAL;
+
+// RawChar: single char (not structural or escaped) for char ranges
+RawCharEscapeSequenceContent = lexeme('\
+') any_char; // Backslash followed by any char
+RawCharUnreserved = none_of_chars("[]\;=,()"); // Chars that need escaping or are structural
+RawCharContentOption = RawCharEscapeSequenceContent | RawCharUnreserved;
+RawChar = lexeme(RawCharContentOption) @AST_ACTION_CREATE_RAW_CHAR_LITERAL;
+
+// NumberLiteral: digit+
+NumberLiteral = lexeme(digit+) @AST_ACTION_CREATE_NUMBER_LITERAL;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 3. Keywords and Terminal Definitions
+// ---------------------------------------------------------------------------------------------------------------------
+
+// GDL Keywords for built-in easy_pc parsers and combinators
+KW_digit = lexeme("digit");
+KW_alpha = lexeme("alpha");
+KW_alphanum = lexeme("alphanum");
+KW_int = lexeme("int");
+KW_double = lexeme("double");
+KW_space = lexeme("space");
+KW_hex_digit = lexeme("hex_digit");
+KW_eoi = lexeme("eoi");
+KW_fail = lexeme("fail");
+KW_succeed = lexeme("succeed");
+KW_oneof = lexeme("oneof");
+KW_none_of = lexeme("none_of");
+KW_count = lexeme("count");
+KW_between = lexeme("between");
+KW_delimited = lexeme("delimited");
+KW_lookahead = lexeme("lookahead");
+KW_not = lexeme("not");
+KW_lexeme = lexeme("lexeme");
+KW_skip = lexeme("skip");
+KW_chainl1 = lexeme("chainl1");
+KW_chainr1 = lexeme("chainr1");
+KW_passthru = lexeme("passthru");
+KW_optional_combinator = lexeme("optional"); // Renamed to avoid clash with repetition operator
+
+GDLKeyword = KW_digit | KW_alpha | KW_alphanum | KW_int | KW_double | KW_space | KW_hex_digit | KW_eoi | KW_fail | KW_succeed
+           | KW_oneof | KW_none_of | KW_count | KW_between | KW_delimited | KW_lookahead | KW_not | KW_lexeme
+           | KW_skip | KW_chainl1 | KW_chainr1 | KW_passthru | KW_optional_combinator
+           @AST_ACTION_CREATE_KEYWORD;
+
+// Terminal: string_literal | char_literal | keyword | identifier (non-keyword)
+NotKeyword = not(GDLKeyword); // Ensure identifier isn't a keyword
+ActualIdentifier = NotKeyword Identifier; // Identifier parser is already a lexeme
+Terminal = StringLiteral | CharLiteral | GDLKeyword | ActualIdentifier | NumberLiteral; // NumberLiteral added for count args
+Terminal @AST_ACTION_CREATE_TERMINAL;
+
+// CharRange: '[' RawChar '-' RawChar ']'
+CharRange = RawLBracket RawChar RawMinusChar RawChar RawRBracket @AST_ACTION_CREATE_CHAR_RANGE;
+
+// RepetitionOperator: '*' | '+' | '?'
+RepetitionOperatorStar = lexeme('*');
+RepetitionOperatorPlus = lexeme('+');
+RepetitionOperatorQuestion = lexeme('?');
+RepetitionOperator = RepetitionOperatorStar | RepetitionOperatorPlus | RepetitionOperatorQuestion @AST_ACTION_CREATE_REPETITION_OPERATOR;
+
+// SemanticAction: '@' Identifier
+SemanticAction = RawAtSign Identifier @AST_ACTION_CREATE_SEMANTIC_ACTION;
+OptionalSemanticAction = optional(SemanticAction) @AST_ACTION_CREATE_OPTIONAL_SEMANTIC_ACTION;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 4. Combinator Calls (Functions)
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Forward declarations for recursive calls
+// An argument can be any DefinitionExpression
+ExpressionArgFwd = DefinitionExpression; // Forward declaration
+
+// oneof_call: 'oneof' '(' char_literal (',' char_literal)* ')'
+OneofArgsElement = CharLiteral;
+OneofArgs = delimited(OneofArgsElement, RawComma);
+OneofCall = KW_oneof RawLParen OneofArgs RawRParen @AST_ACTION_CREATE_ONEOF_CALL;
+
+// none_of_call: 'none_of' '(' char_literal (',' char_literal)* ')'
+NoneofArgsElement = CharLiteral;
+NoneofArgs = delimited(NoneofArgsElement, RawComma);
+NoneofCall = KW_none_of RawLParen NoneofArgs RawRParen @AST_ACTION_CREATE_NONEOF_CALL;
+
+// count_call: 'count' '(' number_literal ',' DefinitionExpression ')'
+CountArgs = NumberLiteral RawComma ExpressionArgFwd;
+CountCall = KW_count RawLParen CountArgs RawRParen @AST_ACTION_CREATE_COUNT_CALL;
+
+// between_call: 'between' '(' ExpressionArgFwd ',' ExpressionArgFwd ',' ExpressionArgFwd ')'
+BetweenArgs = ExpressionArgFwd RawComma ExpressionArgFwd RawComma ExpressionArgFwd;
+BetweenCall = KW_between RawLParen BetweenArgs RawRParen @AST_ACTION_CREATE_BETWEEN_CALL;
+
+// delimited_call: 'delimited' '(' ExpressionArgFwd ',' ExpressionArgFwd ')'
+DelimitedArgs = ExpressionArgFwd RawComma ExpressionArgFwd;
+DelimitedCall = KW_delimited RawLParen DelimitedArgs RawRParen @AST_ACTION_CREATE_DELIMITED_CALL;
+
+// Unary Combinator Calls (lookahead, not, lexeme, skip, passthru, optional)
+UnaryCombinatorArg = ExpressionArgFwd;
+LookaheadCall = KW_lookahead RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_LOOKAHEAD_CALL;
+NotCall = KW_not RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_NOT_CALL;
+LexemeCall = KW_lexeme RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_LEXEME_CALL;
+SkipCall = KW_skip RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_SKIP_CALL;
+PassthruCall = KW_passthru RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_PASSTHRU_CALL;
+OptionalCall = KW_optional_combinator RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_OPTIONAL_CALL;
+
+// Chain Combinator Calls (chainl1, chainr1)
+ChainArgs = ExpressionArgFwd RawComma ExpressionArgFwd;
+ChainL1Call = KW_chainl1 RawLParen ChainArgs RawRParen @AST_ACTION_CREATE_CHAINL1_CALL;
+ChainR1Call = KW_chainr1 RawLParen ChainArgs RawRParen @AST_ACTION_CREATE_CHAINR1_CALL;
+
+CombinatorCall = OneofCall | NoneofCall | CountCall | BetweenCall | DelimitedCall | LookaheadCall
+               | NotCall | LexemeCall | SkipCall | ChainL1Call | ChainR1Call | PassthruCall | OptionalCall;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 5. Expressions
+// ---------------------------------------------------------------------------------------------------------------------
+
+// ParenthesizedExpression: '(' DefinitionExpression ')'
+ParenthesizedExpression = RawLParen DefinitionExpression RawRParen;
+
+// PrimaryExpression: Terminal | CharRange | CombinatorCall | ParenthesizedExpression
+PrimaryExpression = CombinatorCall | Terminal | CharRange | ParenthesizedExpression;
+
+// ExpressionFactor: PrimaryExpression RepetitionOperator?
+OptionalRepetition = RepetitionOperator? @AST_ACTION_CREATE_OPTIONAL;
+ExpressionFactor = PrimaryExpression OptionalRepetition @AST_ACTION_CREATE_EXPRESSION_FACTOR;
+
+// ExpressionTerm: ExpressionFactor+ (sequence of factors)
+ExpressionTerm = ExpressionFactor+ @AST_ACTION_CREATE_SEQUENCE;
+
+// DefinitionExpression: ExpressionTerm ('|' ExpressionTerm)*
+AlternativePart = RawPipeChar ExpressionTerm;
+ManyAlternatives = AlternativePart*;
+DefinitionExpression = ExpressionTerm ManyAlternatives @AST_ACTION_CREATE_ALTERNATIVE;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 6. Rule Definition and Program Structure
+// ---------------------------------------------------------------------------------------------------------------------
+
+// RuleDefinition: Identifier '=' DefinitionExpression SemanticAction? ';'
+RuleDefinition = Identifier RawEqualsChar DefinitionExpression OptionalSemanticAction RawSemicolonChar @AST_ACTION_CREATE_RULE_DEFINITION;
+
+// Program: RuleDefinition+ eoi
+ManyRuleDefinitions = RuleDefinition+ @AST_ACTION_CREATE_SEQUENCE;
+GDLEoiParser = KW_eoi; // Use the keyword 'eoi' directly
+Program = ManyRuleDefinitions GDLEoiParser @AST_ACTION_CREATE_PROGRAM;

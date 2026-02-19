@@ -82,3 +82,5 @@ if (DOXYGEN_FOUND)
 else ()
     message(STATUS "Doxygen not found, skipping documentation generation.")
 endif ()
+
+add_subdirectory(tools/gdl_compiler)

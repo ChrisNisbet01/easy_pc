@@ -168,3 +168,103 @@ add_test(
     COMMAND ParserListTest
 )
 
+add_executable(GdlParserTest
+    AllTests.cpp
+    GdlParserTest.cpp
+    ../tools/gdl_compiler/gdl_parser.c
+)
+
+target_include_directories(GdlParserTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/gdl_compiler
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+target_link_libraries(GdlParserTest PRIVATE
+    easy_pc
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME GdlParserTest
+    COMMAND GdlParserTest
+)
+
+add_executable(GdlAstBuilderTest
+    AllTests.cpp
+    GdlAstBuilderTest.cpp
+    ../tools/gdl_compiler/gdl_parser.c
+    ../tools/gdl_compiler/gdl_ast_builder.c
+)
+
+target_include_directories(GdlAstBuilderTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/gdl_compiler
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+target_link_libraries(GdlAstBuilderTest PRIVATE
+    easy_pc
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME GdlAstBuilderTest
+    COMMAND GdlAstBuilderTest
+)
+
+add_executable(GeneratedParserTest
+    AllTests.cpp
+    GeneratedParserTest.cpp
+    ../tools/gdl_compiler/gdl_parser.c
+    ../tools/gdl_compiler/gdl_ast_builder.c
+    ../tools/gdl_compiler/gdl_code_generator.c # Include the code generator source
+)
+
+target_include_directories(GeneratedParserTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/gdl_compiler
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+target_link_libraries(GeneratedParserTest PRIVATE
+    easy_pc
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME GeneratedParserTest
+    COMMAND GeneratedParserTest
+)
+
+add_executable(ArithmeticParserGeneratorTest
+    AllTests.cpp
+    ArithmeticParserGeneratorTest.cpp
+    ../tools/gdl_compiler/gdl_parser.c
+    ../tools/gdl_compiler/gdl_ast_builder.c
+    ../tools/gdl_compiler/gdl_code_generator.c
+)
+
+target_include_directories(ArithmeticParserGeneratorTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/gdl_compiler
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+target_link_libraries(ArithmeticParserGeneratorTest PRIVATE
+    easy_pc
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME ArithmeticParserGeneratorTest
+    COMMAND ArithmeticParserGeneratorTest
+)

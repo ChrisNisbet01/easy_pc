@@ -70,6 +70,21 @@ static void cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
                                 (node->content && node->len > 0 ? node->len + 3 : 0) + // 'content'
                                 num_to_str_len(node->len) + 7 + 1; // (len=X)\n
 
+    // include semantic content and length
+    char const * scontent = epc_cpt_node_get_semantic_content(node);
+    size_t scontent_len = epc_cpt_node_get_semantic_len(node);
+    if (scontent == node->content && scontent_len == node->len)
+    {
+        scontent = NULL;
+        scontent_len = 0;
+    }
+    if (scontent != NULL && scontent_len > 0)
+    {
+        estimated_line_len += scontent_len + 3 + // 'content'
+        num_to_str_len(scontent_len) + 7 + 1; // (len=X)\n
+    }
+
+
     ensure_buffer_capacity(data, estimated_line_len);
     if (!data->buffer)
     {
@@ -118,6 +133,26 @@ static void cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
         return;
     }
     data->current_offset += required_len;
+
+    if (scontent != NULL && scontent_len > 0)
+    {
+        data->buffer[data->current_offset++] = ' ';
+        data->buffer[data->current_offset++] = '\'';
+        strncpy(data->buffer + data->current_offset, scontent, scontent_len);
+        data->current_offset += scontent_len;
+        data->buffer[data->current_offset++] = '\'';
+
+        required_len = snprintf(data->buffer + data->current_offset,
+                                data->buffer_capacity - data->current_offset,
+                                " (len=%zu)", scontent_len);
+        if (required_len < 0 || (size_t)required_len >= (data->buffer_capacity - data->current_offset))
+        {
+            data->current_offset = data->buffer_capacity - 1; // Mark as full to prevent further writes
+            data->buffer[data->current_offset] = '\0'; // Null-terminate
+            return;
+        }
+        data->current_offset += required_len;
+    }
 
     data->buffer[data->current_offset++] = '\n';
 

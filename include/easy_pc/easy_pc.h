@@ -365,6 +365,73 @@ static inline epc_parser_t * epc_space_l(epc_parser_list * list, char const * na
 }
 
 /**
+ * @brief Creates a parser that matches any single character.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_any_char(char const * name);
+
+/**
+ * @brief Creates a parser that matches any single character and adds it to the list.
+ *        This is a convenience wrapper for `epc_any_char()` that automatically adds the created
+ *        parser to the provided `epc_parser_list`.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t * epc_any_char_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_any_char(name));
+}
+
+/**
+ * @brief Creates a parser that always succeeds and produces a node with specified content and adds it to the list.
+ *
+ * This parser consumes no input and always returns a successful result
+ * containing a CPT node with the given `content` and its length.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_succeed(char const * name);
+
+/**
+ * @brief Creates a parser that always succeeds and produces a node with specified content and adds it to the list.
+ *        This is a convenience wrapper for `epc_succeed()` that automatically adds the created
+ *        parser to the provided `epc_parser_list`.
+ *
+ * This parser consumes no input and always returns a successful result
+ * containing a CPT node with the given `content` and its length.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t * epc_succeed_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_succeed(name));
+}
+
+/**
+ * @brief Creates a parser that matches a single hexadecimal digit (0-9, a-f, A-F) and adds it to the list.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_hex_digit(char const * name);
+
+/**
+ * @brief Creates a parser that matches a single hexadecimal digit (0-9, a-f, A-F) and adds it to the list.
+ *        This is a convenience wrapper for `epc_hex_digit()` that automatically adds the created
+ *        parser to the provided `epc_parser_list`.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t * epc_hex_digit_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_hex_digit(name));
+}
+
+/* Combinators, or parsers that take more than one argument. */
+/**
  * @brief Creates a parser that matches a single character within a specified range and adds it to the list.
  * @param name The name of the parser for debugging/CPT.
  * @param char_start The beginning character of the range (inclusive).
@@ -386,26 +453,6 @@ EASY_PC_API epc_parser_t * epc_char_range(char const * name, char char_start, ch
 static inline epc_parser_t * epc_char_range_l(epc_parser_list * list, char const * name, char char_start, char char_end)
 {
     return epc_parser_list_add(list, epc_char_range(name, char_start, char_end));
-}
-
-/**
- * @brief Creates a parser that matches any single character and adds it to the list.
- * @param name The name of the parser for debugging/CPT.
- * @return A new `parser_t` instance, or NULL on error.
- */
-EASY_PC_API epc_parser_t * epc_any_char(char const * name);
-
-/**
- * @brief Creates a parser that matches any single character and adds it to the list.
- *        This is a convenience wrapper for `epc_any_char()` that automatically adds the created
- *        parser to the provided `epc_parser_list`.
- * @param list The parser list to add to.
- * @param name The name of the parser for debugging/CPT.
- * @return A new `parser_t` instance, or NULL on error.
- */
-static inline epc_parser_t * epc_any_char_l(epc_parser_list * list, char const * name)
-{
-    return epc_parser_list_add(list, epc_any_char(name));
 }
 
 /**
@@ -658,52 +705,6 @@ EASY_PC_API epc_parser_t * epc_fail(char const * name, const char * message);
 static inline epc_parser_t * epc_fail_l(epc_parser_list * list, char const * name, const char * message)
 {
     return epc_parser_list_add(list, epc_fail(name, message));
-}
-
-/**
- * @brief Creates a parser that always succeeds and produces a node with specified content and adds it to the list.
- *
- * This parser consumes no input and always returns a successful result
- * containing a CPT node with the given `content` and its length.
- * @param name The name of the parser for debugging/CPT.
- * @return A new `parser_t` instance, or NULL on error.
- */
-EASY_PC_API epc_parser_t * epc_succeed(char const * name);
-
-/**
- * @brief Creates a parser that always succeeds and produces a node with specified content and adds it to the list.
- *        This is a convenience wrapper for `epc_succeed()` that automatically adds the created
- *        parser to the provided `epc_parser_list`.
- *
- * This parser consumes no input and always returns a successful result
- * containing a CPT node with the given `content` and its length.
- * @param list The parser list to add to.
- * @param name The name of the parser for debugging/CPT.
- * @return A new `parser_t` instance, or NULL on error.
- */
-static inline epc_parser_t * epc_succeed_l(epc_parser_list * list, char const * name)
-{
-    return epc_parser_list_add(list, epc_succeed(name));
-}
-
-/**
- * @brief Creates a parser that matches a single hexadecimal digit (0-9, a-f, A-F) and adds it to the list.
- * @param name The name of the parser for debugging/CPT.
- * @return A new `parser_t` instance, or NULL on error.
- */
-EASY_PC_API epc_parser_t * epc_hex_digit(char const * name);
-
-/**
- * @brief Creates a parser that matches a single hexadecimal digit (0-9, a-f, A-F) and adds it to the list.
- *        This is a convenience wrapper for `epc_hex_digit()` that automatically adds the created
- *        parser to the provided `epc_parser_list`.
- * @param list The parser list to add to.
- * @param name The name of the parser for debugging/CPT.
- * @return A new `parser_t` instance, or NULL on error.
- */
-static inline epc_parser_t * epc_hex_digit_l(epc_parser_list * list, char const * name)
-{
-    return epc_parser_list_add(list, epc_hex_digit(name));
 }
 
 /**

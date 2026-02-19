@@ -1,5 +1,4 @@
 #include "CppUTest/TestHarness.h"
-#include "easy_pc/easy_pc.h"
 #include "easy_pc_private.h" // For epc_parser_t definition (needed for testing parser allocation)
 #include <stdlib.h> // For NULL
 
