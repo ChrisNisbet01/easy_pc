@@ -1,9 +1,10 @@
 #include "grammar.h"
 
 #include "ast.h"
-#include "ast_builder.h"
+#include "simple_calc_ast_actions.h"
 #include "ast_evaluator.h"
 #include "function_definitions.h"
+#include "easy_pc/easy_pc_ast.h" // Added for AST types and functions
 
 #include <stdio.h>
 
@@ -170,13 +171,11 @@ create_formula_grammar(
         epc_parser_t * fn_rparen_ = epc_char_l(list, ")", ')');
         epc_parser_t * fn_rparen  = epc_lexeme_l(list, ")", fn_rparen_);
 
-        epc_parser_t * single_arg        = epc_lexeme_l(list, "single_expression_arg", expr_fwd);
-        epc_parser_t * many_args         = epc_delimited_l(list, "one_or_more_args", single_arg, arg_delim);
+        epc_parser_t * single_arg = epc_lexeme_l(list, "single_expression_arg", expr_fwd);
+        epc_parser_t * many_args  = epc_delimited_l(list, "one_or_more_args", single_arg, arg_delim);
         epc_parser_set_ast_action(many_args, AST_ACTION_COLLECT_CHILD_RESULTS);
 
         epc_parser_t * zero_or_more_args = epc_optional_l(list, "optional_args_list", many_args);
-        epc_parser_set_ast_action(zero_or_more_args, AST_ACTION_PROMOTE_ARGS_LIST_AST_OR_EMPTY_LIST);
-
         epc_parser_t * args_in_parens    = epc_between_l(list, "args_in_parens", fn_lparen, zero_or_more_args, fn_rparen);
         function_call  = epc_and_l(list, "function_call", 2, function, args_in_parens);
         epc_parser_set_ast_action(function_call, AST_ACTION_CREATE_FUNCTION_CALL);
@@ -223,22 +222,7 @@ parse_and_evaluate_result_cleanup(parse_and_evaluate_result_st * result)
     memset(result, 0, sizeof(*result));
 }
 
-static ast_builder_data_t
-build_ast(epc_cpt_node_t * pt_node)
-{
-    ast_builder_data_t ast_builder_data;
-    ast_builder_init(&ast_builder_data);
 
-    epc_cpt_visitor_t ast_builder_visitor = {
-        .enter_node = ast_builder_enter_node,
-        .exit_node = ast_builder_exit_node,
-        .user_data = &ast_builder_data
-    };
-
-    epc_cpt_visit_nodes(pt_node, &ast_builder_visitor);
-
-    return ast_builder_data;
-}
 
 void
 compile_context_cleanup(epc_compile_context_st * ctx)
@@ -250,7 +234,7 @@ compile_context_cleanup(epc_compile_context_st * ctx)
     }
     else
     {
-        ast_node_free(ctx->ast);
+        ast_node_free(ctx->ast, NULL); // User_data is NULL for this example
     }
     memset(ctx, 0, sizeof(*ctx));
 }
@@ -264,32 +248,47 @@ compile_expression(epc_parser_t * formula_parser, char const * input_expr)
 
     if (!result.parse_session.result.is_error)
     {
-        ast_builder_data_t ast_builder_data;
-        ast_builder_init(&ast_builder_data);
-
-        ast_builder_data = build_ast(result.parse_session.result.data.success);
-
-        if (ast_builder_data.has_error)
+        epc_ast_hook_registry_t * ast_registry = epc_ast_hook_registry_create(AST_ACTION_MAX);
+        if (ast_registry == NULL)
         {
-            char * msg = NULL;
-            int len = asprintf(&msg, "Error: %s", ast_builder_data.error_message);
-            if (len < 0)
+            char * msg = strdup("memory allocation error: AST registry");
+            if (msg == NULL)
             {
-                msg = strdup("memory allocation error");
+                result.message = "memory allocation error";
             }
-            result.message = msg;
-        }
-        else if (ast_builder_data.ast_root == NULL)
-        {
-            result.message = strdup("Error: No root AST assigned.");
+            else
+            {
+                result.message = msg;
+            }
         }
         else
         {
-            result.success = true;
-            result.ast = ast_builder_data.ast_root;
-            ast_builder_data.ast_root = NULL;
+            simple_calc_ast_hook_registry_init(ast_registry);
+            void * user_data = NULL;
+            epc_ast_result_t ast_build_result =
+                epc_ast_build(result.parse_session.result.data.success, ast_registry, user_data);
+
+            if (ast_build_result.has_error)
+            {
+                char * msg = NULL;
+                int len = asprintf(&msg, "Error: %s", ast_build_result.error_message);
+                if (len < 0)
+                {
+                    msg = strdup("memory allocation error");
+                }
+                result.message = msg;
+            }
+            else if (ast_build_result.ast_root == NULL)
+            {
+                result.message = strdup("Error: No root AST assigned.");
+            }
+            else
+            {
+                result.success = true;
+                result.ast = (ast_node_t *)ast_build_result.ast_root;
+            }
         }
-        ast_builder_cleanup(&ast_builder_data);
+        epc_ast_hook_registry_free(ast_registry);
     }
     else
     {
@@ -308,6 +307,7 @@ compile_expression(epc_parser_t * formula_parser, char const * input_expr)
         }
         result.message = msg;
     }
+
 
     return result;
 }
