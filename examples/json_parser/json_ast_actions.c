@@ -90,10 +90,23 @@ create_string_action(
     void * user_data
 )
 {
-    (void)children; (void)count; (void)user_data;
+    if (count != 0)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
+        epc_ast_builder_set_error(ctx, "String action expected 0 children, but got %u\n", count);
+        return;
+    }
+
     json_node_t * jnode = json_node_alloc(JSON_NODE_STRING);
     if (!jnode)
     {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
         epc_ast_builder_set_error(ctx, "Failed to allocate JSON string node");
         return;
     }
@@ -109,6 +122,7 @@ create_string_action(
     {
         jnode->data.string = strndup(content, len);
     }
+
     epc_ast_push(ctx, jnode);
 }
 
@@ -121,19 +135,34 @@ create_number_action(
     void * user_data
 )
 {
-    (void)children; (void)count; (void)user_data;
+    if (count != 0)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
+        epc_ast_builder_set_error(ctx, "Number action expected 0 children, but got %u\n", count);
+        return;
+    }
+
     json_node_t * jnode = json_node_alloc(JSON_NODE_NUMBER);
     if (!jnode)
     {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
         epc_ast_builder_set_error(ctx, "Failed to allocate JSON number node");
         return;
     }
+
     const char * content = epc_cpt_node_get_semantic_content(node);
     size_t len = epc_cpt_node_get_semantic_len(node);
     char * endptr;
     char * buf = strndup(content, len);
     jnode->data.number = strtod(buf, &endptr);
     free(buf);
+
     epc_ast_push(ctx, jnode);
 }
 
@@ -146,15 +175,29 @@ create_boolean_action(
     void * user_data
 )
 {
-    (void)children; (void)count; (void)user_data;
+    if (count != 0)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
+        epc_ast_builder_set_error(ctx, "Boolean action expected 0 children, but got %u\n", count);
+        return;
+    }
+
     json_node_t * jnode = json_node_alloc(JSON_NODE_BOOLEAN);
     if (!jnode)
     {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
         epc_ast_builder_set_error(ctx, "Failed to allocate JSON boolean node");
         return;
     }
     const char * content = epc_cpt_node_get_semantic_content(node);
     jnode->data.boolean = (strncmp(content, "true", 4) == 0);
+
     epc_ast_push(ctx, jnode);
 }
 
@@ -167,13 +210,29 @@ create_null_action(
     void * user_data
 )
 {
-    (void)node; (void)children; (void)count; (void)user_data;
+    (void)node;
+
+    if (count != 0)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
+        epc_ast_builder_set_error(ctx, "Null action expected 0 children, but got %u\n", count);
+        return;
+    }
+
     json_node_t * jnode = json_node_alloc(JSON_NODE_NULL);
     if (!jnode)
     {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
         epc_ast_builder_set_error(ctx, "Failed to allocate JSON null node");
         return;
     }
+
     epc_ast_push(ctx, jnode);
 }
 
@@ -190,6 +249,10 @@ create_list_action(
     json_node_t * list_node = json_node_alloc(JSON_NODE_LIST);
     if (!list_node)
     {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
         epc_ast_builder_set_error(ctx, "Failed to allocate JSON list node");
         return;
     }
@@ -201,6 +264,7 @@ create_list_action(
             ast_list_append(&list_node->data.list, (json_node_t *)children[i]);
         }
     }
+
     epc_ast_push(ctx, list_node);
 }
 
@@ -214,7 +278,8 @@ create_optional_list_action(
 )
 {
     (void)node; (void)user_data;
-    if (count == 0 || children[0] == NULL)
+
+    if (count == 0)
     {
         // Empty list
         json_node_t * list_node = json_node_alloc(JSON_NODE_LIST);
@@ -238,21 +303,18 @@ create_array_action(
 {
     (void)node; (void)user_data;
     // json_array: [ , optional_elements, ]
-    json_node_t * list_node = NULL;
-    for (int i = 0; i < count; i++)
-    {
-        if (children[i] != NULL && ((json_node_t *)children[i])->type == JSON_NODE_LIST)
-        {
-            list_node = (json_node_t *)children[i];
-            break;
-        }
-    }
 
-    if (!list_node)
+    if (count != 1 || ((json_node_t *)children[0])->type != JSON_NODE_LIST)
     {
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
         epc_ast_builder_set_error(ctx, "Failed to find list in JSON array children");
         return;
     }
+
+    json_node_t * list_node = (json_node_t *)children[0];
 
     list_node->type = JSON_NODE_ARRAY;
     epc_ast_push(ctx, list_node);
@@ -267,32 +329,38 @@ create_member_action(
     void * user_data
 )
 {
-    (void)node; (void)user_data;
+    (void)node;
     // member: quoted_string, colon, value
-    json_node_t * key_node = NULL;
-    json_node_t * value_node = NULL;
 
-    for (int i = 0; i < count; i++)
+    if (count != 2)
     {
-        if (children[i] != NULL)
+        for (int i = 0; i < count; i++)
         {
-            if (key_node == NULL) key_node = (json_node_t *)children[i];
-            else value_node = (json_node_t *)children[i];
+            json_node_free((json_node_t *)children[i], user_data);
         }
+        epc_ast_builder_set_error(ctx, "JSON member expected 2 children, but got %u\n", count);
+        return;
     }
+    json_node_t * key_node = (json_node_t *)children[0];
+    json_node_t * value_node = (json_node_t *)children[1];
 
-    if (!key_node || !value_node || key_node->type != JSON_NODE_STRING)
+    json_node_t * member_node = json_node_alloc(JSON_NODE_MEMBER);
+    if (member_node == NULL)
     {
-        epc_ast_builder_set_error(ctx, "Invalid children for JSON member");
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
+        epc_ast_builder_set_error(ctx, "Failed to allocate Member node");
         return;
     }
 
-    json_node_t * member_node = json_node_alloc(JSON_NODE_MEMBER);
-    member_node->data.member.key = strdup(key_node->data.string);
+    member_node->data.member.key = key_node->data.string;
+    key_node->data.string = NULL;
     member_node->data.member.value = value_node;
 
-    // Free the temporary key node
     json_node_free(key_node, user_data);
+    /* No need to free the value node as it is attached to the member node. */
 
     epc_ast_push(ctx, member_node);
 }
@@ -306,25 +374,23 @@ create_object_action(
     void * user_data
 )
 {
-    (void)node; (void)user_data;
-    // json_object: { , optional_members, }
-    json_node_t * list_node = NULL;
-    for (int i = 0; i < count; i++)
-    {
-        if (children[i] != NULL && ((json_node_t *)children[i])->type == JSON_NODE_LIST)
-        {
-            list_node = (json_node_t *)children[i];
-            break;
-        }
-    }
+    (void)node;
 
-    if (!list_node)
+    if (count != 1 || ((json_node_t *)children[0])->type != JSON_NODE_LIST)
     {
-        epc_ast_builder_set_error(ctx, "Failed to find list in JSON object children");
+        for (int i = 0; i < count; i++)
+        {
+            json_node_free((json_node_t *)children[i], user_data);
+        }
+        epc_ast_builder_set_error(ctx, "Object action expected 1 child, but got %u\n", count);
         return;
     }
 
+    // json_object: { , optional_members, }
+    json_node_t * list_node = (json_node_t *)children[0];
+
     list_node->type = JSON_NODE_OBJECT;
+
     epc_ast_push(ctx, list_node);
 }
 
