@@ -1,8 +1,10 @@
 
 #include "ast_evaluator.h"
 #include "grammar.h"
+#include "simple_calc_ast_actions.h" // For registry init, free, and action enum
 
 #include "easy_pc/easy_pc.h"
+#include "easy_pc/easy_pc_ast.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -41,21 +43,34 @@ int main(int argc, char ** argv)
     epc_parser_list * list = epc_parser_list_create();
     epc_parser_t * formula_parser = create_formula_grammar(list, 1, variables, 2, constants);
 
-    parse_and_evaluate_result_st result =
-        parse_and_evaluate(formula_parser, input_expr, 1, variables, 2, constants);
-    if (!result.success)
+    epc_compile_result_t compile_result =
+        epc_parse_and_build_ast(formula_parser, input_expr, AST_ACTION_MAX, simple_calc_ast_hook_registry_init, NULL);
+
+    int exit_code = EXIT_FAILURE;
+
+    if (!compile_result.success)
     {
-        printf("Failed to parse and evaluate: `%s`\n", input_expr);
-        printf("%s\n", result.message);
+        printf("Failed to compile: `%s`\n", input_expr);
+        if (compile_result.parse_error_message)
+        {
+            printf("Parse Error: %s\n", compile_result.parse_error_message);
+        }
+        if (compile_result.ast_error_message)
+        {
+            printf("AST Build Error: %s\n", compile_result.ast_error_message);
+        }
     }
     else
     {
-        printf("Result: %lf\n", result.value);
+        printf("Expression successfully compiled.\n");
+        double calculated_result =
+            evaluate_ast(compile_result.ast, variables, 1, constants, 2);
+        
+        printf("Result: %lf\n", calculated_result);
+        exit_code = EXIT_SUCCESS;
     }
 
-    int exit_code = result.success ? EXIT_SUCCESS : EXIT_FAILURE;
-
-    parse_and_evaluate_result_cleanup(&result);
+    epc_compile_result_cleanup(&compile_result, ast_node_free, NULL);
 
     epc_parser_list_free(list);
 

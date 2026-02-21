@@ -167,6 +167,76 @@ epc_ast_build(
     void * user_data
 );
 
+/**
+ * @brief Represents the result of a combined parsing and AST-building operation.
+ *
+ * The 'ast' field is only valid if 'success' is true. If 'success' is false,
+ * one or both of the error message fields will be populated. The caller is
+ * responsible for freeing the resources held by this struct by calling
+ * 'epc_compile_result_cleanup'.
+ */
+typedef struct epc_compile_result_t
+{
+    bool success;                /**< True if both parsing and AST building succeeded. */
+    void * ast;                  /**< The root of the resulting AST if successful, otherwise NULL. */
+    char * parse_error_message;  /**< An error message if the parsing step failed, otherwise NULL. */
+    char * ast_error_message;    /**< An error message if the AST building step failed, otherwise NULL. */
+} epc_compile_result_t;
+
+/**
+ * @brief Callback for initializing an AST hook registry.
+ *
+ * The user implements this function to register all necessary AST action
+ * callbacks and the node-freeing callback.
+ *
+ * @param registry The AST hook registry to be initialized.
+ */
+typedef void (*epc_ast_registry_init_cb)(epc_ast_hook_registry_t * registry);
+
+/**
+ * @brief Parses an input string and builds an AST in a single operation.
+ *
+ * This function encapsulates the common workflow of:
+ * 1. Parsing the input string with the given parser.
+ * 2. If parsing is successful, creating an AST hook registry.
+ * 3. Initializing the registry via the user-provided callback.
+ * 4. Building the AST from the parse tree.
+ * 5. Cleaning up all intermediate resources.
+ *
+ * @param parser The top-level parser to use.
+ * @param input The input string to parse.
+ * @param ast_action_count The number of AST actions (max index + 1).
+ * @param registry_init_cb A callback function to initialize the hook registry.
+ * @param user_data Optional user data to be passed to all AST callbacks.
+ * @return An 'epc_compile_result_t' struct containing the result.
+ */
+EASY_PC_API epc_compile_result_t
+epc_parse_and_build_ast(
+    epc_parser_t * parser,
+    char const * input,
+    int ast_action_count,
+    epc_ast_registry_init_cb registry_init_cb,
+    void * user_data
+);
+
+/**
+ * @brief Frees the resources held by an epc_compile_result_t.
+ *
+ * This function frees the error message strings (if any) and, if an AST
+ * was created, calls the provided 'ast_free_cb' to allow the user to
+ * recursively free their custom AST node structures.
+ *
+ * @param result A pointer to the result struct to clean up.
+ * @param ast_free_cb A user-provided function to free the AST nodes.
+ * @param user_data Optional user data to be passed to the free callback.
+ */
+EASY_PC_API void
+epc_compile_result_cleanup(
+    epc_compile_result_t * result,
+    epc_ast_node_free_cb ast_free_cb,
+    void * user_data
+);
+
 #ifdef __cplusplus
 }
 #endif

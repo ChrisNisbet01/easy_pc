@@ -1,4 +1,4 @@
-set(app "simple_calc")
+set(app "simple_calc_2")
 add_executable(${app} 
   main.c 
   simple_calc_ast_actions.c 

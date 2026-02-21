@@ -413,3 +413,95 @@ epc_ast_build(
     epc_ast_builder_ctx_cleanup(&ctx); // Frees stack memory, but not the root node if transferred
     return result;
 }
+
+EASY_PC_API epc_compile_result_t
+epc_parse_and_build_ast(
+    epc_parser_t * parser,
+    char const * input,
+    int ast_action_count,
+    epc_ast_registry_init_cb registry_init_cb,
+    void * user_data
+)
+{
+    epc_compile_result_t result = {0};
+    epc_parse_session_t parse_session = epc_parse_input(parser, input);
+
+    if (parse_session.result.is_error)
+    {
+        result.success = false;
+        char *msg = NULL;
+        // The error structure from the parser has all the necessary details.
+        epc_parser_error_t *err = parse_session.result.data.error;
+        int len = asprintf(&msg, "Parse error: %s at '%.*s' (expected '%s', found '%.*s')",
+            err->message,
+            (int)(input + strlen(input) - err->input_position), err->input_position,
+            err->expected ? err->expected : "N/A",
+            (int)strlen(err->found), err->found ? err->found : "N/A"
+        );
+        if (len < 0)
+        {
+            result.parse_error_message = strdup("Failed to allocate memory for parse error message.");
+        }
+        else
+        {
+            result.parse_error_message = msg;
+        }
+    }
+    else
+    {
+        epc_ast_hook_registry_t * ast_registry = epc_ast_hook_registry_create(ast_action_count);
+        if (ast_registry == NULL)
+        {
+            result.success = false;
+            result.ast_error_message = strdup("Failed to create AST hook registry.");
+        }
+        else
+        {
+            if (registry_init_cb != NULL)
+            {
+                registry_init_cb(ast_registry);
+            }
+
+            epc_ast_result_t ast_build_result =
+                epc_ast_build(parse_session.result.data.success, ast_registry, user_data);
+
+            if (ast_build_result.has_error)
+            {
+                result.success = false;
+                result.ast_error_message = strdup(ast_build_result.error_message);
+            }
+            else
+            {
+                result.success = true;
+                result.ast = ast_build_result.ast_root;
+            }
+            epc_ast_hook_registry_free(ast_registry);
+        }
+    }
+
+    epc_parse_session_destroy(&parse_session);
+    return result;
+}
+
+EASY_PC_API void
+epc_compile_result_cleanup(
+    epc_compile_result_t * result,
+    epc_ast_node_free_cb ast_free_cb,
+    void * user_data
+)
+{
+    if (result == NULL)
+    {
+        return;
+    }
+
+    free(result->parse_error_message);
+    free(result->ast_error_message);
+
+    if (result->success && result->ast != NULL && ast_free_cb != NULL)
+    {
+        ast_free_cb(result->ast, user_data);
+    }
+
+    memset(result, 0, sizeof(*result));
+}
