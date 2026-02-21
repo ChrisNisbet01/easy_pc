@@ -167,9 +167,6 @@ gdl_generate_semantic_actions_header(gdl_ast_node_t * ast_root, const char * bas
 
     fprintf(actions_header_file, "typedef enum {\n");
 
-    /* The default action is to do nothing, which has a value of 0. */
-    fprintf(actions_header_file, "    AST_ACTION_NONE,\n");
-
     semantic_action_node_t * action_names_head = NULL;
 
     gdl_ast_list_node_t * current_rule_node = ast_root->data.program.rules.head;
@@ -214,7 +211,9 @@ gdl_generate_semantic_actions_header(gdl_ast_node_t * ast_root, const char * bas
      * Finish with a 'COUNT' value, which will be handy when creating a list of
      * callbacks for the AST builder library code.
      */
-    fprintf(actions_header_file, "    AST_ACTION_COUNT__,\n");
+    char * action_count_prefix = to_upper_case(base_name);
+    fprintf(actions_header_file, "    %s_AST_ACTION_COUNT__,\n", action_count_prefix);
+    free(action_count_prefix);
 
 
     fprintf(actions_header_file, "} %s_semantic_action_t;\n", base_name);

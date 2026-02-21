@@ -1,8 +1,37 @@
 #include "json_pointer.h" // Generated header
+#include "json_pointer_ast.h"
+#include "json_pointer_actions.h"
+#include "json_pointer_ast_actions.h"
+
 #include <easy_pc/easy_pc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static void
+print_json_pointer_ast(json_pointer_node_t * node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    switch (node->type)
+    {
+        case JSON_POINTER_NODE_STRING:
+            printf("\"%s\"\n", node->data.string);
+            break;
+        case JSON_POINTER_NODE_LIST:
+            for (json_pointer_list_node_t * curr = node->data.list.head; curr; curr = curr->next)
+            {
+                print_json_pointer_ast(curr->item);
+            }
+            break;
+        default:
+            printf("UNKNOWN NODE TYPE");
+            break;
+    }
+}
 
 int main(int argc, char ** argv)
 {
@@ -30,34 +59,33 @@ int main(int argc, char ** argv)
         return EXIT_FAILURE;
     }
 
-    epc_parse_session_t session = epc_parse_input(json_pointer_parser, input_string);
+    epc_compile_result_t compile_result =
+        epc_parse_and_build_ast(json_pointer_parser, input_string,
+                                JSON_POINTER_AST_ACTION_COUNT__,
+                                json_pointer_ast_hook_registry_init, NULL);
 
-    int exit_code = EXIT_SUCCESS;
-
-    if (session.result.is_error)
+    if (!compile_result.success)
     {
-        fprintf(stderr, "Parsing Error for '%s': %s at input position '%.10s...'\n",
-                input_string,
-                session.result.data.error->message,
-                session.result.data.error->input_position);
-        fprintf(stderr, "    Expected %s, found: %s at column %u\n",
-                session.result.data.error->expected,
-                session.result.data.error->found,
-                session.result.data.error->col);
-        exit_code = EXIT_FAILURE;
+        if (compile_result.parse_error_message)
+        {
+            fprintf(stderr, "Parse Error: %s\n", compile_result.parse_error_message);
+        }
+        if (compile_result.ast_error_message)
+        {
+            fprintf(stderr, "AST Build Error: %s\n", compile_result.ast_error_message);
+        }
+        epc_compile_result_cleanup(&compile_result, json_pointer_node_free, NULL);
+        epc_parser_list_free(parser_list);
+        return EXIT_FAILURE;
     }
     else
     {
-        printf("Successfully parsed JSON Pointer: '%s'\n", input_string);
-        char* cpt_str = epc_cpt_to_string(session.result.data.success);
-        if (cpt_str) {
-            printf("CPT:\n%s\n", cpt_str);
-            free(cpt_str);
-        }
+        printf("Parsing and AST building successful!\n");
+        printf("AST:\n");
+        print_json_pointer_ast((json_pointer_node_t *)compile_result.ast);
+
+        epc_compile_result_cleanup(&compile_result, json_pointer_node_free, NULL);
+        epc_parser_list_free(parser_list);
+        return EXIT_SUCCESS;
     }
-
-    epc_parse_session_destroy(&session);
-    epc_parser_list_free(parser_list);
-
-    return exit_code;
 }

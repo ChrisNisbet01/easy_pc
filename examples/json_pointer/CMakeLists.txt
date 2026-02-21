@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
-project(json_pointer_example C)
+set(APP json_pointer)
+
+project(${APP} C)
 
 # Set output directory for generated files
 set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
@@ -39,21 +41,24 @@ add_dependencies(json_pointer_generated_sources
 )
 
 # Add the application executable
-add_executable(json_pointer_example main.c)
+add_executable(${APP} 
+  main.c
+  json_pointer_ast_actions.c
+)
 
 # Link against the generated library and easy_pc
-target_link_libraries(json_pointer_example
+target_link_libraries(${APP}
     PRIVATE
     easy_pc
     json_pointer_generated_sources
 )
 
 # Include directories for generated files and easy_pc
-target_include_directories(json_pointer_example
+target_include_directories(${APP}
     PRIVATE
     ${GENERATED_DIR}
     ${CMAKE_SOURCE_DIR}/include
 )
 
 # Add our custom example main.c
-target_sources(json_pointer_example PRIVATE main.c)
+target_sources(${APP} PRIVATE main.c)
