@@ -74,6 +74,18 @@ ast_list_append(json_pointer_list_t * list, json_pointer_node_t * item)
     list->count++;
 }
 
+static void
+free_children(void * * children, int count, void * user_data)
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (children[i] != NULL)
+        {
+            json_pointer_node_free((json_pointer_node_t *)children[i], user_data);
+        }
+    }
+}
+
 /* --- Semantic Action Callbacks --- */
 
 static void
@@ -146,10 +158,7 @@ create_optional_token_action(
 
     if (jpnode == NULL)
     {
-        for (int i = 0; i < count; i++)
-        {
-            json_pointer_node_free((json_pointer_node_t *)children[i], user_data);
-        }
+        free_children(children, count, user_data);
         epc_ast_builder_set_error(ctx, "Failed to allocate JSON pointer string node");
         return;
     }
@@ -157,10 +166,7 @@ create_optional_token_action(
     jpnode->data.string = malloc(count + 1);
     if (jpnode->data.string == NULL)
     {
-        for (int i = 0; i < count; i++)
-        {
-            json_pointer_node_free((json_pointer_node_t *)children[i], user_data);
-        }
+        free_children(children, count, user_data);
         json_pointer_node_free(jpnode, user_data);
         epc_ast_builder_set_error(ctx, "Failed to allocate JSON pointer string");
         return;

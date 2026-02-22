@@ -54,6 +54,17 @@ ast_list_append(ast_list_t * list, ast_node_t * item)
     list->count++;
 }
 
+static void
+free_calc_children_on_error(void * * children, int count, void * user_data)
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (children[i] != NULL)
+        {
+            ast_node_free((ast_node_t *)children[i], user_data);
+        }
+    }
+}
 
 void
 ast_node_free(void * node_ptr, void * user_data)
@@ -229,10 +240,7 @@ build_binary_expression_action(
     (void)node; (void)user_data;
     if (count != 3)
     {
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         epc_ast_builder_set_error(ctx, "Binary expression expects 3 children (left, op, right), got %d", count);
         return;
     }
@@ -243,10 +251,7 @@ build_binary_expression_action(
 
     if (operator_node == NULL || operator_node->type != AST_NODE_TYPE_OPERATOR)
     {
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         epc_ast_builder_set_error(ctx, "Expected operator node for binary expression");
         return;
     }
@@ -254,10 +259,7 @@ build_binary_expression_action(
     ast_node_t * expression_node = ast_node_alloc(AST_NODE_TYPE_EXPRESSION);
     if (expression_node == NULL)
     {
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         epc_ast_builder_set_error(ctx, "Failed to allocate AST expression node");
         return;
     }
@@ -282,10 +284,7 @@ create_function_call_action(
 
     if (count == 0 || count > 2)
     {
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         epc_ast_builder_set_error(ctx, "Function call expects 1 or 2 children (identifier [, args_list]), got %d", count);
         return;
     }
@@ -296,10 +295,7 @@ create_function_call_action(
     if (func_name_node == NULL || func_name_node->type != AST_NODE_TYPE_IDENTIFIER)
     {
         epc_ast_builder_set_error(ctx, "Expected function name identifier on stack for function call");
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         return;
     }
 
@@ -309,10 +305,7 @@ create_function_call_action(
         if (args_list_node->type != AST_NODE_TYPE_LIST)
         {
             epc_ast_builder_set_error(ctx, "Expected arguments list on stack for function call");
-            for (size_t i = 0; i < (size_t)count; i++)
-            {
-                ast_node_free(children[i], user_data);
-            }
+            free_calc_children_on_error(children, count, user_data);
             return;
         }
     }
@@ -323,20 +316,14 @@ create_function_call_action(
     if (!func_def)
     {
         epc_ast_builder_set_error(ctx, "Unknown function '%s'", func_name_str);
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         return;
     }
     size_t args_count = args_list_node != NULL ? (size_t)args_list_node->data.list.count : 0;
     if (func_def->num_args != args_count)
     {
         epc_ast_builder_set_error(ctx, "Function '%s' expects %zu args, got %d", func_def->name, func_def->num_args, args_count);
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         return;
     }
 
@@ -344,10 +331,7 @@ create_function_call_action(
     if (func_call_node == NULL)
     {
         epc_ast_builder_set_error(ctx, "Failed to allocate AST function call node");
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         return;
     }
 
@@ -384,10 +368,7 @@ assign_root_action(
 
     if (count != 1)
     {
-        for (size_t i = 0; i < (size_t)count; i++)
-        {
-            ast_node_free(children[i], user_data);
-        }
+        free_calc_children_on_error(children, count, user_data);
         epc_ast_builder_set_error(ctx, "Assign root action expects 1 child, got %d", count);
         return;
     }
