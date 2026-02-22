@@ -157,6 +157,11 @@ static line_column_calc_result_t
 calculate_line_and_column(char const * start, char const * current)
 {
     line_column_calc_result_t res = {0};
+    if (start == NULL || current == NULL)
+    {
+        return res;
+    }
+
     char const * nl;
     char const * line_start = start;
     for (nl = strchr(start, '\n'); nl != NULL && nl <= current; nl = strchr(nl + 1, '\n'))
@@ -185,7 +190,7 @@ epc_parser_error_alloc(
     }
 
     char const * input_start =
-        (ctx != NULL) ? ctx->input_start : input_position;
+        ctx != NULL ? ctx->input_start : input_position;
 
     error->input_position = input_position;
     line_column_calc_result_t res = calculate_line_and_column(input_start, input_position);
