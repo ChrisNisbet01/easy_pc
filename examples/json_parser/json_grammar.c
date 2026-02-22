@@ -35,7 +35,7 @@ json_quoted_string(epc_parser_list * list)
     epc_parser_t * string_content_char =
         epc_or_l(
             list, "string_content_char", 2,
-            epc_none_of_chars_l(list, "non_quote_non_backslash", "\"\\"),
+            epc_none_of_l(list, "non_quote_non_backslash", "\"\\"),
             json_escaped_char(list)
         );
 

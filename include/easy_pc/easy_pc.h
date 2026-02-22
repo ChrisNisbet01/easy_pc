@@ -464,11 +464,11 @@ static inline epc_parser_t * epc_char_range_l(epc_parser_list * list, char const
  *                       The lifetime of this string must exceed the parser's.
  * @return A new `parser_t` instance, or NULL on error.
  */
-EASY_PC_API epc_parser_t * epc_none_of_chars(char const * name, const char * chars_to_avoid);
+EASY_PC_API epc_parser_t * epc_none_of(char const * name, const char * chars_to_avoid);
 
 /**
  * @brief Creates a parser that matches any single character NOT in the provided set and adds it to the list.
- *        This is a convenience wrapper for `epc_none_of_chars()` that automatically adds the created
+ *        This is a convenience wrapper for `epc_none_of()` that automatically adds the created
  *        parser to the provided `epc_parser_list`.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.
@@ -476,9 +476,9 @@ EASY_PC_API epc_parser_t * epc_none_of_chars(char const * name, const char * cha
  *                       The lifetime of this string must exceed the parser's.
  * @return A new `parser_t` instance, or NULL on error.
  */
-static inline epc_parser_t * epc_none_of_chars_l(epc_parser_list * list, char const * name, const char * chars_to_avoid)
+static inline epc_parser_t * epc_none_of_l(epc_parser_list * list, char const * name, const char * chars_to_avoid)
 {
-    return epc_parser_list_add(list, epc_none_of_chars(name, chars_to_avoid));
+    return epc_parser_list_add(list, epc_none_of(name, chars_to_avoid));
 }
 
 /**

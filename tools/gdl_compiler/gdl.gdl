@@ -30,7 +30,7 @@ Identifier = lexeme(IdentifierStartChar IdentifierRest) @AST_ACTION_CREATE_IDENT
 RawStringQuote = lexeme('\"');
 EscapedDoubleQuote = lexeme('\\\"'); // Backslash followed by double quote
 EscapedBackslashStr = lexeme("\\\\"); // Backslash followed by backslash
-AnyCharExceptQuoteBackslash = none_of_chars("\"\\");
+AnyCharExceptQuoteBackslash = none_of("\"\\");
 StringCharOption = EscapedDoubleQuote | EscapedBackslashStr | AnyCharExceptQuoteBackslash;
 StringContent = StringCharOption*;
 StringLiteral = lexeme(RawStringQuote StringContent RawStringQuote) @AST_ACTION_CREATE_STRING_LITERAL;
@@ -42,7 +42,7 @@ EscapedBackslashChar = lexeme('\\'); // Backslash followed by backslash
 EscapedN = lexeme('\n');
 EscapedT = lexeme('\t');
 EscapedR = lexeme('\r');
-AnyCharExceptSingleQuoteBackslash = none_of_chars("\'\\");
+AnyCharExceptSingleQuoteBackslash = none_of("\'\\");
 CharLiteralContentElement = EscapedSingleQuote | EscapedBackslashChar | EscapedN | EscapedT | EscapedR | AnyCharExceptSingleQuoteBackslash;
 CharLiteralContent = CharLiteralContentElement; // Must be exactly one character
 CharLiteral = lexeme(RawCharQuote CharLiteralContent RawCharQuote) @AST_ACTION_CREATE_CHAR_LITERAL;
@@ -50,7 +50,7 @@ CharLiteral = lexeme(RawCharQuote CharLiteralContent RawCharQuote) @AST_ACTION_C
 // RawChar: single char (not structural or escaped) for char ranges
 RawCharEscapeSequenceContent = lexeme('\
 ') any_char; // Backslash followed by any char
-RawCharUnreserved = none_of_chars("[]\;=,()"); // Chars that need escaping or are structural
+RawCharUnreserved = none_of("[]\;=,()"); // Chars that need escaping or are structural
 RawCharContentOption = RawCharEscapeSequenceContent | RawCharUnreserved;
 RawChar = lexeme(RawCharContentOption) @AST_ACTION_CREATE_RAW_CHAR_LITERAL;
 
@@ -118,15 +118,11 @@ OptionalSemanticAction = optional(SemanticAction) @AST_ACTION_CREATE_OPTIONAL_SE
 // An argument can be any DefinitionExpression
 ExpressionArgFwd = DefinitionExpression; // Forward declaration
 
-// oneof_call: 'oneof' '(' char_literal (',' char_literal)* ')'
-OneofArgsElement = CharLiteral;
-OneofArgs = delimited(OneofArgsElement, RawComma);
-OneofCall = KW_oneof RawLParen OneofArgs RawRParen @AST_ACTION_CREATE_ONEOF_CALL;
+// oneof_call: 'oneof' '(' string_literal ')'
+OneofCall = KW_oneof RawLParen StringLiteral RawRParen @AST_ACTION_CREATE_ONEOF_CALL;
 
-// none_of_call: 'none_of' '(' char_literal (',' char_literal)* ')'
-NoneofArgsElement = CharLiteral;
-NoneofArgs = delimited(NoneofArgsElement, RawComma);
-NoneofCall = KW_none_of RawLParen NoneofArgs RawRParen @AST_ACTION_CREATE_NONEOF_CALL;
+// none_of_call: 'none_of' '(' string_literal ')'
+NoneofCall = KW_none_of RawLParen StringLiteral RawRParen @AST_ACTION_CREATE_NONEOF_CALL;
 
 // count_call: 'count' '(' number_literal ',' DefinitionExpression ')'
 CountArgs = NumberLiteral RawComma ExpressionArgFwd;

@@ -863,7 +863,7 @@ TEST(GdlParserTest, ParseSimpleStarRule) {
 // Test parsing a oneof combinator call
 // Example GDL: MyOneofRule = oneof('a', 'b', 'c');
 TEST(GdlParserTest, ParseOneofCallRule) {
-    const char* gdl_input = "MyOneofRule = oneof('a', 'b', 'c');";
+    const char* gdl_input = "MyOneofRule = oneof(\"abc\");";
     epc_parse_session_t session = epc_parse_input(gdl_parser_root, gdl_input);
 
     if (session.result.is_error) {
@@ -935,26 +935,9 @@ TEST(GdlParserTest, ParseOneofCallRule) {
     STRCMP_EQUAL("LParen", lparen_node->name);
     STRNCMP_EQUAL("(", epc_cpt_node_get_semantic_content(lparen_node), epc_cpt_node_get_semantic_len(lparen_node));
 
-    // Check OneofArgs
-    epc_cpt_node_t* oneof_args_node = oneof_call_node->children[2];
-    STRCMP_EQUAL("OneofArgs", oneof_args_node->name);
-    CHECK_EQUAL(3, oneof_args_node->children_count); // 'a', 'b', 'c'
-
-    // 'a'
-    epc_cpt_node_t* raw_char_a_node = oneof_args_node->children[0];
-    STRCMP_EQUAL("CharLiteral", raw_char_a_node->name);
-    STRNCMP_EQUAL("'a'", epc_cpt_node_get_semantic_content(raw_char_a_node), epc_cpt_node_get_semantic_len(raw_char_a_node));
-
-    // 'b'
-    epc_cpt_node_t* raw_char_b_node = oneof_args_node->children[1];
-    STRCMP_EQUAL("CharLiteral", raw_char_b_node->name);
-    STRNCMP_EQUAL("'b'", epc_cpt_node_get_semantic_content(raw_char_b_node), epc_cpt_node_get_semantic_len(raw_char_b_node));
-
-    // 'c'
-    epc_cpt_node_t* raw_char_c_node = oneof_args_node->children[2];
-    STRCMP_EQUAL("CharLiteral", raw_char_c_node->name);
-    STRNCMP_EQUAL("'c'", epc_cpt_node_get_semantic_content(raw_char_c_node), epc_cpt_node_get_semantic_len(raw_char_c_node));
-
+    epc_cpt_node_t * abc_node = oneof_call_node->children[2];
+    STRCMP_EQUAL("StringLiteral", abc_node->name);
+    STRNCMP_EQUAL("\"abc\"", epc_cpt_node_get_semantic_content(abc_node), epc_cpt_node_get_semantic_len(abc_node));
 
     // Check RParen
     epc_cpt_node_t* rparen_node = oneof_call_node->children[3];
@@ -980,9 +963,9 @@ TEST(GdlParserTest, ParseOneofCallRule) {
 }
 
 // Test parsing a none_of combinator call
-// Example GDL: MyNoneofRule = none_of('x', 'y', 'z');
+// Example GDL: MyNoneofRule = none_of("xyz");
 TEST(GdlParserTest, ParseNoneofCallRule) {
-    const char* gdl_input = "MyNoneofRule = noneof('x', 'y', 'z');";
+    const char* gdl_input = "MyNoneofRule = noneof(\"xyz\");";
     epc_parse_session_t session = epc_parse_input(gdl_parser_root, gdl_input);
 
     if (session.result.is_error) {
@@ -1054,26 +1037,10 @@ TEST(GdlParserTest, ParseNoneofCallRule) {
     STRCMP_EQUAL("LParen", lparen_node->name);
     STRNCMP_EQUAL("(", epc_cpt_node_get_semantic_content(lparen_node), epc_cpt_node_get_semantic_len(lparen_node));
 
-    // Check NoneofArgs
-    epc_cpt_node_t* noneof_args_node = noneof_call_node->children[2];
-    STRCMP_EQUAL("NoneofArgs", noneof_args_node->name);
-    CHECK_EQUAL(3, noneof_args_node->children_count); // 'x', 'y', 'z'
-
-    // 'x'
-    epc_cpt_node_t* char_x_node = noneof_args_node->children[0];
-    STRCMP_EQUAL("CharLiteral", char_x_node->name);
-    STRNCMP_EQUAL("'x'", epc_cpt_node_get_semantic_content(char_x_node), epc_cpt_node_get_semantic_len(char_x_node));
-
-    // 'y'
-    epc_cpt_node_t* char_y_node = noneof_args_node->children[1];
-    STRCMP_EQUAL("CharLiteral", char_y_node->name);
-    STRNCMP_EQUAL("'y'", epc_cpt_node_get_semantic_content(char_y_node), epc_cpt_node_get_semantic_len(char_y_node));
-
-    // 'z'
-    epc_cpt_node_t* char_z_node = noneof_args_node->children[2];
-    STRCMP_EQUAL("CharLiteral", char_z_node->name);
-    STRNCMP_EQUAL("'z'", epc_cpt_node_get_semantic_content(char_z_node), epc_cpt_node_get_semantic_len(char_z_node));
-
+    // "xyz"
+    epc_cpt_node_t* xyz_node = noneof_call_node->children[2];
+    STRCMP_EQUAL("StringLiteral", xyz_node->name);
+    STRNCMP_EQUAL("\"xyz\"", epc_cpt_node_get_semantic_content(xyz_node), epc_cpt_node_get_semantic_len(xyz_node));
 
     // Check RParen
     epc_cpt_node_t* rparen_node = noneof_call_node->children[3];
