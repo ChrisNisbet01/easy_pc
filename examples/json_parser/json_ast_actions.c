@@ -292,7 +292,7 @@ create_array_action(
     if (count != 1 || ((json_node_t *)children[0])->type != JSON_NODE_LIST)
     {
         free_children(children, count, user_data);
-        epc_ast_builder_set_error(ctx, "Failed to find list in JSON array children");
+        epc_ast_builder_set_error(ctx, "Array action expected a LIST type node, but found an unexpected type");
         return;
     }
 
@@ -355,7 +355,7 @@ create_object_action(
     if (count != 1 || ((json_node_t *)children[0])->type != JSON_NODE_LIST)
     {
         free_children(children, count, user_data);
-        epc_ast_builder_set_error(ctx, "Object action expected 1 child, but got %u\n", count);
+        epc_ast_builder_set_error(ctx, "Object action expected 1 child of type LIST, but received %u children or an invalid type", count);
         return;
     }
 

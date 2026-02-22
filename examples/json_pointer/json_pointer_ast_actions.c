@@ -116,7 +116,7 @@ create_escaped_token_action(
     }
     else
     {
-        epc_ast_builder_set_error(ctx, "Got unsupported excaped token '%c'", escaped_ch);
+        epc_ast_builder_set_error(ctx, "Got unsupported escaped token '%c'", escaped_ch);
         return;
     }
 
@@ -168,7 +168,7 @@ create_optional_token_action(
     {
         free_children(children, count, user_data);
         json_pointer_node_free(jpnode, user_data);
-        epc_ast_builder_set_error(ctx, "Failed to allocate JSON pointer string");
+        epc_ast_builder_set_error(ctx, "Failed to allocate data string for JSON pointer node");
         return;
     }
 
@@ -196,7 +196,7 @@ collect_optional_token_list_action(
     json_pointer_node_t * list_node = json_pointer_node_alloc(JSON_POINTER_NODE_LIST);
     if (list_node == NULL)
     {
-        epc_ast_builder_set_error(ctx, "Failed to allocate list node");
+        epc_ast_builder_set_error(ctx, "Failed to allocate JSON pointer list node");
         return;
     }
 
