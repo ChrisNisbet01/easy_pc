@@ -1422,7 +1422,7 @@ epc_any_char(char const * name)
 }
 
 static epc_parse_result_t
-pnone_of_chars_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * input)
+pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, const char * input)
 {
     const char * chars_to_avoid = self->data.string;
 
@@ -1440,7 +1440,7 @@ pnone_of_chars_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, cons
 
     if (strchr(chars_to_avoid, *input) == NULL) // If char is NOT found in the forbidden set
     {
-        epc_cpt_node_t * node = epc_node_alloc(self, "none_of_chars");
+        epc_cpt_node_t * node = epc_node_alloc(self, "none_of");
         if (node == NULL)
         {
             return epc_parser_error_result(ctx, input, "Memory allocation error", self->name, "N/A");
@@ -1456,14 +1456,14 @@ pnone_of_chars_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, cons
 }
 
 EASY_PC_API epc_parser_t *
-epc_none_of_chars(char const * name, const char * chars_to_avoid)
+epc_none_of(char const * name, const char * chars_to_avoid)
 {
-    epc_parser_t * p = epc_parser_allocate(name != NULL ? name : "none_of_chars");
+    epc_parser_t * p = epc_parser_allocate(name != NULL ? name : "none_of");
     if (p == NULL)
     {
         return NULL;
     }
-    p->parse_fn = pnone_of_chars_parse_fn;
+    p->parse_fn = pnone_of_parse_fn;
     char * duplicated_chars = strdup(chars_to_avoid);
     if (duplicated_chars == NULL)
     {

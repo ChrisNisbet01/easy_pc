@@ -113,38 +113,38 @@ TEST(TerminalParsersNew, AnyChar_FailsNullInput)
     check_failure(session, "Input string is NULL");
 }
 
-// --- p_none_of_chars tests ---
+// --- p_none_of tests ---
 TEST(TerminalParsersNew, NoneOfChars_MatchesCharNotInSet)
 {
-    epc_parser_t* p = epc_none_of_chars(NULL, "abc");
+    epc_parser_t* p = epc_none_of(NULL, "abc");
     epc_parse_session_t session = epc_parse_input(p, "X");
-    check_success(session, "none_of_chars", "X", 1);
+    check_success(session, "none_of", "X", 1);
 }
 
 TEST(TerminalParsersNew, NoneOfChars_MatchesCharNotInSetLongerInput)
 {
-    epc_parser_t* p = epc_none_of_chars(NULL, "abc");
+    epc_parser_t* p = epc_none_of(NULL, "abc");
     epc_parse_session_t session = epc_parse_input(p, "def");
-    check_success(session, "none_of_chars", "d", 1);
+    check_success(session, "none_of", "d", 1);
 }
 
 TEST(TerminalParsersNew, NoneOfChars_FailsCharInSet)
 {
-    epc_parser_t* p = epc_none_of_chars(NULL, "abc");
+    epc_parser_t* p = epc_none_of(NULL, "abc");
     epc_parse_session_t session = epc_parse_input(p, "b");
     check_failure(session, "Character found in forbidden set");
 }
 
 TEST(TerminalParsersNew, NoneOfChars_FailsEmptyInput)
 {
-    epc_parser_t* p = epc_none_of_chars(NULL, "abc");
+    epc_parser_t* p = epc_none_of(NULL, "abc");
     epc_parse_session_t session = epc_parse_input(p, "");
     check_failure(session, "Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, NoneOfChars_FailsNullInput)
 {
-    epc_parser_t* p = epc_none_of_chars(NULL, "abc");
+    epc_parser_t* p = epc_none_of(NULL, "abc");
     epc_parse_session_t session = epc_parse_input(p, NULL);
     check_failure(session, "Input string is NULL");
 }

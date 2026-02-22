@@ -12,8 +12,8 @@ Escaped = Tilde ('0' | '1') @CREATE_ESCAPED_TOKEN;
 
 // --- Unescaped Characters ---
 // Any character is allowed except for the special '/' and '~' characters.
-// We use none_of_chars to match any single character NOT in the provided set.
-Unescaped = noneof('/', '~') @CREATE_UNESCAPED_TOKEN;
+// We use none_of to match any single character NOT in the provided set.
+Unescaped = noneof("/~") @CREATE_UNESCAPED_TOKEN;
 
 // --- Rules ---
 

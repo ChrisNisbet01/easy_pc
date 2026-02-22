@@ -37,7 +37,6 @@ typedef enum epc_ast_user_defined_action_gdl
     GDL_AST_ACTION_CREATE_ALTERNATIVE,
     GDL_AST_ACTION_CREATE_OPTIONAL,
     GDL_AST_ACTION_CREATE_EXPRESSION_FACTOR,
-    GDL_AST_ACTION_COLLECT_ARGUMENTS,
     GDL_AST_ACTION_CREATE_RAW_CHAR_LITERAL,
     GDL_AST_ACTION_CREATE_KEYWORD,
     GDL_AST_ACTION_CREATE_TERMINAL,
@@ -167,13 +166,8 @@ typedef struct
 
 typedef struct
 {
-    gdl_ast_list_t args; // List of gdl_ast_node_t
-} gdl_ast_combinator_oneof_t; // Or gdl_ast_oneof_call_t
-
-typedef struct
-{
-    gdl_ast_list_t args;
-} gdl_ast_combinator_noneof_t;
+    char const * args;
+} gdl_ast_combinator_none_or_one_of_t;
 
 typedef struct
 {
@@ -245,8 +239,7 @@ struct gdl_ast_node_t
         gdl_ast_keyword_t keyword;
         gdl_ast_terminal_t terminal;
 
-        gdl_ast_combinator_oneof_t oneof_call;
-        gdl_ast_combinator_noneof_t noneof_call;
+        gdl_ast_combinator_none_or_one_of_t none_or_one_of_call;
         gdl_ast_combinator_count_t count_call;
         gdl_ast_combinator_between_t between_call;
         gdl_ast_combinator_delimited_t delimited_call;

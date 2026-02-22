@@ -57,7 +57,6 @@ Raw characters are single characters, possibly escaped, not enclosed in quotes. 
 *   **Examples:**
     ```gdl
     // Used in char ranges like: '[' a '-' z ']'
-    // Used in oneof/none_of combinators if they accepted raw chars.
     ```
 
 ### 2.5 Number Literals
@@ -109,21 +108,21 @@ GDL supports postfix repetition operators for expressions, directly mapping to `
 
 GDL provides a rich set of combinators, which are functions that combine simpler parsers into more complex ones. These are invoked using a function-call like syntax.
 
-| Combinator  | Arguments                               | Description                                                                 | Generated `easy_pc` Call (Example)                                        |
-| :---------- | :-------------------------------------- | :-------------------------------------------------------------------------- | :------------------------------------------------------------------------ |
-| `lexeme`    | `(expression)`                          | Groups the matched input of `expression` into a single semantic token.      | `epc_lexeme_l(list, "lexeme", expression_parser)`                         |
-| `optional`  | `(expression)`                          | Makes `expression` optional. (Equivalent to `expr?`)                        | `epc_optional_l(list, "optional", expression_parser)`                     |
-| `count`     | `(number, expression)`                  | Matches `expression` exactly `number` times.                                | `epc_count_l(list, "count", number, expression_parser)`                   |
-| `delimited` | `(item_expr, delimiter_expr)`           | Matches `item_expr`s separated by `delimiter_expr`. Returns only `item_expr`s. | `epc_delimited_l(list, "delimited", item_parser, delimiter_parser)`       |
+| Combinator  | Arguments                               | Description                                                                 | Generated `easy_pc` Call (Example)                                          |
+| :---------- | :-------------------------------------- | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
+| `lexeme`    | `(expression)`                          | Groups the matched input of `expression` into a single semantic token.      | `epc_lexeme_l(list, "lexeme", expression_parser)`                           |
+| `optional`  | `(expression)`                          | Makes `expression` optional. (Equivalent to `expr?`)                        | `epc_optional_l(list, "optional", expression_parser)`                       |
+| `count`     | `(number, expression)`                  | Matches `expression` exactly `number` times.                                | `epc_count_l(list, "count", number, expression_parser)`                     |
+| `delimited` | `(item_expr, delimiter_expr)`           | Matches `item_expr`s separated by `delimiter_expr`. Returns only `item_expr`s. | `epc_delimited_l(list, "delimited", item_parser, delimiter_parser)`      |
 | `between`   | `(open_expr, content_expr, close_expr)` | Matches `open_expr`, then `content_expr`, then `close_expr`.                | `epc_between_l(list, "between", open_parser, content_parser, close_parser)` |
-| `chainl1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, left-associative. | `epc_chainl1_l(list, "chainl1", item_parser, op_parser)`                  |
-| `chainr1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, right-associative. | `epc_chainr1_l(list, "chainr1", item_parser, op_parser)`                  |
-| `lookahead` | `(expression)`                          | Succeeds if `expression` matches, but does not consume input.               | `epc_lookahead_l(list, "lookahead", expression_parser)`                   |
+| `chainl1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, left-associative. | `epc_chainl1_l(list, "chainl1", item_parser, op_parser)`                     |
+| `chainr1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, right-associative. | `epc_chainr1_l(list, "chainr1", item_parser, op_parser)`                    |
+| `lookahead` | `(expression)`                          | Succeeds if `expression` matches, but does not consume input.               | `epc_lookahead_l(list, "lookahead", expression_parser)`                     |
 | `not`       | `(expression)`                          | Succeeds if `expression` fails, fails if it succeeds. Does not consume input. | `epc_not_l(list, "not", expression_parser)`                               |
-| `skip`      | `(expression)`                          | Matches `expression` and consumes input, but does not add to CPT.           | `epc_skip_l(list, "skip", expression_parser)`                             |
-| `passthru`  | `(expression)`                          | Matches `expression` and promotes its content to the parent's CPT node.     | `epc_passthru_l(list, "passthru", expression_parser)`                     |
-| `oneof`     | `(char_literal, ...)`                   | Matches any single character from the provided list of `char_literal`s.     | `epc_oneof_chars_l(list, "oneof", "abc")` (internal mapping)              |
-| `none_of`   | `(char_literal, ...)`                   | Matches any single character NOT from the provided list of `char_literal`s. | `epc_none_of_chars_l(list, "none_of", "abc")` (internal mapping)          |
+| `skip`      | `(expression)`                          | Matches `expression` and consumes input, but does not add to CPT.           | `epc_skip_l(list, "skip", expression_parser)`                               |
+| `passthru`  | `(expression)`                          | Matches `expression` and promotes its content to the parent's CPT node.     | `epc_passthru_l(list, "passthru", expression_parser)`                       |
+| `one_of`    | `(string_literal)`                      | Matches any single character from the provided list string.                 | `epc_one_of_l(list, "one_of", "abc")`                                       |
+| `none_of`   | `(string_literal)`                      | Matches any single character NOT from the provided string.                  | `epc_none_of_l(list, "none_of", "abc")`                                     |
 
 
 *   **Examples:**
@@ -149,7 +148,6 @@ GDL provides a rich set of combinators, which are functions that combine simpler
     // Matches "foo" OR "bar"
     FooOrBar = "foo" | "bar";
     ```
-    *Note: The actual implementation of `oneof` and `none_of` in `gdl_parser.c` currently uses `char_literal`s and constructs an `epc_oneof_chars_l` or `epc_none_of_chars_l` with a string of those characters.*
 
 ## 6. Expressions
 

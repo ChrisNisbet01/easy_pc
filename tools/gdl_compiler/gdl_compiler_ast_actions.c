@@ -159,7 +159,7 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
 
     case GDL_AST_NODE_TYPE_COMBINATOR_ONEOF:
     case GDL_AST_NODE_TYPE_COMBINATOR_NONEOF:
-        gdl_ast_list_free_recursive(&node->data.oneof_call.args, user_data); // Common arg list for both
+        free((char *)node->data.none_or_one_of_call.args); // Common arg list for both
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_COUNT:
@@ -867,9 +867,9 @@ handle_create_oneof_call(
     }
 
     gdl_ast_node_t * args_list_node = (gdl_ast_node_t *)children[0];
-    if (args_list_node == NULL || args_list_node->type != GDL_AST_NODE_TYPE_ARGUMENT_LIST)
+    if (args_list_node == NULL || args_list_node->type != GDL_AST_NODE_TYPE_STRING_LITERAL)
     {
-        epc_ast_builder_set_error(ctx, "Oneof call expects an argument list.");
+        epc_ast_builder_set_error(ctx, "Oneof call expects a string literal.");
         gdl_ast_node_free(args_list_node, user_data);
         return;
     }
@@ -877,8 +877,8 @@ handle_create_oneof_call(
     gdl_ast_node_t * result_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_COMBINATOR_ONEOF);
     if (result_node)
     {
-        result_node->data.oneof_call.args = args_list_node->data.argument_list;
-        args_list_node->data.argument_list.head = NULL; // Transfer ownership
+        result_node->data.none_or_one_of_call.args = args_list_node->data.string_literal.value;
+        args_list_node->data.string_literal.value = NULL; // Transfer ownership
         gdl_ast_node_free(args_list_node, user_data); // Free the wrapper node
     }
     epc_ast_push(ctx, result_node);
@@ -915,9 +915,9 @@ handle_create_noneof_call(
     }
 
     gdl_ast_node_t * args_list_node = (gdl_ast_node_t *)children[0];
-    if (args_list_node == NULL || args_list_node->type != GDL_AST_NODE_TYPE_ARGUMENT_LIST)
+    if (args_list_node == NULL || args_list_node->type != GDL_AST_NODE_TYPE_STRING_LITERAL)
     {
-        epc_ast_builder_set_error(ctx, "Noneof call expects an argument list.");
+        epc_ast_builder_set_error(ctx, "Noneof call expects a string literal.");
         gdl_ast_node_free(args_list_node, user_data);
         return;
     }
@@ -925,8 +925,8 @@ handle_create_noneof_call(
     gdl_ast_node_t * result_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_COMBINATOR_NONEOF);
     if (result_node)
     {
-        result_node->data.noneof_call.args = args_list_node->data.argument_list;
-        args_list_node->data.argument_list.head = NULL; // Transfer ownership
+        result_node->data.none_or_one_of_call.args = args_list_node->data.string_literal.value;
+        args_list_node->data.string_literal.value = NULL; // Transfer ownership
         gdl_ast_node_free(args_list_node, user_data); // Free the wrapper node
     }
     epc_ast_push(ctx, result_node);
@@ -1210,45 +1210,6 @@ handle_create_chainr1_call(
 }
 
 static void
-handle_collect_arguments(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
-)
-{
-#ifdef AST_DEBUG
-    debug_indent -= 4;
-    fprintf(stderr, "%*sAST_DEBUG: EXIT CPT node '%s' (action %d) num_children %u\n",
-            debug_indent, "", node->name, node->ast_config.action, count);
-    for (int i = 0; i < count; i++)
-    {
-        gdl_ast_node_t * child = (gdl_ast_node_t *)children[i];
-        fprintf(stderr, "%*schild %d type %d\n", debug_indent, "", i, child->type);
-    }
-#endif
-
-    (void)node;
-    gdl_ast_node_t * arg_list_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_ARGUMENT_LIST);
-    if (arg_list_node == NULL)
-    {
-        // Error already set by gdl_ast_node_alloc
-        for (int i = 0; i < count; ++i) {
-            gdl_ast_node_free(children[i], user_data);
-        }
-        return;
-    }
-
-    // Children are in order from left to right, so append them
-    for (int i = 0; i < count; ++i)
-    {
-        gdl_ast_list_append(&arg_list_node->data.argument_list, (gdl_ast_node_t *)children[i]);
-    }
-    epc_ast_push(ctx, arg_list_node);
-}
-
-static void
 handle_create_expression_factor(
     epc_ast_builder_ctx_t * ctx,
     epc_cpt_node_t * node,
@@ -1513,7 +1474,6 @@ gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_PROGRAM, handle_create_program);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_RULE_DEFINITION, handle_create_rule_definition);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_CHAR_RANGE, handle_create_char_range);
-    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_COLLECT_ARGUMENTS, handle_collect_arguments);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_EXPRESSION_FACTOR, handle_create_expression_factor);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_SEQUENCE, handle_create_sequence);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_ALTERNATIVE, handle_create_alternative);

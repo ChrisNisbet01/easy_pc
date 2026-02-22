@@ -34,7 +34,7 @@ epc_parser_t * create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_escaped_quote = epc_string_l(l, "EscapedDoubleQuote", "\\\"");
     epc_parser_t * gdl_escaped_backslash_str = epc_string_l(l, "EscapedBackslashStr", "\\\\");
     epc_parser_t * gdl_any_char_except_quote_backslash =
-                                                         epc_none_of_chars_l(l, "AnyCharExceptQuoteBackslash", "\"\\");
+                                                         epc_none_of_l(l, "AnyCharExceptQuoteBackslash", "\"\\");
     epc_parser_t * gdl_string_char_option =
                                             epc_or_l(l, "StringCharOption", 3, gdl_escaped_quote, gdl_escaped_backslash_str, gdl_any_char_except_quote_backslash);
     epc_parser_t * gdl_string_content = epc_many_l(l, "StringContent", gdl_string_char_option);
@@ -53,7 +53,7 @@ epc_parser_t * create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_escaped_t = epc_string_l(l, "EscapedT", "\\t");
     epc_parser_t * gdl_escaped_r = epc_string_l(l, "EscapedR", "\\r");
     epc_parser_t * gdl_any_char_except_single_quote_backslash =
-                                                                epc_none_of_chars_l(l, "AnyCharExceptSingleQuoteBackslash", "'\\");
+                                                                epc_none_of_l(l, "AnyCharExceptSingleQuoteBackslash", "'\\");
 
     epc_parser_t * gdl_char_literal_content_element =
                                                       epc_or_l(l, "CharLiteralContentElement", 6,
@@ -78,7 +78,7 @@ epc_parser_t * create_gdl_parser(epc_parser_list * l)
                                                                     epc_any_char_l(l, "AnyEscapedChar") // Matches any char after backslash
                                                                    );
     epc_parser_t * gdl_raw_char_unreserved =
-                                             epc_none_of_chars_l(l, "RawCharNonStructural", "[]\\;=,()"); // Chars that need escaping or are structural
+                                             epc_none_of_l(l, "RawCharNonStructural", "[]\\;=,()"); // Chars that need escaping or are structural
 
     epc_parser_t * gdl_raw_char_content_option =
                                                  epc_or_l(l, "RawCharContentOption", 2,
@@ -108,8 +108,8 @@ epc_parser_t * create_gdl_parser(epc_parser_list * l)
     /* Combinator. */
     epc_parser_t * p_string_raw         = epc_string_l(l, "string", "string");
     epc_parser_t * p_char_range_raw     = epc_string_l(l, "char_range", "char_range");
-    epc_parser_t * p_none_of_chars_raw  = epc_string_l(l, "noneof", "noneof");
-    epc_parser_t * p_none_of_chars      = epc_lexeme_l(l, "noneof", p_none_of_chars_raw);
+    epc_parser_t * p_none_of_raw  = epc_string_l(l, "noneof", "noneof");
+    epc_parser_t * p_none_of      = epc_lexeme_l(l, "noneof", p_none_of_raw);
     epc_parser_t * p_many_raw           = epc_string_l(l, "many", "many");
     epc_parser_t * p_count_raw          = epc_string_l(l, "count", "count");
     epc_parser_t * p_count              = epc_lexeme_l(l, "count", p_count_raw);
@@ -165,7 +165,7 @@ epc_parser_t * create_gdl_parser(epc_parser_list * l)
             l, "CombinatorKeyword", 16,
             p_string_raw,
             p_char_range_raw,
-            p_none_of_chars_raw,
+            p_none_of_raw,
             p_many_raw,
             p_count_raw,
             p_between_raw,
@@ -262,10 +262,8 @@ epc_parser_t * create_gdl_parser(epc_parser_list * l)
     /* Combinator parsers. */
 
     // none_of_call: 'none_of' '(' char_literal (',' char_literal)* ')'
-    epc_parser_t * none_of_args = epc_delimited_l(l, "NoneofArgs", gdl_char_literal, gdl_comma);
-    epc_parser_set_ast_action(none_of_args, GDL_AST_ACTION_COLLECT_ARGUMENTS);
     epc_parser_t * none_of_call =
-        epc_and_l(l, "NoneofCall", 4, p_none_of_chars, gdl_lparen, none_of_args, gdl_rparen);
+        epc_and_l(l, "NoneofCall", 4, p_none_of, gdl_lparen, gdl_string_literal, gdl_rparen);
     epc_parser_set_ast_action(none_of_call, GDL_AST_ACTION_CREATE_NONEOF_CALL);
 
     // count_call: 'count' '(' number_literal ',' definition_expression ')'
@@ -294,11 +292,9 @@ epc_parser_t * create_gdl_parser(epc_parser_list * l)
         epc_and_l(l, "NotCall", 4, p_not, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(not_call, GDL_AST_ACTION_CREATE_NOT_CALL);
 
-    // oneof_call: 'oneof' '(' char_literal (',' char_literal)* ')'
-    epc_parser_t * oneof_args = epc_delimited_l(l, "OneofArgs", gdl_char_literal, gdl_comma);
-    epc_parser_set_ast_action(oneof_args, GDL_AST_ACTION_COLLECT_ARGUMENTS);
+    // oneof_call: 'oneof' '(' string_literal ')'
     epc_parser_t * oneof_call =
-        epc_and_l(l, "OneofCall", 4, p_one_of, gdl_lparen, oneof_args, gdl_rparen);
+        epc_and_l(l, "OneofCall", 4, p_one_of, gdl_lparen, gdl_string_literal, gdl_rparen);
     epc_parser_set_ast_action(oneof_call, GDL_AST_ACTION_CREATE_ONEOF_CALL);
 
     epc_parser_t * lexeme_call =
