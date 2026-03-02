@@ -62,7 +62,7 @@ OctalLiteral = '0' OctalDigit*;
 DecDigit = [1-9];
 DecimalLiteral = DecDigit digit* | '0';
 
-IntegerLiteral = HexLiteral | DecimalLiteral | OctalLiteral;
+IntegerLiteral = HexLiteral | OctalLiteral | DecimalLiteral;
 IntegerSuffix = (oneof("uU") oneof("lL")?) | (oneof("lL") oneof("uU")?);
 
 DigitSeq = digit+;
