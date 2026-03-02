@@ -211,7 +211,9 @@ AssignmentOp = ShlAssign | ShrAssign
 AssignmentExpression = (UnaryExpression AssignmentOp AssignmentExpression)
                      | ConditionalExpression;
 
-Expression = AssignmentExpression;
+CommaExpression = chainl1(AssignmentExpression, Comma);
+
+Expression = CommaExpression;
 
 // --- Structs and Unions ---
 
