@@ -7,8 +7,11 @@
 int
 main()
 {
-    char const * input = "/* Global variable */\n"
-                         "static int global = 1;\n"
+    char const * input = "/* Global variable with qualifiers */\n"
+                         "static const unsigned long int global = 1;\n"
+                         "\n"
+                         "// Extern function declaration\n"
+                         "extern void some_external_fn(int a, char b);\n"
                          "\n"
                          "// A simple function\n"
                          "static int some_function(int x)\n"
@@ -18,6 +21,7 @@ main()
                          "\n"
                          "void main(void)\n"
                          "{\n"
+                         "    auto int local_var = 5;\n"
                          "    global += 1;\n"
                          "\n"
                          "    return some_function(global);\n"

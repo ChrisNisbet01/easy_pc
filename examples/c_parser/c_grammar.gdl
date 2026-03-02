@@ -13,10 +13,27 @@ Identifier = lexeme(FullId);
 // Numbers: [0-9]+
 NumberLiteral = lexeme(digit+);
 
-// Keywords
+// Keywords - Storage Classes
 KwStatic = lexeme("static");
-KwInt = lexeme("int");
+KwExtern = lexeme("extern");
+KwAuto = lexeme("auto");
+KwRegister = lexeme("register");
+
+// Keywords - Type Qualifiers
+KwConst = lexeme("const");
+KwVolatile = lexeme("volatile");
+
+// Keywords - Types
 KwVoid = lexeme("void");
+KwChar = lexeme("char");
+KwShort = lexeme("short");
+KwInt = lexeme("int");
+KwLong = lexeme("long");
+KwFloat = lexeme("float");
+KwDouble = lexeme("double");
+KwSigned = lexeme("signed");
+KwUnsigned = lexeme("unsigned");
+
 KwReturn = lexeme("return");
 
 // Operators and Punctuation
@@ -34,17 +51,29 @@ Star = lexeme('*');
 
 TranslationUnit = ExternalDeclaration+;
 
-ExternalDeclaration = FunctionDefinition | Declaration;
+ExternalDeclaration = FunctionDefinition | FunctionDeclaration | Declaration;
 
-// Function Definition: [static] type identifier ( params ) { body }
+// Function Definition: [specifiers] identifier ( params ) { body }
 FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
 
-// Declaration: [static] type init_declarator_list ;
+// Function Declaration: [specifiers] identifier ( params ) ;
+FunctionDeclaration = DeclarationSpecifiers Declarator ParameterList Semicolon;
+
+// Declaration: [specifiers] init_declarator_list ;
 Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
 
-DeclarationSpecifiers = KwStatic? TypeSpecifier;
+DeclarationSpecifiers = DeclarationSpecifier+;
 
-TypeSpecifier = KwInt | KwVoid;
+DeclarationSpecifier = StorageClassSpecifier
+                     | TypeQualifier
+                     | TypeSpecifier;
+
+StorageClassSpecifier = KwStatic | KwExtern | KwAuto | KwRegister;
+
+TypeQualifier = KwConst | KwVolatile;
+
+TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
+              | KwFloat | KwDouble | KwSigned | KwUnsigned;
 
 InitDeclarator = Declarator (Assign AssignmentExpression)?;
 
@@ -54,13 +83,14 @@ Declarator = Identifier;
 
 ParameterList = LParen ParameterTypeList? RParen;
 
-ParameterDeclaration = TypeSpecifier Declarator?;
+ParameterDeclaration = DeclarationSpecifiers Declarator?;
 
 ParameterTypeList = delimited(ParameterDeclaration, Comma);
 
 CompoundStatement = LBrace Statement* RBrace;
 
 Statement = CompoundStatement
+          | Declaration
           | JumpStatement
           | ExpressionStatement
           ;
@@ -71,12 +101,11 @@ JumpStatement = KwReturn Expression? Semicolon;
 
 // --- Expression Hierarchy (Simplified) ---
 
+Expression = AssignmentExpression;
+
 AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
                      | MultiplicativeExpression
                      ;
-
-// Ensure Expression is assigned _after_ AssignmentExpression is properly defined.
-Expression = AssignmentExpression;
 
 AssignmentOp = Assign | PlusAssign;
 
@@ -86,14 +115,13 @@ PrimaryExpression = NumberLiteral
                   | LParen Expression RParen
                   ;
 
-// Ensure UnaryExpression is assigned _after_
-UnaryExpression = PrimaryExpression;
-
 MultiplicativeExpression = chainl1(PrimaryExpression, Star);
 
 FunctionCall = Identifier LParen ArgumentList? RParen;
 
 ArgumentList = delimited(AssignmentExpression, Comma);
+
+UnaryExpression = PrimaryExpression;
 
 // The top-level rule MUST be the last one in the file.
 Program = TranslationUnit eoi;
