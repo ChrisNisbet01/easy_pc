@@ -132,8 +132,15 @@ UnaryExpression = (KwSizeof UnaryExpression)
                 | PostfixExpression
                 ;
 
+// Abstract declarators are used in type names (e.g., in casts)
+AbstractDeclarator = (Pointer+ ArrayPart*) | ArrayPart+;
+TypeName = SpecifierQualifierList AbstractDeclarator?;
+
+CastExpression = (LParen TypeName RParen CastExpression)
+               | UnaryExpression;
+
 MulOp = Star | Slash | Percent;
-MultiplicativeExpression = chainl1(UnaryExpression, MulOp);
+MultiplicativeExpression = chainl1(CastExpression, MulOp);
 
 AddOp = Plus | Minus;
 AdditiveExpression = chainl1(MultiplicativeExpression, AddOp);
