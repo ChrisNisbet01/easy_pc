@@ -1,0 +1,97 @@
+// GDL definition for a basic C-like parser
+// Supports global variables, function definitions, and basic statements/expressions.
+
+// --- Lexical Elements ---
+
+// Identifiers: [a-zA-Z_][a-zA-Z0-9_]*
+IdChar = alpha | digit | '_';
+IdPrefix = alpha | '_';
+IdRest = IdChar*;
+FullId = IdPrefix IdRest;
+Identifier = lexeme(FullId);
+
+// Numbers: [0-9]+
+NumberLiteral = lexeme(digit+);
+
+// Keywords
+KwStatic = lexeme("static");
+KwInt = lexeme("int");
+KwVoid = lexeme("void");
+KwReturn = lexeme("return");
+
+// Operators and Punctuation
+LParen = lexeme('(');
+RParen = lexeme(')');
+LBrace = lexeme('{');
+RBrace = lexeme('}');
+Semicolon = lexeme(';');
+Comma = lexeme(',');
+Assign = lexeme('=');
+PlusAssign = lexeme("+=");
+Star = lexeme('*');
+
+// --- Grammar Rules ---
+
+TranslationUnit = ExternalDeclaration+;
+
+ExternalDeclaration = FunctionDefinition | Declaration;
+
+// Function Definition: [static] type identifier ( params ) { body }
+FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
+
+// Declaration: [static] type init_declarator_list ;
+Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
+
+DeclarationSpecifiers = KwStatic? TypeSpecifier;
+
+TypeSpecifier = KwInt | KwVoid;
+
+InitDeclarator = Declarator (Assign AssignmentExpression)?;
+
+InitDeclaratorList = delimited(InitDeclarator, Comma);
+
+Declarator = Identifier;
+
+ParameterList = LParen ParameterTypeList? RParen;
+
+ParameterDeclaration = TypeSpecifier Declarator?;
+
+ParameterTypeList = delimited(ParameterDeclaration, Comma);
+
+CompoundStatement = LBrace Statement* RBrace;
+
+Statement = CompoundStatement
+          | JumpStatement
+          | ExpressionStatement
+          ;
+
+ExpressionStatement = Expression? Semicolon;
+
+JumpStatement = KwReturn Expression? Semicolon;
+
+// --- Expression Hierarchy (Simplified) ---
+
+Expression = AssignmentExpression;
+
+AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
+                     | MultiplicativeExpression
+                     ;
+
+AssignmentOp = Assign | PlusAssign;
+
+PrimaryExpression = NumberLiteral
+                  | FunctionCall
+                  | Identifier
+                  | LParen Expression RParen
+                  ;
+
+MultiplicativeExpression = chainl1(PrimaryExpression, Star);
+
+FunctionCall = Identifier LParen ArgumentList? RParen;
+
+ArgumentList = delimited(AssignmentExpression, Comma);
+
+UnaryExpression = PrimaryExpression;
+
+// The top-level rule MUST be the last one in the file.
+Program = TranslationUnit eoi;
