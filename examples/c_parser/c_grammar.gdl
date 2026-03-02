@@ -107,6 +107,7 @@ RBracket = lexeme(']');
 Semicolon = lexeme(';');
 Comma = lexeme(',');
 Colon = lexeme(':' not(':'));
+Ellipsis = lexeme("...");
 
 // Protected operators using not() to prevent prefix stealing
 Assign = lexeme('=' not('='));
@@ -359,7 +360,7 @@ Statement = LabeledStatement
 
 ParameterDeclaration = DeclarationSpecifiers Declarator?;
 
-ParameterTypeList = delimited(ParameterDeclaration, Comma);
+ParameterTypeList = ParameterDeclaration (Comma ParameterDeclaration)* (Comma Ellipsis)?;
 
 ParameterList = LParen ParameterTypeList? RParen;
 
