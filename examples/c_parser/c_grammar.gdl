@@ -71,11 +71,12 @@ JumpStatement = KwReturn Expression? Semicolon;
 
 // --- Expression Hierarchy (Simplified) ---
 
-Expression = AssignmentExpression;
-
 AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
                      | MultiplicativeExpression
                      ;
+
+// Ensure Expression is assigned _after_ AssignmentExpression is properly defined.
+Expression = AssignmentExpression;
 
 AssignmentOp = Assign | PlusAssign;
 
@@ -85,13 +86,14 @@ PrimaryExpression = NumberLiteral
                   | LParen Expression RParen
                   ;
 
+// Ensure UnaryExpression is assigned _after_
+UnaryExpression = PrimaryExpression;
+
 MultiplicativeExpression = chainl1(PrimaryExpression, Star);
 
 FunctionCall = Identifier LParen ArgumentList? RParen;
 
 ArgumentList = delimited(AssignmentExpression, Comma);
-
-UnaryExpression = PrimaryExpression;
 
 // The top-level rule MUST be the last one in the file.
 Program = TranslationUnit eoi;
