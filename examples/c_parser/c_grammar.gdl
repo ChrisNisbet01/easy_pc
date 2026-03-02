@@ -46,6 +46,12 @@ Comma = lexeme(',');
 Assign = lexeme('=');
 PlusAssign = lexeme("+=");
 Star = lexeme('*');
+Minus = lexeme('-');
+Plus = lexeme('+');
+Slash = lexeme('/');
+Percent = lexeme('%');
+Dot = lexeme('.');
+Arrow = lexeme("->");
 
 // --- Grammar Rules ---
 
@@ -53,10 +59,10 @@ TranslationUnit = ExternalDeclaration+;
 
 ExternalDeclaration = FunctionDefinition | FunctionDeclaration | Declaration;
 
-// Function Definition: [specifiers] identifier ( params ) { body }
+// Function Definition: [specifiers] declarator ( params ) { body }
 FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
 
-// Function Declaration: [specifiers] identifier ( params ) ;
+// Function Declaration: [specifiers] declarator ( params ) ;
 FunctionDeclaration = DeclarationSpecifiers Declarator ParameterList Semicolon;
 
 // Declaration: [specifiers] init_declarator_list ;
@@ -79,7 +85,9 @@ InitDeclarator = Declarator (Assign AssignmentExpression)?;
 
 InitDeclaratorList = delimited(InitDeclarator, Comma);
 
-Declarator = Identifier;
+// Declarator: supports pointers: int *p, **pp, * const p;
+Pointer = Star TypeQualifier*;
+Declarator = Pointer* Identifier;
 
 ParameterList = LParen ParameterTypeList? RParen;
 
@@ -99,29 +107,37 @@ ExpressionStatement = Expression? Semicolon;
 
 JumpStatement = KwReturn Expression? Semicolon;
 
-// --- Expression Hierarchy (Simplified) ---
+// --- Expression Hierarchy ---
+
+AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
+                     | AdditiveExpression
+                     ;
 
 Expression = AssignmentExpression;
 
-AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
-                     | MultiplicativeExpression
-                     ;
-
 AssignmentOp = Assign | PlusAssign;
 
+ArgumentList = delimited(AssignmentExpression, Comma);
+
+PostfixPart = LParen ArgumentList? RParen
+            | Dot Identifier
+            | Arrow Identifier
+            ;
+
 PrimaryExpression = NumberLiteral
-                  | FunctionCall
                   | Identifier
                   | LParen Expression RParen
                   ;
 
-MultiplicativeExpression = chainl1(PrimaryExpression, Star);
+PostfixExpression = PrimaryExpression PostfixPart*;
 
-FunctionCall = Identifier LParen ArgumentList? RParen;
+UnaryExpression = PostfixExpression;
 
-ArgumentList = delimited(AssignmentExpression, Comma);
+MulOp = Star | Slash | Percent;
+MultiplicativeExpression = chainl1(UnaryExpression, MulOp);
 
-UnaryExpression = PrimaryExpression;
+AddOp = Plus | Minus;
+AdditiveExpression = chainl1(MultiplicativeExpression, AddOp);
 
 // The top-level rule MUST be the last one in the file.
 Program = TranslationUnit eoi;

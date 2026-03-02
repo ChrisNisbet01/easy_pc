@@ -7,24 +7,22 @@
 int
 main()
 {
-    char const * input = "/* Global variable with qualifiers */\n"
-                         "static const unsigned long int global = 1;\n"
+    char const * input = "/* Pointers and members */\n"
+                         "static int * const global_ptr = 1;\n"
                          "\n"
-                         "// Extern function declaration\n"
-                         "extern void some_external_fn(int a, char b);\n"
-                         "\n"
-                         "// A simple function\n"
-                         "static int some_function(int x)\n"
+                         "// A simple function with math and members\n"
+                         "static int some_function(int x, void * p)\n"
                          "{\n"
-                         "    return x * 2; // Multiply by two\n"
+                         "    x = x + 10 / 2;\n"
+                         "    return x * p->member.submember;\n"
                          "}\n"
                          "\n"
                          "void main(void)\n"
                          "{\n"
-                         "    auto int local_var = 5;\n"
-                         "    global += 1;\n"
+                         "    int ** pp = 0;\n"
+                         "    global_ptr += 1;\n"
                          "\n"
-                         "    return some_function(global);\n"
+                         "    return some_function(global_ptr, pp);\n"
                          "}\n";
 
     printf("Attempting to parse simple C input:\n%s\n", input);
