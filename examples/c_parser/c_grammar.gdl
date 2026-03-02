@@ -226,7 +226,14 @@ Expression = CommaExpression;
 
 // --- User Defined Types & Initializers ---
 
-Initializer = (LBrace Initializer (Comma Initializer)* Comma? RBrace)
+Designator = (LBracket ConditionalExpression RBracket)
+           | (Dot Identifier);
+
+Designation = Designator+ Assign;
+
+InitializerList = (Designation? Initializer) (Comma Designation? Initializer)* Comma?;
+
+Initializer = (LBrace InitializerList RBrace)
             | AssignmentExpression;
 
 StructDeclarator = (Declarator? Colon ConditionalExpression)

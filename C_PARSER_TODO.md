@@ -10,7 +10,7 @@
 ## 2. User-Defined Types & Initializers
 - [x] Enumerations (`enum`)
 - [x] Initializer lists (e.g., `int a[] = {1, 2, 3};`)
-- [ ] Designated initializers (C99)
+- [x] Designated initializers (C99)
 - [x] Bit-fields in structs/unions
 
 ## 3. Complex Declarators
