@@ -22,6 +22,7 @@ KwRegister = lexeme("register" IdBoundary);
 // Keywords - Type Qualifiers
 KwConst = lexeme("const" IdBoundary);
 KwVolatile = lexeme("volatile" IdBoundary);
+KwRestrict = lexeme("restrict" IdBoundary);
 
 // Keywords - Types
 KwVoid = lexeme("void" IdBoundary);
@@ -33,6 +34,9 @@ KwFloat = lexeme("float" IdBoundary);
 KwDouble = lexeme("double" IdBoundary);
 KwSigned = lexeme("signed" IdBoundary);
 KwUnsigned = lexeme("unsigned" IdBoundary);
+KwBool = lexeme("_Bool" IdBoundary);
+KwComplex = lexeme("_Complex" IdBoundary);
+KwImaginary = lexeme("_Imaginary" IdBoundary);
 KwStruct = lexeme("struct" IdBoundary);
 KwUnion = lexeme("union" IdBoundary);
 KwEnum = lexeme("enum" IdBoundary);
@@ -52,12 +56,15 @@ KwGoto = lexeme("goto" IdBoundary);
 KwContinue = lexeme("continue" IdBoundary);
 KwBreak = lexeme("break" IdBoundary);
 KwSizeof = lexeme("sizeof" IdBoundary);
+KwInline = lexeme("inline" IdBoundary);
 
 ReservedWord = KwStatic | KwExtern | KwAuto | KwRegister 
-             | KwConst | KwVolatile 
+             | KwConst | KwVolatile | KwRestrict
              | KwVoid | KwChar | KwShort | KwInt | KwLong | KwFloat | KwDouble | KwSigned | KwUnsigned
+             | KwBool | KwComplex | KwImaginary
              | KwStruct | KwUnion | KwEnum | KwTypedef
-             | KwReturn | KwIf | KwElse | KwWhile | KwDo | KwFor | KwSwitch | KwCase | KwDefault | KwGoto | KwContinue | KwBreak | KwSizeof;
+             | KwReturn | KwIf | KwElse | KwWhile | KwDo | KwFor | KwSwitch | KwCase | KwDefault | KwGoto | KwContinue | KwBreak | KwSizeof
+             | KwInline;
 
 Identifier = lexeme(not(ReservedWord) FullId);
 
@@ -146,7 +153,9 @@ DecOp = lexeme("--");
 
 StorageClassSpecifier = KwStatic | KwExtern | KwAuto | KwRegister;
 
-TypeQualifier = KwConst | KwVolatile;
+TypeQualifier = KwConst | KwVolatile | KwRestrict;
+
+FunctionSpecifier = KwInline;
 
 // --- Expression Hierarchy ---
 
@@ -260,6 +269,7 @@ TypedefName = satisfy(Identifier, "typedef-name", is_typedef_name, NULL);
 
 TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
               | KwFloat | KwDouble | KwSigned | KwUnsigned
+              | KwBool | KwComplex | KwImaginary
               | TypedefName
               | StructOrUnionSpecifier
               | EnumSpecifier;
@@ -268,9 +278,11 @@ TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong
 
 DeclarationSpecifier = StorageClassSpecifier
                      | TypeQualifier
-                     | TypeSpecifier;
+                     | TypeSpecifier
+                     | FunctionSpecifier;
 
 DeclarationSpecifiers = DeclarationSpecifier+;
+
 
 // Common Declarator: supports pointers, arrays, and function pointers
 Pointer = Star TypeQualifier*;

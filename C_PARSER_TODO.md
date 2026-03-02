@@ -14,8 +14,8 @@
 - [x] Bit-fields in structs/unions
 
 ## 3. Complex Declarators
-- [ ] Nested declarators (Function pointers: `int (*f)(void)`)
-- [ ] Recursive declarator nesting (e.g., `int (*a[10])(int)`)
+- [x] Nested declarators (Function pointers: `int (*f)(void)`)
+- [x] Recursive declarator nesting (e.g., `int (*a[10])(int)`)
 - [ ] Advanced array sizing (C99 `static`, `const`, `*`)
 
 ## 4. Expression Polish
@@ -28,8 +28,8 @@
 - [x] Proper Comma operator (as a binary operator in the hierarchy)
 
 ## 5. Modern C (C99/C11)
-- [ ] `inline` keyword
-- [ ] `restrict` keyword
-- [ ] `_Bool`, `_Complex`, `_Imaginary`
-- [ ] Variable Length Arrays (VLA)
+- [x] `inline` keyword
+- [x] `restrict` keyword
+- [x] `_Bool`, `_Complex`, `_Imaginary`
+- [x] Variable Length Arrays (VLA)
 - [ ] Variadic macros (preprocessor)
