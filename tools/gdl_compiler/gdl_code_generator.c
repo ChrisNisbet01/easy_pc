@@ -765,7 +765,23 @@ generate_expression_code(
     {
         // This is now purely a reference to another rule
         char * pascal_ref_name = to_pascal_case(expression_node->data.identifier_ref.name);
-        fprintf(source_file, "%s", pascal_ref_name);
+        if (expression_name != NULL)
+        {
+            // We are at the top level of a rule definition: Rule = OtherRule;
+            // Wrap it in a single-element AND to avoid NULL copy during forward decl duplication.
+            // Even though the duplicate should have the same funcitonality, it needs to be a separate
+            // parser so that different semantic actions can be assigned to the forward declaration and the actual
+            // definition.
+            // TODO: This is a bit of a hack - ideally the parser library would have a more elegant way to handle this
+            // case.
+            // - perhaps by creating something like epc_parser_alias_l that simply references another parser without
+            // copying.
+            fprintf(source_file, "epc_and_l(list, %s%s%s, 1, %s)", q, expr_name, q, pascal_ref_name);
+        }
+        else
+        {
+            fprintf(source_file, "%s", pascal_ref_name);
+        }
         free(pascal_ref_name);
         break;
     }
