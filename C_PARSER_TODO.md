@@ -16,7 +16,7 @@
 ## 3. Complex Declarators
 - [x] Nested declarators (Function pointers: `int (*f)(void)`)
 - [x] Recursive declarator nesting (e.g., `int (*a[10])(int)`)
-- [ ] Advanced array sizing (C99 `static`, `const`, `*`)
+- [x] Advanced array sizing (C99 `static`, `const`, `*`)
 
 ## 4. Expression Polish
 - [x] Remaining compound assignments: `*=`, `/=`, `%=`, `<<=`, `>>=`, `&=`, `^=`, `|=`

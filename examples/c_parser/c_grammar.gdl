@@ -291,7 +291,11 @@ DirectDeclarator = (LParen Declarator RParen)
                  | Identifier;
 
 // Declarator suffix: arrays or function parameters
-DeclaratorSuffix = (LBracket Expression? RBracket)
+DeclaratorSuffix = (LBracket (TypeQualifier* KwStatic? Expression) RBracket)
+                 | (LBracket (KwStatic TypeQualifier* Expression) RBracket)
+                 | (LBracket (TypeQualifier+ Expression?) RBracket)
+                 | (LBracket (TypeQualifier* Star) RBracket)
+                 | (LBracket Expression? RBracket)
                  | (LParen ParameterTypeList? RParen);
 
 Declarator = Pointer* DirectDeclarator DeclaratorSuffix*;
