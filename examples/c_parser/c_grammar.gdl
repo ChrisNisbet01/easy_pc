@@ -52,8 +52,34 @@ ReservedWord = KwStatic | KwExtern | KwAuto | KwRegister
 
 Identifier = lexeme(not(ReservedWord) FullId);
 
-// Numbers: [0-9]+
-NumberLiteral = lexeme(digit+);
+// Numbers and Literals
+HexPrefix = "0x" | "0X";
+HexLiteral = HexPrefix hex_digit+;
+
+OctalDigit = [0-7];
+OctalLiteral = '0' OctalDigit*;
+
+DecDigit = [1-9];
+DecimalLiteral = DecDigit digit* | '0';
+
+IntegerLiteral = HexLiteral | DecimalLiteral | OctalLiteral;
+IntegerSuffix = (oneof("uU") oneof("lL")?) | (oneof("lL") oneof("uU")?);
+
+DigitSeq = digit+;
+Exponent = oneof("eE") oneof("+-")? DigitSeq;
+FloatSuffix = oneof("fFlL");
+
+FloatLiteral = (DigitSeq? '.' DigitSeq Exponent? FloatSuffix?)
+             | (DigitSeq '.' Exponent? FloatSuffix?)
+             | (DigitSeq Exponent FloatSuffix?);
+
+NumberLiteral = lexeme((FloatLiteral | (IntegerLiteral IntegerSuffix?)) IdBoundary);
+
+StringChar = ("\\" any) | noneof("\"\\\n\r");
+StringLiteral = lexeme('"' StringChar* '"');
+
+CharContent = ("\\" any) | noneof("'\\\n\r");
+CharLiteral = lexeme('\'' CharContent+ '\'');
 
 // Operators and Punctuation
 LParen = lexeme('(');
@@ -69,6 +95,15 @@ Comma = lexeme(',');
 Assign = lexeme('=' not('='));
 PlusAssign = lexeme("+=");
 MinusAssign = lexeme("-=");
+MulAssign = lexeme("*=");
+DivAssign = lexeme("/=");
+ModAssign = lexeme("%=");
+ShlAssign = lexeme("<<=");
+ShrAssign = lexeme(">>=");
+AndAssign = lexeme("&=");
+XorAssign = lexeme("^=");
+OrAssign = lexeme("|=");
+
 Star = lexeme('*' not('='));
 Minus = lexeme('-' not('-') not('=') not('>'));
 Plus = lexeme('+' not('+') not('='));
@@ -87,11 +122,11 @@ Amp = lexeme('&' not('&') not('='));
 Pipe = lexeme('|' not('|') not('='));
 Caret = lexeme('^' not('='));
 Tilde = lexeme('~');
-Shl = lexeme("<<");
-Shr = lexeme(">>");
+Shl = lexeme("<<" not('='));
+Shr = lexeme(">>" not('='));
 AmpAmp = lexeme("&&");
 PipePipe = lexeme("||");
-Excl = lexeme('!');
+Excl = lexeme('!' not('='));
 Question = lexeme('?');
 Colon = lexeme(':');
 
@@ -107,6 +142,8 @@ TypeQualifier = KwConst | KwVolatile;
 // --- Expression Hierarchy ---
 
 PrimaryExpression = NumberLiteral
+                  | StringLiteral
+                  | CharLiteral
                   | Identifier
                   | (LParen Expression RParen)
                   ;
@@ -166,7 +203,10 @@ LogicalOrExpression = chainl1(LogicalAndExpression, PipePipe);
 
 ConditionalExpression = LogicalOrExpression (Question AssignmentExpression Colon ConditionalExpression)?;
 
-AssignmentOp = PlusAssign | MinusAssign | Assign;
+AssignmentOp = ShlAssign | ShrAssign
+             | PlusAssign | MinusAssign | MulAssign | DivAssign | ModAssign
+             | AndAssign | XorAssign | OrAssign
+             | Assign;
 
 AssignmentExpression = (UnaryExpression AssignmentOp AssignmentExpression)
                      | ConditionalExpression;

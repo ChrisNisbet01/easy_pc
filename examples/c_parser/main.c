@@ -267,6 +267,14 @@ main(int argc, char * argv[])
 
     printf("Successfully parsed the C file!\n");
 
+    // Print the CPT
+    char * cpt_str = epc_cpt_to_string(session.internal_parse_ctx, session.result.data.success);
+    if (cpt_str)
+    {
+        printf("Concrete Parse Tree:\n%s\n", cpt_str);
+        free(cpt_str);
+    }
+
     epc_parse_session_destroy(&session);
     session_ctx_free(session_ctx);
     epc_parser_list_free(list);
