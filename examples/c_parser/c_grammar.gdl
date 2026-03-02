@@ -179,7 +179,7 @@ UnaryExpression = (KwSizeof UnaryExpression)
                 ;
 
 // Abstract declarators are used in type names (e.g., in casts)
-AbstractDeclarator = (Pointer+ ArrayPart*) | ArrayPart+;
+AbstractDeclarator = (Pointer+ DeclaratorSuffix*) | DeclaratorSuffix+;
 TypeName = SpecifierQualifierList AbstractDeclarator?;
 
 CastExpression = (LParen TypeName RParen CastExpression)
@@ -272,10 +272,17 @@ DeclarationSpecifier = StorageClassSpecifier
 
 DeclarationSpecifiers = DeclarationSpecifier+;
 
-// Common Declarator: supports pointers and arrays
+// Common Declarator: supports pointers, arrays, and function pointers
 Pointer = Star TypeQualifier*;
-ArrayPart = LBracket Expression? RBracket;
-Declarator = Pointer* Identifier ArrayPart*;
+
+DirectDeclarator = (LParen Declarator RParen)
+                 | Identifier;
+
+// Declarator suffix: arrays or function parameters
+DeclaratorSuffix = (LBracket Expression? RBracket)
+                 | (LParen ParameterTypeList? RParen);
+
+Declarator = Pointer* DirectDeclarator DeclaratorSuffix*;
 
 InitDeclarator = Declarator (Assign Initializer)?;
 
@@ -288,8 +295,11 @@ Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
 // A specialized identifier that captures itself when parsed
 TypedefDefiningIdentifier = wrap(Identifier, typedef_capture_callbacks, NULL);
 
+TypedefDirectDeclarator = (LParen TypedefDeclarator RParen)
+                        | TypedefDefiningIdentifier;
+
 // A specialized declarator that uses the capturing identifier
-TypedefDeclarator = Pointer* TypedefDefiningIdentifier ArrayPart*;
+TypedefDeclarator = Pointer* TypedefDirectDeclarator DeclaratorSuffix*;
 
 TypedefInitDeclarator = TypedefDeclarator (Assign Initializer)?;
 
@@ -337,11 +347,9 @@ ParameterTypeList = delimited(ParameterDeclaration, Comma);
 
 ParameterList = LParen ParameterTypeList? RParen;
 
-FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
+ExternalDeclaration = FunctionDefinition | TypedefDeclaration | Declaration;
 
-FunctionDeclaration = DeclarationSpecifiers Declarator ParameterList Semicolon;
-
-ExternalDeclaration = FunctionDefinition | FunctionDeclaration | TypedefDeclaration | Declaration;
+FunctionDefinition = DeclarationSpecifiers Declarator CompoundStatement;
 
 TranslationUnit = ExternalDeclaration+;
 
