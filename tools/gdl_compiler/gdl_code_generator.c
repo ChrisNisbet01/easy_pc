@@ -322,33 +322,41 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_IDENTIFIER_REF:
     {
         gdl_rule_info_t * referenced_rule = gdl_rule_list_find(all_rules, expression_node->data.identifier_ref.name);
-        if (referenced_rule != NULL && referenced_rule != current_rule_info)
+        if (referenced_rule != NULL)
         {
-            // Check if the referenced rule appears later in the list than the current rule
-            gdl_rule_info_t * temp_current = all_rules->head;
-            bool found_current = false;
-            bool found_referenced = false;
-
-            while (temp_current != NULL)
+            if (referenced_rule == current_rule_info)
             {
-                if (temp_current == current_rule_info)
-                    found_current = true;
-                if (temp_current == referenced_rule)
-                    found_referenced = true;
+                // Self-recursion needs a forward declaration so it can be used in its own definition
+                referenced_rule->needs_forward_declaration = true;
+            }
+            else
+            {
+                // Check if the referenced rule appears later in the list than the current rule
+                gdl_rule_info_t * temp_current = all_rules->head;
+                bool found_current = false;
+                bool found_referenced = false;
 
-                if (found_current && !found_referenced)
+                while (temp_current != NULL)
                 {
-                    // Current rule is before the referenced rule in the list order
-                    // Thus, this is a forward reference.
-                    referenced_rule->needs_forward_declaration = true;
-                    break;
+                    if (temp_current == current_rule_info)
+                        found_current = true;
+                    if (temp_current == referenced_rule)
+                        found_referenced = true;
+
+                    if (found_current && !found_referenced)
+                    {
+                        // Current rule is before the referenced rule in the list order
+                        // Thus, this is a forward reference.
+                        referenced_rule->needs_forward_declaration = true;
+                        break;
+                    }
+                    if (found_referenced && !found_current)
+                    {
+                        // Referenced rule is before the current rule, no forward declaration needed here.
+                        break;
+                    }
+                    temp_current = temp_current->next;
                 }
-                if (found_referenced && !found_current)
-                {
-                    // Referenced rule is before the current rule, no forward declaration needed here.
-                    break;
-                }
-                temp_current = temp_current->next;
             }
         }
         break;
