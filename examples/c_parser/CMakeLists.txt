@@ -8,8 +8,8 @@ set(GENERATED_ACTIONS_HEADER ${GENERATED_DIR}/c_grammar_actions.h)
 
 add_custom_command(
     OUTPUT ${GENERATED_HEADER} ${GENERATED_SOURCE} ${GENERATED_ACTIONS_HEADER}
-    COMMAND gdl_compiler ${GDL_INPUT_FILE} --output-dir=${GENERATED_DIR}
-    DEPENDS ${GDL_INPUT_FILE} gdl_compiler
+    COMMAND gdl_compiler ${GDL_INPUT_FILE} --output-dir=${GENERATED_DIR} --header=callbacks.h
+    DEPENDS ${GDL_INPUT_FILE} gdl_compiler ${CMAKE_CURRENT_SOURCE_DIR}/callbacks.h
     VERBATIM
     COMMENT "Generating parser code for ${GDL_INPUT_FILE}"
 )
@@ -22,6 +22,7 @@ add_executable(c_parser_example
 target_include_directories(c_parser_example PRIVATE
     ${GENERATED_DIR}
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(c_parser_example PRIVATE

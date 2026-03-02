@@ -1,5 +1,6 @@
 // GDL definition for a basic C-like parser
 // Supports global variables, function definitions, structs, and a more complete expression hierarchy.
+// Now includes support for typedefs using transactional wrap() and satisfy().
 
 // --- Lexical Elements ---
 
@@ -34,6 +35,7 @@ KwSigned = lexeme("signed" IdBoundary);
 KwUnsigned = lexeme("unsigned" IdBoundary);
 KwStruct = lexeme("struct" IdBoundary);
 KwUnion = lexeme("union" IdBoundary);
+KwTypedef = lexeme("typedef" IdBoundary);
 
 // Keywords - Control Flow
 KwReturn = lexeme("return" IdBoundary);
@@ -45,7 +47,7 @@ KwSizeof = lexeme("sizeof" IdBoundary);
 ReservedWord = KwStatic | KwExtern | KwAuto | KwRegister 
              | KwConst | KwVolatile 
              | KwVoid | KwChar | KwShort | KwInt | KwLong | KwFloat | KwDouble | KwSigned | KwUnsigned
-             | KwStruct | KwUnion
+             | KwStruct | KwUnion | KwTypedef
              | KwReturn | KwIf | KwElse | KwWhile | KwSizeof;
 
 Identifier = lexeme(not(ReservedWord) FullId);
@@ -162,7 +164,7 @@ AssignmentOp = PlusAssign | MinusAssign | Assign;
 AssignmentExpression = (UnaryExpression AssignmentOp AssignmentExpression)
                      | ConditionalExpression;
 
-Expression = delimited(AssignmentExpression, Comma);
+Expression = AssignmentExpression;
 
 // --- Structs and Unions ---
 
@@ -179,8 +181,12 @@ StructDeclarationList = StructDeclaration+;
 StructOrUnionSpecifier = ((KwStruct | KwUnion) Identifier? LBrace StructDeclarationList RBrace)
                        | ((KwStruct | KwUnion) Identifier);
 
+// Typedef names are identifiers that have been registered
+TypedefName = satisfy(Identifier, "typedef-name", is_typedef_name, NULL);
+
 TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
               | KwFloat | KwDouble | KwSigned | KwUnsigned
+              | TypedefName
               | StructOrUnionSpecifier;
 
 // --- Declarations ---
@@ -191,22 +197,31 @@ DeclarationSpecifier = StorageClassSpecifier
 
 DeclarationSpecifiers = DeclarationSpecifier+;
 
+// Common Declarator: supports pointers and arrays
+Pointer = Star TypeQualifier*;
+ArrayPart = LBracket Expression? RBracket;
+Declarator = Pointer* Identifier ArrayPart*;
+
 InitDeclarator = Declarator (Assign AssignmentExpression)?;
 
 InitDeclaratorList = delimited(InitDeclarator, Comma);
 
 Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
 
-// Declarator: supports pointers and arrays
-Pointer = Star TypeQualifier*;
-ArrayPart = LBracket Expression? RBracket;
-Declarator = Pointer* Identifier ArrayPart*;
+// --- Typedef Specific Rules ---
 
-ParameterDeclaration = DeclarationSpecifiers Declarator?;
+// A specialized identifier that captures itself when parsed
+TypedefDefiningIdentifier = wrap(Identifier, typedef_capture_callbacks, NULL);
 
-ParameterTypeList = delimited(ParameterDeclaration, Comma);
+// A specialized declarator that uses the capturing identifier
+TypedefDeclarator = Pointer* TypedefDefiningIdentifier ArrayPart*;
 
-ParameterList = LParen ParameterTypeList? RParen;
+TypedefInitDeclarator = TypedefDeclarator (Assign AssignmentExpression)?;
+
+TypedefInitDeclaratorList = delimited(TypedefInitDeclarator, Comma);
+
+// The whole typedef declaration is wrapped to commit/discard the captured names
+TypedefDeclaration = wrap(KwTypedef DeclarationSpecifiers TypedefInitDeclaratorList Semicolon, typedef_commit_callbacks, NULL);
 
 // --- Statements ---
 
@@ -230,11 +245,17 @@ Statement = CompoundStatement
 
 // --- Top Level ---
 
+ParameterDeclaration = DeclarationSpecifiers Declarator?;
+
+ParameterTypeList = delimited(ParameterDeclaration, Comma);
+
+ParameterList = LParen ParameterTypeList? RParen;
+
 FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
 
 FunctionDeclaration = DeclarationSpecifiers Declarator ParameterList Semicolon;
 
-ExternalDeclaration = FunctionDefinition | FunctionDeclaration | Declaration;
+ExternalDeclaration = FunctionDefinition | FunctionDeclaration | TypedefDeclaration | Declaration;
 
 TranslationUnit = ExternalDeclaration+;
 
