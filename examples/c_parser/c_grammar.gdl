@@ -42,13 +42,21 @@ KwReturn = lexeme("return" IdBoundary);
 KwIf = lexeme("if" IdBoundary);
 KwElse = lexeme("else" IdBoundary);
 KwWhile = lexeme("while" IdBoundary);
+KwDo = lexeme("do" IdBoundary);
+KwFor = lexeme("for" IdBoundary);
+KwSwitch = lexeme("switch" IdBoundary);
+KwCase = lexeme("case" IdBoundary);
+KwDefault = lexeme("default" IdBoundary);
+KwGoto = lexeme("goto" IdBoundary);
+KwContinue = lexeme("continue" IdBoundary);
+KwBreak = lexeme("break" IdBoundary);
 KwSizeof = lexeme("sizeof" IdBoundary);
 
 ReservedWord = KwStatic | KwExtern | KwAuto | KwRegister 
              | KwConst | KwVolatile 
              | KwVoid | KwChar | KwShort | KwInt | KwLong | KwFloat | KwDouble | KwSigned | KwUnsigned
              | KwStruct | KwUnion | KwTypedef
-             | KwReturn | KwIf | KwElse | KwWhile | KwSizeof;
+             | KwReturn | KwIf | KwElse | KwWhile | KwDo | KwFor | KwSwitch | KwCase | KwDefault | KwGoto | KwContinue | KwBreak | KwSizeof;
 
 Identifier = lexeme(not(ReservedWord) FullId);
 
@@ -90,6 +98,7 @@ LBracket = lexeme('[');
 RBracket = lexeme(']');
 Semicolon = lexeme(';');
 Comma = lexeme(',');
+Colon = lexeme(':' not(':'));
 
 // Protected operators using not() to prevent prefix stealing
 Assign = lexeme('=' not('='));
@@ -128,7 +137,6 @@ AmpAmp = lexeme("&&");
 PipePipe = lexeme("||");
 Excl = lexeme('!' not('='));
 Question = lexeme('?');
-Colon = lexeme(':');
 
 IncOp = lexeme("++");
 DecOp = lexeme("--");
@@ -276,15 +284,26 @@ TypedefDeclaration = wrap(KwTypedef DeclarationSpecifiers TypedefInitDeclaratorL
 
 ExpressionStatement = Expression? Semicolon;
 
-JumpStatement = KwReturn Expression? Semicolon;
+LabeledStatement = (Identifier Colon Statement)
+                 | (KwCase ConditionalExpression Colon Statement)
+                 | (KwDefault Colon Statement);
 
-SelectionStatement = KwIf LParen Expression RParen Statement (KwElse Statement)?;
+JumpStatement = (KwGoto Identifier Semicolon)
+              | (KwContinue Semicolon)
+              | (KwBreak Semicolon)
+              | (KwReturn Expression? Semicolon);
 
-IterationStatement = KwWhile LParen Expression RParen Statement;
+SelectionStatement = (KwIf LParen Expression RParen Statement (KwElse Statement)?)
+                   | (KwSwitch LParen Expression RParen Statement);
+
+IterationStatement = (KwWhile LParen Expression RParen Statement)
+                   | (KwDo Statement KwWhile LParen Expression RParen Semicolon)
+                   | (KwFor LParen (Declaration | ExpressionStatement) ExpressionStatement Expression? RParen Statement);
 
 CompoundStatement = LBrace Statement* RBrace;
 
-Statement = CompoundStatement
+Statement = LabeledStatement
+          | CompoundStatement
           | SelectionStatement
           | IterationStatement
           | Declaration
