@@ -380,6 +380,20 @@ traverse_expression_for_references(
         );
         break;
     }
+    case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED:
+    {
+        traverse_expression_for_references(
+            expression_node->data.delimited_call.item_expr, current_rule_info, all_rules
+        );
+        if (expression_node->data.delimited_call.delimiter_expr != NULL)
+        {
+            traverse_expression_for_references(
+                expression_node->data.delimited_call.delimiter_expr, current_rule_info, all_rules
+            );
+        }
+        break;
+    }
+
     case GDL_AST_NODE_TYPE_OPTIONAL_EXPRESSION:
     {
         traverse_expression_for_references(expression_node->data.optional.expr, current_rule_info, all_rules);
@@ -406,7 +420,6 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_COMBINATOR_NONEOF:
     case GDL_AST_NODE_TYPE_COMBINATOR_COUNT:
     case GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN:
-    case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED:
     case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
     case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:

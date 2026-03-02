@@ -34,13 +34,19 @@ KwDouble = lexeme("double");
 KwSigned = lexeme("signed");
 KwUnsigned = lexeme("unsigned");
 
+// Keywords - Control Flow
 KwReturn = lexeme("return");
+KwIf = lexeme("if");
+KwElse = lexeme("else");
+KwWhile = lexeme("while");
 
 // Operators and Punctuation
 LParen = lexeme('(');
 RParen = lexeme(')');
 LBrace = lexeme('{');
 RBrace = lexeme('}');
+LBracket = lexeme('[');
+RBracket = lexeme(']');
 Semicolon = lexeme(';');
 Comma = lexeme(',');
 Assign = lexeme('=');
@@ -52,21 +58,14 @@ Slash = lexeme('/');
 Percent = lexeme('%');
 Dot = lexeme('.');
 Arrow = lexeme("->");
+Lt = lexeme('<');
+Gt = lexeme('>');
+Le = lexeme("<=");
+Ge = lexeme(">=");
+Eq = lexeme("==");
+Ne = lexeme("!=");
 
 // --- Grammar Rules ---
-
-TranslationUnit = ExternalDeclaration+;
-
-ExternalDeclaration = FunctionDefinition | FunctionDeclaration | Declaration;
-
-// Function Definition: [specifiers] declarator ( params ) { body }
-FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
-
-// Function Declaration: [specifiers] declarator ( params ) ;
-FunctionDeclaration = DeclarationSpecifiers Declarator ParameterList Semicolon;
-
-// Declaration: [specifiers] init_declarator_list ;
-Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
 
 DeclarationSpecifiers = DeclarationSpecifier+;
 
@@ -81,53 +80,22 @@ TypeQualifier = KwConst | KwVolatile;
 TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
               | KwFloat | KwDouble | KwSigned | KwUnsigned;
 
-InitDeclarator = Declarator (Assign AssignmentExpression)?;
-
-InitDeclaratorList = delimited(InitDeclarator, Comma);
-
-// Declarator: supports pointers: int *p, **pp, * const p;
-Pointer = Star TypeQualifier*;
-Declarator = Pointer* Identifier;
-
-ParameterList = LParen ParameterTypeList? RParen;
-
-ParameterDeclaration = DeclarationSpecifiers Declarator?;
-
-ParameterTypeList = delimited(ParameterDeclaration, Comma);
-
-CompoundStatement = LBrace Statement* RBrace;
-
-Statement = CompoundStatement
-          | Declaration
-          | JumpStatement
-          | ExpressionStatement
-          ;
-
-ExpressionStatement = Expression? Semicolon;
-
-JumpStatement = KwReturn Expression? Semicolon;
-
 // --- Expression Hierarchy ---
 
-AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
-                     | AdditiveExpression
-                     ;
-
-Expression = AssignmentExpression;
-
 AssignmentOp = Assign | PlusAssign;
-
-ArgumentList = delimited(AssignmentExpression, Comma);
-
-PostfixPart = LParen ArgumentList? RParen
-            | Dot Identifier
-            | Arrow Identifier
-            ;
 
 PrimaryExpression = NumberLiteral
                   | Identifier
                   | LParen Expression RParen
                   ;
+
+ArgumentList = delimited(AssignmentExpression, Comma);
+
+PostfixPart = LParen ArgumentList? RParen
+            | LBracket Expression RBracket
+            | Dot Identifier
+            | Arrow Identifier
+            ;
 
 PostfixExpression = PrimaryExpression PostfixPart*;
 
@@ -138,6 +106,69 @@ MultiplicativeExpression = chainl1(UnaryExpression, MulOp);
 
 AddOp = Plus | Minus;
 AdditiveExpression = chainl1(MultiplicativeExpression, AddOp);
+
+RelOp = Le | Ge | Lt | Gt;
+RelationalExpression = chainl1(AdditiveExpression, RelOp);
+
+EqOp = Eq | Ne;
+EqualityExpression = chainl1(RelationalExpression, EqOp);
+
+AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
+                     | EqualityExpression
+                     ;
+
+Expression = AssignmentExpression;
+
+// --- Declarations ---
+
+InitDeclarator = Declarator (Assign AssignmentExpression)?;
+
+InitDeclaratorList = delimited(InitDeclarator, Comma);
+
+Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
+
+// Declarator: supports pointers and arrays: int *p, a[10], **pp[5];
+Pointer = Star TypeQualifier*;
+ArrayPart = LBracket Expression? RBracket;
+Declarator = Pointer* Identifier ArrayPart*;
+
+ParameterDeclaration = DeclarationSpecifiers Declarator?;
+
+ParameterTypeList = delimited(ParameterDeclaration, Comma);
+
+ParameterList = LParen ParameterTypeList? RParen;
+
+// --- Statements ---
+
+ExpressionStatement = Expression? Semicolon;
+
+JumpStatement = KwReturn Expression? Semicolon;
+
+SelectionStatement = KwIf LParen Expression RParen Statement (KwElse Statement)?;
+
+IterationStatement = KwWhile LParen Expression RParen Statement;
+
+CompoundStatement = LBrace Statement* RBrace;
+
+Statement = CompoundStatement
+          | SelectionStatement
+          | IterationStatement
+          | Declaration
+          | JumpStatement
+          | ExpressionStatement
+          ;
+
+// --- Top Level ---
+
+// Function Definition: [specifiers] declarator ( params ) { body }
+FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
+
+// Function Declaration: [specifiers] declarator ( params ) ;
+FunctionDeclaration = DeclarationSpecifiers Declarator ParameterList Semicolon;
+
+ExternalDeclaration = FunctionDefinition | FunctionDeclaration | Declaration;
+
+TranslationUnit = ExternalDeclaration+;
 
 // The top-level rule MUST be the last one in the file.
 Program = TranslationUnit eoi;
