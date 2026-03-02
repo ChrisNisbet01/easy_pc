@@ -1,5 +1,5 @@
 // GDL definition for a basic C-like parser
-// Supports global variables, function definitions, and basic statements/expressions.
+// Supports global variables, function definitions, structs, and a more complete expression hierarchy.
 
 // --- Lexical Elements ---
 
@@ -8,37 +8,50 @@ IdChar = alpha | digit | '_';
 IdPrefix = alpha | '_';
 IdRest = IdChar*;
 FullId = IdPrefix IdRest;
-Identifier = lexeme(FullId);
+
+// Boundary check to ensure keywords and identifiers match full words
+IdBoundary = not(IdChar);
+
+// Keywords - Storage Classes
+KwStatic = lexeme("static" IdBoundary);
+KwExtern = lexeme("extern" IdBoundary);
+KwAuto = lexeme("auto" IdBoundary);
+KwRegister = lexeme("register" IdBoundary);
+
+// Keywords - Type Qualifiers
+KwConst = lexeme("const" IdBoundary);
+KwVolatile = lexeme("volatile" IdBoundary);
+
+// Keywords - Types
+KwVoid = lexeme("void" IdBoundary);
+KwChar = lexeme("char" IdBoundary);
+KwShort = lexeme("short" IdBoundary);
+KwInt = lexeme("int" IdBoundary);
+KwLong = lexeme("long" IdBoundary);
+KwFloat = lexeme("float" IdBoundary);
+KwDouble = lexeme("double" IdBoundary);
+KwSigned = lexeme("signed" IdBoundary);
+KwUnsigned = lexeme("unsigned" IdBoundary);
+KwStruct = lexeme("struct" IdBoundary);
+KwUnion = lexeme("union" IdBoundary);
+
+// Keywords - Control Flow
+KwReturn = lexeme("return" IdBoundary);
+KwIf = lexeme("if" IdBoundary);
+KwElse = lexeme("else" IdBoundary);
+KwWhile = lexeme("while" IdBoundary);
+KwSizeof = lexeme("sizeof" IdBoundary);
+
+ReservedWord = KwStatic | KwExtern | KwAuto | KwRegister 
+             | KwConst | KwVolatile 
+             | KwVoid | KwChar | KwShort | KwInt | KwLong | KwFloat | KwDouble | KwSigned | KwUnsigned
+             | KwStruct | KwUnion
+             | KwReturn | KwIf | KwElse | KwWhile | KwSizeof;
+
+Identifier = lexeme(not(ReservedWord) FullId);
 
 // Numbers: [0-9]+
 NumberLiteral = lexeme(digit+);
-
-// Keywords - Storage Classes
-KwStatic = lexeme("static");
-KwExtern = lexeme("extern");
-KwAuto = lexeme("auto");
-KwRegister = lexeme("register");
-
-// Keywords - Type Qualifiers
-KwConst = lexeme("const");
-KwVolatile = lexeme("volatile");
-
-// Keywords - Types
-KwVoid = lexeme("void");
-KwChar = lexeme("char");
-KwShort = lexeme("short");
-KwInt = lexeme("int");
-KwLong = lexeme("long");
-KwFloat = lexeme("float");
-KwDouble = lexeme("double");
-KwSigned = lexeme("signed");
-KwUnsigned = lexeme("unsigned");
-
-// Keywords - Control Flow
-KwReturn = lexeme("return");
-KwIf = lexeme("if");
-KwElse = lexeme("else");
-KwWhile = lexeme("while");
 
 // Operators and Punctuation
 LParen = lexeme('(');
@@ -49,57 +62,73 @@ LBracket = lexeme('[');
 RBracket = lexeme(']');
 Semicolon = lexeme(';');
 Comma = lexeme(',');
-Assign = lexeme('=');
+
+// Protected operators using not() to prevent prefix stealing
+Assign = lexeme('=' not('='));
 PlusAssign = lexeme("+=");
-Star = lexeme('*');
-Minus = lexeme('-');
-Plus = lexeme('+');
-Slash = lexeme('/');
-Percent = lexeme('%');
+MinusAssign = lexeme("-=");
+Star = lexeme('*' not('='));
+Minus = lexeme('-' not('-') not('=') not('>'));
+Plus = lexeme('+' not('+') not('='));
+Slash = lexeme('/' not('='));
+Percent = lexeme('%' not('='));
 Dot = lexeme('.');
 Arrow = lexeme("->");
-Lt = lexeme('<');
-Gt = lexeme('>');
+Lt = lexeme('<' not('<') not('='));
+Gt = lexeme('>' not('>') not('='));
 Le = lexeme("<=");
 Ge = lexeme(">=");
 Eq = lexeme("==");
 Ne = lexeme("!=");
 
+Amp = lexeme('&' not('&') not('='));
+Pipe = lexeme('|' not('|') not('='));
+Caret = lexeme('^' not('='));
+Tilde = lexeme('~');
+Shl = lexeme("<<");
+Shr = lexeme(">>");
+AmpAmp = lexeme("&&");
+PipePipe = lexeme("||");
+Excl = lexeme('!');
+Question = lexeme('?');
+Colon = lexeme(':');
+
+IncOp = lexeme("++");
+DecOp = lexeme("--");
+
 // --- Grammar Rules ---
-
-DeclarationSpecifiers = DeclarationSpecifier+;
-
-DeclarationSpecifier = StorageClassSpecifier
-                     | TypeQualifier
-                     | TypeSpecifier;
 
 StorageClassSpecifier = KwStatic | KwExtern | KwAuto | KwRegister;
 
 TypeQualifier = KwConst | KwVolatile;
 
-TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
-              | KwFloat | KwDouble | KwSigned | KwUnsigned;
-
 // --- Expression Hierarchy ---
-
-AssignmentOp = Assign | PlusAssign;
 
 PrimaryExpression = NumberLiteral
                   | Identifier
-                  | LParen Expression RParen
+                  | (LParen Expression RParen)
                   ;
 
 ArgumentList = delimited(AssignmentExpression, Comma);
 
-PostfixPart = LParen ArgumentList? RParen
-            | LBracket Expression RBracket
-            | Dot Identifier
-            | Arrow Identifier
+PostfixPart = (LParen ArgumentList? RParen)
+            | (LBracket Expression RBracket)
+            | (Dot Identifier)
+            | (Arrow Identifier)
+            | IncOp
+            | DecOp
             ;
 
 PostfixExpression = PrimaryExpression PostfixPart*;
 
-UnaryExpression = PostfixExpression;
+UnaryOp = Amp | Star | Plus | Minus | Tilde | Excl;
+
+UnaryExpression = (KwSizeof UnaryExpression)
+                | (UnaryOp UnaryExpression)
+                | (IncOp UnaryExpression)
+                | (DecOp UnaryExpression)
+                | PostfixExpression
+                ;
 
 MulOp = Star | Slash | Percent;
 MultiplicativeExpression = chainl1(UnaryExpression, MulOp);
@@ -107,19 +136,60 @@ MultiplicativeExpression = chainl1(UnaryExpression, MulOp);
 AddOp = Plus | Minus;
 AdditiveExpression = chainl1(MultiplicativeExpression, AddOp);
 
+ShiftOp = Shl | Shr;
+ShiftExpression = chainl1(AdditiveExpression, ShiftOp);
+
 RelOp = Le | Ge | Lt | Gt;
-RelationalExpression = chainl1(AdditiveExpression, RelOp);
+RelationalExpression = chainl1(ShiftExpression, RelOp);
 
 EqOp = Eq | Ne;
 EqualityExpression = chainl1(RelationalExpression, EqOp);
 
-AssignmentExpression = UnaryExpression AssignmentOp AssignmentExpression
-                     | EqualityExpression
-                     ;
+AndExpression = chainl1(EqualityExpression, Amp);
 
-Expression = AssignmentExpression;
+ExclusiveOrExpression = chainl1(AndExpression, Caret);
+
+InclusiveOrExpression = chainl1(ExclusiveOrExpression, Pipe);
+
+LogicalAndExpression = chainl1(InclusiveOrExpression, AmpAmp);
+
+LogicalOrExpression = chainl1(LogicalAndExpression, PipePipe);
+
+ConditionalExpression = LogicalOrExpression (Question AssignmentExpression Colon ConditionalExpression)?;
+
+AssignmentOp = PlusAssign | MinusAssign | Assign;
+
+AssignmentExpression = (UnaryExpression AssignmentOp AssignmentExpression)
+                     | ConditionalExpression;
+
+Expression = delimited(AssignmentExpression, Comma);
+
+// --- Structs and Unions ---
+
+StructDeclarator = Declarator; // Simplified
+
+StructDeclaratorList = delimited(StructDeclarator, Comma);
+
+SpecifierQualifierList = (TypeSpecifier | TypeQualifier)+;
+
+StructDeclaration = SpecifierQualifierList StructDeclaratorList Semicolon;
+
+StructDeclarationList = StructDeclaration+;
+
+StructOrUnionSpecifier = ((KwStruct | KwUnion) Identifier? LBrace StructDeclarationList RBrace)
+                       | ((KwStruct | KwUnion) Identifier);
+
+TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
+              | KwFloat | KwDouble | KwSigned | KwUnsigned
+              | StructOrUnionSpecifier;
 
 // --- Declarations ---
+
+DeclarationSpecifier = StorageClassSpecifier
+                     | TypeQualifier
+                     | TypeSpecifier;
+
+DeclarationSpecifiers = DeclarationSpecifier+;
 
 InitDeclarator = Declarator (Assign AssignmentExpression)?;
 
@@ -127,7 +197,7 @@ InitDeclaratorList = delimited(InitDeclarator, Comma);
 
 Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
 
-// Declarator: supports pointers and arrays: int *p, a[10], **pp[5];
+// Declarator: supports pointers and arrays
 Pointer = Star TypeQualifier*;
 ArrayPart = LBracket Expression? RBracket;
 Declarator = Pointer* Identifier ArrayPart*;
@@ -160,10 +230,8 @@ Statement = CompoundStatement
 
 // --- Top Level ---
 
-// Function Definition: [specifiers] declarator ( params ) { body }
 FunctionDefinition = DeclarationSpecifiers Declarator ParameterList CompoundStatement;
 
-// Function Declaration: [specifiers] declarator ( params ) ;
 FunctionDeclaration = DeclarationSpecifiers Declarator ParameterList Semicolon;
 
 ExternalDeclaration = FunctionDefinition | FunctionDeclaration | Declaration;

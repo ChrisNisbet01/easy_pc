@@ -27,3 +27,6 @@ target_include_directories(c_parser_example PRIVATE
 target_link_libraries(c_parser_example PRIVATE
     easy_pc_shared
 )
+
+# Copy test files to build directory
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

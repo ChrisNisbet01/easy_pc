@@ -5,35 +5,16 @@
 #include <stdlib.h>
 
 int
-main()
+main(int argc, char * argv[])
 {
-    char const * input = "/* Arrays, If, and While */\n"
-                         "static int global_array[10];\n"
-                         "\n"
-                         "static void process_data(int * data, int count)\n"
-                         "{\n"
-                         "    int i = 0;\n"
-                         "    while (i < count)\n"
-                         "    {\n"
-                         "        if (data[i] > 0)\n"
-                         "        {\n"
-                         "            data[i] = data[i] * 2;\n"
-                         "        }\n"
-                         "        else\n"
-                         "        {\n"
-                         "            data[i] = 0;\n"
-                         "        }\n"
-                         "        i = i + 1;\n"
-                         "    }\n"
-                         "}\n"
-                         "\n"
-                         "void main(void)\n"
-                         "{\n"
-                         "    global_array[0] = 5;\n"
-                         "    process_data(global_array, 10);\n"
-                         "}\n";
+    if (argc < 2)
+    {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
 
-    printf("Attempting to parse simple C input:\n%s\n", input);
+    char const * filename = argv[1];
+    printf("Attempting to parse C file: %s\n", filename);
 
     epc_parser_list * list = epc_parser_list_create();
     if (!list)
@@ -51,8 +32,8 @@ main()
         return EXIT_FAILURE;
     }
 
-    // No user_ctx needed for this basic test
-    epc_parse_session_t session = epc_parse_str(c_parser, input, NULL);
+    // Parse from file
+    epc_parse_session_t session = epc_parse_file(c_parser, filename, NULL);
 
     if (session.result.is_error)
     {
@@ -67,7 +48,7 @@ main()
         return EXIT_FAILURE;
     }
 
-    printf("Successfully parsed the C input!\n");
+    printf("Successfully parsed the C file!\n");
 
     // Print the CPT
     char * cpt_str = epc_cpt_to_string(session.internal_parse_ctx, session.result.data.success);
