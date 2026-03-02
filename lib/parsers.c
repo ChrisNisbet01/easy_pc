@@ -2737,9 +2737,49 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, bool consume_comments)
                 }
                 consumed_something = true;
             }
+            else if (!res.is_eof && res.available >= 2 && res.next_input[0] == '/' && res.next_input[1] == '*')
+            {
+                len += 2;
+                while (1)
+                {
+                    res = parse_ctx_get_input_at_offset(ctx, offset + len, 2);
+                    if (res.is_eof && res.available < 2)
+                    {
+                        /* Unterminated comment is treated as consuming until EOF for WS purposes. */
+                        return (consume_ws_result_t){.len = len + res.available,
+                                                     .interrupted = is_streaming && !parse_ctx_is_eof(ctx)};
+                    }
+                    if (res.next_input[0] == '*' && res.next_input[1] == '/')
+                    {
+                        len += 2;
+                        break;
+                    }
+                    len++;
+                }
+                consumed_something = true;
+            }
+            else if (!res.is_eof && res.available >= 1 && res.next_input[0] == '#')
+            {
+                len += 1;
+                while (1)
+                {
+                    res = parse_ctx_get_input_at_offset(ctx, offset + len, 1);
+                    if (res.is_eof)
+                    {
+                        return (consume_ws_result_t){.len = len, .interrupted = is_streaming && !parse_ctx_is_eof(ctx)};
+                    }
+                    if (res.next_input[0] == '\n')
+                    {
+                        len++;
+                        break;
+                    }
+                    len++;
+                }
+                consumed_something = true;
+            }
             else if (is_streaming && !res.is_eof && res.available < 2 && !parse_ctx_is_eof(ctx))
             {
-                // We have 1 char and it might be the start of "//"
+                // We have 1 char and it might be the start of "//" or "/*"
                 if (res.next_input[0] == '/')
                 {
                     return (consume_ws_result_t){.len = len, .interrupted = true};
