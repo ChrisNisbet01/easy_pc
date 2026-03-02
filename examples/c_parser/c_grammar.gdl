@@ -35,6 +35,7 @@ KwSigned = lexeme("signed" IdBoundary);
 KwUnsigned = lexeme("unsigned" IdBoundary);
 KwStruct = lexeme("struct" IdBoundary);
 KwUnion = lexeme("union" IdBoundary);
+KwEnum = lexeme("enum" IdBoundary);
 KwTypedef = lexeme("typedef" IdBoundary);
 
 // Keywords - Control Flow
@@ -55,7 +56,7 @@ KwSizeof = lexeme("sizeof" IdBoundary);
 ReservedWord = KwStatic | KwExtern | KwAuto | KwRegister 
              | KwConst | KwVolatile 
              | KwVoid | KwChar | KwShort | KwInt | KwLong | KwFloat | KwDouble | KwSigned | KwUnsigned
-             | KwStruct | KwUnion | KwTypedef
+             | KwStruct | KwUnion | KwEnum | KwTypedef
              | KwReturn | KwIf | KwElse | KwWhile | KwDo | KwFor | KwSwitch | KwCase | KwDefault | KwGoto | KwContinue | KwBreak | KwSizeof;
 
 Identifier = lexeme(not(ReservedWord) FullId);
@@ -223,9 +224,13 @@ CommaExpression = chainl1(AssignmentExpression, Comma);
 
 Expression = CommaExpression;
 
-// --- Structs and Unions ---
+// --- User Defined Types & Initializers ---
 
-StructDeclarator = Declarator; // Simplified
+Initializer = (LBrace Initializer (Comma Initializer)* Comma? RBrace)
+            | AssignmentExpression;
+
+StructDeclarator = (Declarator? Colon ConditionalExpression)
+                 | Declarator;
 
 StructDeclaratorList = delimited(StructDeclarator, Comma);
 
@@ -238,13 +243,19 @@ StructDeclarationList = StructDeclaration+;
 StructOrUnionSpecifier = ((KwStruct | KwUnion) Identifier? LBrace StructDeclarationList RBrace)
                        | ((KwStruct | KwUnion) Identifier);
 
+Enumerator = Identifier (Assign ConditionalExpression)?;
+
+EnumSpecifier = (KwEnum Identifier? LBrace Enumerator (Comma Enumerator)* Comma? RBrace)
+              | (KwEnum Identifier);
+
 // Typedef names are identifiers that have been registered
 TypedefName = satisfy(Identifier, "typedef-name", is_typedef_name, NULL);
 
 TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
               | KwFloat | KwDouble | KwSigned | KwUnsigned
               | TypedefName
-              | StructOrUnionSpecifier;
+              | StructOrUnionSpecifier
+              | EnumSpecifier;
 
 // --- Declarations ---
 
@@ -259,7 +270,7 @@ Pointer = Star TypeQualifier*;
 ArrayPart = LBracket Expression? RBracket;
 Declarator = Pointer* Identifier ArrayPart*;
 
-InitDeclarator = Declarator (Assign AssignmentExpression)?;
+InitDeclarator = Declarator (Assign Initializer)?;
 
 InitDeclaratorList = delimited(InitDeclarator, Comma);
 
@@ -273,7 +284,7 @@ TypedefDefiningIdentifier = wrap(Identifier, typedef_capture_callbacks, NULL);
 // A specialized declarator that uses the capturing identifier
 TypedefDeclarator = Pointer* TypedefDefiningIdentifier ArrayPart*;
 
-TypedefInitDeclarator = TypedefDeclarator (Assign AssignmentExpression)?;
+TypedefInitDeclarator = TypedefDeclarator (Assign Initializer)?;
 
 TypedefInitDeclaratorList = delimited(TypedefInitDeclarator, Comma);
 

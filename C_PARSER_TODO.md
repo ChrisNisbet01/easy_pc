@@ -8,10 +8,10 @@
 - [x] Labeled statements (e.g., `start:`)
 
 ## 2. User-Defined Types & Initializers
-- [ ] Enumerations (`enum`)
-- [ ] Initializer lists (e.g., `int a[] = {1, 2, 3};`)
+- [x] Enumerations (`enum`)
+- [x] Initializer lists (e.g., `int a[] = {1, 2, 3};`)
 - [ ] Designated initializers (C99)
-- [ ] Bit-fields in structs/unions
+- [x] Bit-fields in structs/unions
 
 ## 3. Complex Declarators
 - [ ] Nested declarators (Function pointers: `int (*f)(void)`)
