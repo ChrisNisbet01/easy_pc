@@ -75,7 +75,7 @@ TEST(GeneratedParserTest, GeneratesFilesSuccessfully)
 
     generate_ast(gdl_input);
 
-    CHECK_TRUE(gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir));
+    CHECK_TRUE(gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir, NULL));
 }
 
 TEST(GeneratedParserTest, GeneratesFilesWithFwdRefSuccessfully)
@@ -97,5 +97,5 @@ TEST(GeneratedParserTest, GeneratesFilesWithFwdRefSuccessfully)
 
     generate_ast(gdl_input);
 
-    CHECK_TRUE(gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir));
+    CHECK_TRUE(gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir, NULL));
 }

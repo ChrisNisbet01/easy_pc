@@ -484,7 +484,9 @@ gdl_analyze_rule_dependencies(gdl_ast_node_t * ast_root, gdl_rule_list_t * rule_
 // --- Main Code Generation Logic ---
 
 bool
-gdl_generate_c_code(gdl_ast_node_t * ast_root, char const * base_name, char const * output_dir)
+gdl_generate_c_code(
+    gdl_ast_node_t * ast_root, char const * base_name, char const * output_dir, char const * header_to_include
+)
 {
     if (ast_root == NULL || ast_root->type != GDL_AST_NODE_TYPE_PROGRAM || base_name == NULL || output_dir == NULL)
     {
@@ -542,6 +544,10 @@ gdl_generate_c_code(gdl_ast_node_t * ast_root, char const * base_name, char cons
     fprintf(source_file, "// Generated source for %s\n", base_name);
     fprintf(source_file, "#include \"%s.h\"\n", base_name);
     fprintf(source_file, "#include \"%s_actions.h\"\n", base_name); // Include actions header
+    if (header_to_include != NULL)
+    {
+        fprintf(source_file, "#include \"%s\"\n", header_to_include);
+    }
     fprintf(source_file, "#include <easy_pc/easy_pc.h>\n");
     fprintf(source_file, "#include <stddef.h>\n"); // For NULL, size_t, etc.
     fprintf(source_file, "#include <stdio.h>\n");  // For debugging, if needed

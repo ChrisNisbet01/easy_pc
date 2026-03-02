@@ -14,6 +14,7 @@ main(int argc, char ** argv)
     int exit_code = EXIT_SUCCESS;
     char const * gdl_filepath = NULL;
     char const * output_dir = "."; // Default output directory
+    char const * header_to_include = NULL;
 
     // Parse command line arguments
     for (int i = 1; i < argc; ++i)
@@ -37,6 +38,27 @@ main(int argc, char ** argv)
                 else
                 {
                     fprintf(stderr, "Error: --output-dir requires an argument.\n");
+                    return EXIT_FAILURE;
+                }
+            }
+        }
+        else if (strncmp(argv[i], "--header", strlen("--header")) == 0)
+        {
+            char const * arg = argv[i];
+            char const * value_start = strchr(arg, '=');
+            if (value_start)
+            {
+                header_to_include = value_start + 1;
+            }
+            else
+            {
+                if (i + 1 < argc)
+                {
+                    header_to_include = argv[++i];
+                }
+                else
+                {
+                    fprintf(stderr, "Error: --header requires an argument.\n");
                     return EXIT_FAILURE;
                 }
             }
@@ -147,7 +169,9 @@ main(int argc, char ** argv)
                     *dot = '\0';
                 }
 
-                if (!gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir))
+                if (!gdl_generate_c_code(
+                        (gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir, header_to_include
+                    ))
                 {
                     fprintf(stderr, "C code generation failed.\n");
                     exit_code = EXIT_FAILURE;

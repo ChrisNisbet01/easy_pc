@@ -15,7 +15,9 @@ typedef struct semantic_action_node
 
 
 // Function to generate C code from the GDL AST
-bool gdl_generate_c_code(gdl_ast_node_t * ast_root, const char * base_name, const char * output_dir);
+bool gdl_generate_c_code(
+    gdl_ast_node_t * ast_root, const char * base_name, const char * output_dir, const char * header_to_include
+);
 
 // Function to collect all unique semantic action names from the AST
 semantic_action_node_t * gdl_collect_semantic_actions(gdl_ast_node_t * ast_root);
