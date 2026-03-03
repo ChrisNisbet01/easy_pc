@@ -163,6 +163,7 @@ FunctionSpecifier = KwInline;
 PrimaryExpression = NumberLiteral
                   | StringLiteral
                   | CharLiteral
+                  | (LParen TypeName RParen LBrace InitializerList RBrace)
                   | Identifier
                   | (LParen Expression RParen)
                   ;

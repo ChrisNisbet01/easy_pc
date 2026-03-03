@@ -12,7 +12,7 @@
 - [x] Initializer lists (e.g., `int a[] = {1, 2, 3};`)
 - [x] Designated initializers (C99)
 - [x] Bit-fields in structs/unions
-- [ ] Compound literals (C99) (e.g., `(int[]){1, 2}`)
+- [x] Compound literals (C99) (e.g., `(int[]){1, 2}`)
 
 ## 3. Complex Declarators
 - [x] Nested declarators (Function pointers: `int (*f)(void)`)
