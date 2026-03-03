@@ -416,7 +416,53 @@ traverse_expression_for_references(
         break;
     }
 
-        // Add other composite types here
+    case GDL_AST_NODE_TYPE_COMBINATOR_COUNT:
+    {
+        traverse_expression_for_references(expression_node->data.count_call.expression, current_rule_info, all_rules);
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN:
+    {
+        traverse_expression_for_references(expression_node->data.between_call.open_expr, current_rule_info, all_rules);
+        traverse_expression_for_references(expression_node->data.between_call.content_expr, current_rule_info, all_rules);
+        traverse_expression_for_references(expression_node->data.between_call.close_expr, current_rule_info, all_rules);
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
+    case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
+    case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
+    case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
+    {
+        traverse_expression_for_references(expression_node->data.unary_combinator_call.expr, current_rule_info, all_rules);
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_CHAINL1:
+    case GDL_AST_NODE_TYPE_COMBINATOR_CHAINR1:
+    {
+        traverse_expression_for_references(
+            expression_node->data.chain_combinator_call.item_expr, current_rule_info, all_rules
+        );
+        traverse_expression_for_references(
+            expression_node->data.chain_combinator_call.op_expr, current_rule_info, all_rules
+        );
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_SATISFY_CALL:
+    {
+        traverse_expression_for_references(expression_node->data.satisfy_call.expr, current_rule_info, all_rules);
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_WRAP_CALL:
+    {
+        traverse_expression_for_references(expression_node->data.wrap_call.expr, current_rule_info, all_rules);
+        break;
+    }
+
     case GDL_AST_NODE_TYPE_STRING_LITERAL:
     case GDL_AST_NODE_TYPE_CHAR_LITERAL:
     case GDL_AST_NODE_TYPE_NUMBER_LITERAL:
@@ -427,21 +473,11 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_KEYWORD: // GDL keywords like 'eoi', 'digit' are not rule references
     case GDL_AST_NODE_TYPE_COMBINATOR_ONEOF:
     case GDL_AST_NODE_TYPE_COMBINATOR_NONEOF:
-    case GDL_AST_NODE_TYPE_COMBINATOR_COUNT:
-    case GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN:
-    case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
-    case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
-    case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
-    case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
-    case GDL_AST_NODE_TYPE_COMBINATOR_CHAINL1:
-    case GDL_AST_NODE_TYPE_COMBINATOR_CHAINR1:
     case GDL_AST_NODE_TYPE_FAIL_CALL:
     case GDL_AST_NODE_TYPE_PROGRAM:         // Should not happen here
     case GDL_AST_NODE_TYPE_RULE_DEFINITION: // Should not happen here
     case GDL_AST_NODE_TYPE_ARGUMENT_LIST:   // Should be handled by FUNCTION_CALL
     case GDL_AST_NODE_TYPE_PLACEHOLDER:
-    case GDL_AST_NODE_TYPE_SATISFY_CALL:
-    case GDL_AST_NODE_TYPE_WRAP_CALL:
         // These nodes do not contain further rule references in this context
         break;
     }

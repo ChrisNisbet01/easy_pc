@@ -1,0 +1,17 @@
+// Test 1: count
+TestCount = count(2, SubRuleCount);
+SubRuleCount = 'a';
+
+// Test 2: between
+TestBetween = between('[', SubRuleBetween, ']');
+SubRuleBetween = 'b';
+
+// Test 3: chainl1
+TestChain = chainl1(SubRuleChain, '+');
+SubRuleChain = 'c';
+
+// Test 4: lookahead (represents all unary combinators)
+TestUnary = lookahead(SubRuleUnary);
+SubRuleUnary = 'd';
+
+Program = (TestCount | TestBetween | TestChain | TestUnary) eoi;
