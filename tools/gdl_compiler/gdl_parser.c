@@ -111,7 +111,10 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_digit_raw = epc_string_l(l, "digit", "digit");
     epc_parser_t * p_alphanum_raw = epc_string_l(l, "alphanum", "alphanum");
     epc_parser_t * p_alpha_raw = epc_string_l(l, "alpha", "alpha");
+    epc_parser_t * p_identifier_raw = epc_string_l(l, "identifier", "identifier");
     epc_parser_t * p_int_raw = epc_string_l(l, "int", "int");
+    epc_parser_t * p_octal_raw = epc_string_l(l, "octal", "octal");
+    epc_parser_t * p_hex_raw = epc_string_l(l, "hex", "hex");
     epc_parser_t * p_double_raw = epc_string_l(l, "double", "double");
     epc_parser_t * p_double = epc_lexeme_l(l, "double", p_double_raw);
     epc_parser_t * p_space_raw = epc_string_l(l, "space", "space");
@@ -137,6 +140,8 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_between = epc_lexeme_l(l, "between", p_between_raw);
     epc_parser_t * p_delimited_raw = epc_string_l(l, "delimited", "delimited");
     epc_parser_t * p_delimited = epc_lexeme_l(l, "delimited", p_delimited_raw);
+    epc_parser_t * p_delimited_flex_raw = epc_string_l(l, "delimited_flex", "delimited_flex");
+    epc_parser_t * p_delimited_flex = epc_lexeme_l(l, "delimited_flex", p_delimited_flex_raw);
     epc_parser_t * p_optional_raw = epc_string_l(l, "optional", "optional");
     epc_parser_t * p_lookahead_raw = epc_string_l(l, "lookahead", "lookahead");
     epc_parser_t * p_lookahead = epc_lexeme_l(l, "lookahead", p_lookahead_raw);
@@ -160,17 +165,20 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * terminal_no_arg_parser = epc_or_l(
         l,
         "TerminalNoArgKeyword",
-        14,
+        17,
         p_char_raw,
         p_digit_raw,
         p_alphanum_raw,
         p_alpha_raw,
+        p_identifier_raw,
         p_int_raw,
+        p_octal_raw,
         p_double_raw,
         p_space_raw,
         p_any_raw,
         p_succeed_raw,
         p_hex_digit_raw,
+        p_hex_raw,
         p_cpp_comment_raw,
         p_c_comment_raw,
         p_bash_comment_raw,
@@ -188,7 +196,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * combinator_parser = epc_or_l(
         l,
         "CombinatorKeyword",
-        17,
+        18,
         p_string_raw,
         p_char_range_raw,
         p_none_of_raw,
@@ -196,6 +204,7 @@ create_gdl_parser(epc_parser_list * l)
         p_count_raw,
         p_between_raw,
         p_delimited_raw,
+        p_delimited_flex_raw,
         p_optional_raw,
         p_lookahead_raw,
         p_not_raw,
@@ -305,6 +314,10 @@ create_gdl_parser(epc_parser_list * l)
         = epc_and_l(l, "DelimitedCall", 4, p_delimited, gdl_lparen, delimited_args, gdl_rparen);
     epc_parser_set_ast_action(delimited_call, GDL_AST_ACTION_CREATE_DELIMITED_CALL);
 
+    epc_parser_t * delimited_flex_call
+        = epc_and_l(l, "DelimitedFlexCall", 4, p_delimited_flex, gdl_lparen, delimited_args, gdl_rparen);
+    epc_parser_set_ast_action(delimited_flex_call, GDL_AST_ACTION_CREATE_DELIMITED_FLEX_CALL);
+
     epc_parser_t * lookahead_call
         = epc_and_l(l, "LookaheadCall", 4, p_lookahead, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(lookahead_call, GDL_AST_ACTION_CREATE_LOOKAHEAD_CALL);
@@ -353,11 +366,12 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_combinator_call = epc_or_l(
         l,
         "CombinatorCall",
-        14,
+        15,
         none_of_call,
         count_call,
         between_call,
         delimited_call,
+        delimited_flex_call,
         lookahead_call,
         not_call,
         fail_call,

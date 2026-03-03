@@ -389,6 +389,7 @@ traverse_expression_for_references(
         break;
     }
     case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED:
+    case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED_FLEX:
     {
         traverse_expression_for_references(
             expression_node->data.delimited_call.item_expr, current_rule_info, all_rules
@@ -833,6 +834,10 @@ generate_expression_code(
         {
             fprintf(source_file, "epc_alphanum_l(list, \"%s\")", keyword_name);
         }
+        else if (strcmp(keyword_name, "identifier") == 0)
+        {
+            fprintf(source_file, "epc_identifier_l(list, \"%s\")", keyword_name);
+        }
         else if (strcmp(keyword_name, "space") == 0)
         {
             fprintf(source_file, "epc_space_l(list, \"%s\")", keyword_name);
@@ -852,6 +857,14 @@ generate_expression_code(
         else if (strcmp(keyword_name, "int") == 0)
         {
             fprintf(source_file, "epc_int_l(list, \"%s\")", keyword_name);
+        }
+        else if (strcmp(keyword_name, "octal") == 0)
+        {
+            fprintf(source_file, "epc_octal_l(list, \"%s\")", keyword_name);
+        }
+        else if (strcmp(keyword_name, "hex") == 0)
+        {
+            fprintf(source_file, "epc_hex_l(list, \"%s\")", keyword_name);
         }
         else if (strcmp(keyword_name, "double") == 0)
         {
@@ -1127,7 +1140,11 @@ generate_expression_code(
     }
 
     case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED:
-        fprintf(source_file, "epc_delimited_l(list, %s%s%s, ", q, expr_name, q);
+    case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED_FLEX:
+    {
+        char const * fn_name
+            = (expression_node->type == GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED) ? "delimited" : "delimited_flex";
+        fprintf(source_file, "epc_%s_l(list, %s%s%s, ", fn_name, q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.delimited_call.item_expr, indent_level + 1, rule_list, NULL
             ))
@@ -1143,6 +1160,7 @@ generate_expression_code(
         }
         fprintf(source_file, ")");
         break;
+    }
 
     case GDL_AST_NODE_TYPE_CHAR_RANGE:
         fprintf(

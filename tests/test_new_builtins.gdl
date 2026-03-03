@@ -1,0 +1,5 @@
+MyId = identifier;
+MyOctal = octal;
+MyHex = hex;
+MyList = delimited_flex(identifier, ',');
+Program = (MyId | MyOctal | MyHex | MyList)* eoi;

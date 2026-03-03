@@ -173,6 +173,7 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED:
+    case GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED_FLEX:
         gdl_ast_node_free(node->data.delimited_call.item_expr, user_data);
         gdl_ast_node_free(node->data.delimited_call.delimiter_expr, user_data);
         break;
@@ -1162,6 +1163,34 @@ handle_create_between_call(
     }
 }
 
+static void
+handle_create_delimited_flex_call(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    (void)node;
+    if (count != 2)
+    {
+        epc_ast_builder_set_error(ctx, "Delimited flex call expects 2 children (item, delimiter), got %d", count);
+        for (int i = 0; i < count; ++i)
+        {
+            gdl_ast_node_free(children[i], user_data);
+        }
+        return;
+    }
+
+    gdl_ast_node_t * item_expr_node = (gdl_ast_node_t *)children[0];
+    gdl_ast_node_t * delimiter_expr_node = (gdl_ast_node_t *)children[1];
+
+    gdl_ast_node_t * result_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED_FLEX);
+    if (result_node)
+    {
+        result_node->data.delimited_call.item_expr = item_expr_node;
+        result_node->data.delimited_call.delimiter_expr = delimiter_expr_node;
+        epc_ast_push(ctx, result_node);
+    }
+}
+
 // Unary combinator helper action
 static void
 handle_unary_combinator_call(
@@ -1784,6 +1813,9 @@ gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_COUNT_CALL, handle_create_count_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_BETWEEN_CALL, handle_create_between_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_DELIMITED_CALL, handle_create_delimited_call);
+    epc_ast_hook_registry_set_action(
+        registry, GDL_AST_ACTION_CREATE_DELIMITED_FLEX_CALL, handle_create_delimited_flex_call
+    );
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_LOOKAHEAD_CALL, handle_create_lookahead_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_NOT_CALL, handle_create_not_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_LEXEME_CALL, handle_create_lexeme_call);

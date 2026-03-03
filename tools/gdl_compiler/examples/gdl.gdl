@@ -65,7 +65,10 @@ NumberLiteral = lexeme(digit+) @AST_ACTION_CREATE_NUMBER_LITERAL;
 KW_digit = lexeme("digit");
 KW_alpha = lexeme("alpha");
 KW_alphanum = lexeme("alphanum");
+KW_identifier = lexeme("identifier");
 KW_int = lexeme("int");
+KW_octal = lexeme("octal");
+KW_hex = lexeme("hex");
 KW_double = lexeme("double");
 KW_space = lexeme("space");
 KW_hex_digit = lexeme("hex_digit");
@@ -77,6 +80,7 @@ KW_none_of = lexeme("none_of");
 KW_count = lexeme("count");
 KW_between = lexeme("between");
 KW_delimited = lexeme("delimited");
+KW_delimited_flex = lexeme("delimited_flex");
 KW_lookahead = lexeme("lookahead");
 KW_not = lexeme("not");
 KW_lexeme = lexeme("lexeme");
@@ -85,8 +89,8 @@ KW_chainl1 = lexeme("chainl1");
 KW_chainr1 = lexeme("chainr1");
 KW_optional_combinator = lexeme("optional"); // Renamed to avoid clash with repetition operator
 
-GDLKeyword = KW_digit | KW_alpha | KW_alphanum | KW_int | KW_double | KW_space | KW_hex_digit | KW_eoi | KW_fail | KW_succeed
-           | KW_oneof | KW_none_of | KW_count | KW_between | KW_delimited | KW_lookahead | KW_not | KW_lexeme
+GDLKeyword = KW_digit | KW_alpha | KW_alphanum | KW_identifier | KW_int | KW_octal | KW_double | KW_space | KW_hex_digit | KW_hex | KW_eoi | KW_fail | KW_succeed
+           | KW_oneof | KW_none_of | KW_count | KW_between | KW_delimited | KW_delimited_flex | KW_lookahead | KW_not | KW_lexeme
            | KW_skip | KW_chainl1 | KW_chainr1 | KW_optional_combinator
            @AST_ACTION_CREATE_KEYWORD;
 
@@ -135,6 +139,9 @@ BetweenCall = KW_between RawLParen BetweenArgs RawRParen @AST_ACTION_CREATE_BETW
 DelimitedArgs = ExpressionArgFwd RawComma ExpressionArgFwd;
 DelimitedCall = KW_delimited RawLParen DelimitedArgs RawRParen @AST_ACTION_CREATE_DELIMITED_CALL;
 
+// delimited_flex_call: 'delimited_flex' '(' ExpressionArgFwd ',' ExpressionArgFwd ')'
+DelimitedFlexCall = KW_delimited_flex RawLParen DelimitedArgs RawRParen @AST_ACTION_CREATE_DELIMITED_FLEX_CALL;
+
 // Unary Combinator Calls (lookahead, not, lexeme, skip, optional)
 UnaryCombinatorArg = ExpressionArgFwd;
 LookaheadCall = KW_lookahead RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_LOOKAHEAD_CALL;
@@ -148,7 +155,7 @@ ChainArgs = ExpressionArgFwd RawComma ExpressionArgFwd;
 ChainL1Call = KW_chainl1 RawLParen ChainArgs RawRParen @AST_ACTION_CREATE_CHAINL1_CALL;
 ChainR1Call = KW_chainr1 RawLParen ChainArgs RawRParen @AST_ACTION_CREATE_CHAINR1_CALL;
 
-CombinatorCall = OneofCall | NoneofCall | CountCall | BetweenCall | DelimitedCall | LookaheadCall
+CombinatorCall = OneofCall | NoneofCall | CountCall | BetweenCall | DelimitedCall | DelimitedFlexCall | LookaheadCall
                | NotCall | LexemeCall | SkipCall | ChainL1Call | ChainR1Call | OptionalCall;
 
 // ---------------------------------------------------------------------------------------------------------------------

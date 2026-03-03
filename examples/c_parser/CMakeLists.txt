@@ -18,6 +18,7 @@ add_executable(c_parser_example
     main.c
     ${GENERATED_SOURCE}
 )
+add_dependencies(c_parser_example all_unit_tests)
 
 target_include_directories(c_parser_example PRIVATE
     ${GENERATED_DIR}
