@@ -2177,6 +2177,7 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     while (!infinite_recursion_detected)
     {
         size_t loop_start_input_offset = current_input_offset;
+        size_t offset_before_delimiter = current_input_offset;
 
         if (delimiter_parser != NULL)
         {
@@ -2200,6 +2201,15 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
         {
             if (delimiter_parser != NULL)
             {
+                if (delimited_data->is_flexible)
+                {
+                    // Flexible mode: backtrack over delimiter and finish
+                    epc_parser_result_cleanup(&item_result);
+                    parser_furthest_error_restore(ctx, &original_furthest_error);
+                    current_input_offset = offset_before_delimiter;
+                    break;
+                }
+
                 char const * current_input = input_result.next_input + current_input_offset - input_offset;
                 char found_buffer[FOUND_BUFFER_SIZE];
                 snprintf(found_buffer, sizeof(found_buffer), "%.*s", (int)sizeof(found_buffer) - 1, current_input);
@@ -2274,6 +2284,22 @@ epc_delimited(char const * name, epc_parser_t * item_parser, epc_parser_t * deli
     p->data.type = PARSER_DATA_TYPE_DELIMITED;
     p->data.delimited.item = item_parser;
     p->data.delimited.delimiter = delimiter_parser;
+
+    return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_delimited_flex(char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "delimited_flex", pdelimited_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+    p->data.type = PARSER_DATA_TYPE_DELIMITED;
+    p->data.delimited.item = item_parser;
+    p->data.delimited.delimiter = delimiter_parser;
+    p->data.delimited.is_flexible = true;
 
     return p;
 }

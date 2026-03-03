@@ -248,6 +248,34 @@ TEST(CombinatorParsersNew, Delimited_FailsNullItemParser)
     check_failure("p_delimited received NULL item parser");
 }
 
+// --- epc_delimited_flex tests ---
+TEST(CombinatorParsersNew, DelimitedFlex_MatchesMultipleItemsWithoutTrailing)
+{
+    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_comma = epc_char(NULL, ',');
+    epc_parser_t * p_delimited_flex = epc_delimited_flex(NULL, p_a, p_comma);
+    session = parse(p_delimited_flex, "a,a,a");
+    check_success("delimited_flex", "a,a,a", 5, 3);
+}
+
+TEST(CombinatorParsersNew, DelimitedFlex_MatchesMultipleItemsWithTrailingAndBacktracks)
+{
+    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_comma = epc_char(NULL, ',');
+    epc_parser_t * p_delimited_flex = epc_delimited_flex(NULL, p_a, p_comma);
+    session = parse(p_delimited_flex, "a,a,");
+    check_success("delimited_flex", "a,a", 3, 2); // Should backtrack over the last comma
+}
+
+TEST(CombinatorParsersNew, DelimitedFlex_FailsIfFirstItemMissing)
+{
+    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_comma = epc_char(NULL, ',');
+    epc_parser_t * p_delimited_flex = epc_delimited_flex(NULL, p_a, p_comma);
+    session = parse(p_delimited_flex, ",a");
+    check_failure("Unexpected character"); // expecting 'a'
+}
+
 // --- p_optional tests ---
 TEST(CombinatorParsersNew, Optional_MatchesChild)
 {

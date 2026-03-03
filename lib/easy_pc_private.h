@@ -132,6 +132,7 @@ typedef struct
 {
     epc_parser_t * item;
     epc_parser_t * delimiter;
+    bool is_flexible;
 } delimited_data_t;
 
 typedef struct

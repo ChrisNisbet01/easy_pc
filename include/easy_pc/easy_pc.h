@@ -618,6 +618,21 @@ epc_delimited(char const * name, epc_parser_t * item_parser, epc_parser_t * deli
 
 /**
  * @brief Creates a parser that matches one or more `item` parsers, optionally separated by a `delimiter` and adds it to
+ * the list. This is a "flexible" version that backtracks if it finds a delimiter but no subsequent item.
+ *
+ * It requires at least one `item` to match. If a `delimiter_parser` is provided,
+ * it attempts to match it between items. If it matches a delimiter but the next item fails,
+ * it backtracks over the delimiter and succeeds with the items matched so far.
+ * @param name The name of the parser for debugging/CPT.
+ * @param item_parser The parser for the items in the list.
+ * @param delimiter_parser An optional parser for the delimiter between items. Can be NULL.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t *
+epc_delimited_flex(char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser);
+
+/**
+ * @brief Creates a parser that matches one or more `item` parsers, optionally separated by a `delimiter` and adds it to
  * the list. This is a convenience wrapper for `epc_delimited()` that automatically adds the created parser to the
  * provided `epc_parser_list`.
  *
@@ -633,6 +648,29 @@ static inline epc_parser_t *
 epc_delimited_l(epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
 {
     return epc_parser_list_add(list, epc_delimited(name, item_parser, delimiter_parser));
+}
+
+/**
+ * @brief Creates a parser that matches one or more `item` parsers, optionally separated by a `delimiter` and adds it to
+ * the list. This is a "flexible" version that backtracks if it finds a delimiter but no subsequent item.
+ * This is a convenience wrapper for `epc_delimited_flex()` that automatically adds the created parser to the
+ * provided `epc_parser_list`.
+ *
+ * It requires at least one `item` to match. If a `delimiter_parser` is provided,
+ * it attempts to match it between items. If it matches a delimiter but the next item fails,
+ * it backtracks over the delimiter and succeeds with the items matched so far.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param item_parser The parser for the items in the list.
+ * @param delimiter_parser An optional parser for the delimiter between items. Can be NULL.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t *
+epc_delimited_flex_l(
+    epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser
+)
+{
+    return epc_parser_list_add(list, epc_delimited_flex(name, item_parser, delimiter_parser));
 }
 
 /**
