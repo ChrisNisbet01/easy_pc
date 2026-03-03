@@ -399,7 +399,8 @@ epc_space_l(epc_parser_list * list, char const * name)
 EASY_PC_API epc_parser_t * epc_any(char const * name);
 
 /**
- * @brief Creates a parser that matches any single character and adds it to the list.
+ * @brief Creates a parser that matches any character and adds it to the list.
+
  *        This is a convenience wrapper for `epc_any()` that automatically adds the created
  *        parser to the provided `epc_parser_list`.
  * @param list The parser list to add to.
@@ -410,6 +411,29 @@ static inline epc_parser_t *
 epc_any_l(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, epc_any(name));
+}
+
+/**
+ * @brief Creates a parser that matches a standard programming identifier.
+ *
+ * It matches the pattern `[_a-zA-Z][_a-zA-Z0-9]*`.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_identifier(char const * name);
+
+/**
+ * @brief Creates a parser that matches a standard programming identifier and adds it to the list.
+ *
+ * It matches the pattern `[_a-zA-Z][_a-zA-Z0-9]*`.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t *
+epc_identifier_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_identifier(name));
 }
 
 /**
@@ -1107,7 +1131,8 @@ epc_c_comment_l(epc_parser_list * list, char const * name)
  * parsing logic that can depend on external state or complex conditions that are not easily expressed with the standard
  * combinators.
  * @param token The current CPT node token to evaluate.
- * @param parse_ctx The parser context for the current parse attempt, which can be used to access information about the input and manage state during parsing.
+ * @param parse_ctx The parser context for the current parse attempt, which can be used to access information about the
+ * input and manage state during parsing.
  * @param user_ctx A user-defined context pointer that will be passed to the predicate function. The lifetime of this
  * pointer must exceed that of the parser.
  * @return true if the parser should succeed at the current position, or false if it should fail.
@@ -1174,70 +1199,84 @@ epc_satisfy_l(
 
 /**
  * @brief A callback function type for the entry point of `epc_wrap()`.
- * The function is called with the parser instance and a user-defined context pointer, allowing for custom logic to be executed before attempting to match the wrapped parser. This can be used for tasks such as initializing state, logging, or modifying the parse result before the wrapped parser runs.
+ * The function is called with the parser instance and a user-defined context pointer, allowing for custom logic to be
+ * executed before attempting to match the wrapped parser. This can be used for tasks such as initializing state,
+ * logging, or modifying the parse result before the wrapped parser runs.
  * @param parser The parser instance being entered.
- * @param parse_ctx The parser context for the current parse attempt, which can be used to access information about the input and manage state during parsing.
- * @param parser_data A user-defined context pointer that will be passed to the callback function. The lifetime of this pointer must exceed that of the parser.
+ * @param parse_ctx The parser context for the current parse attempt, which can be used to access information about the
+ * input and manage state during parsing.
+ * @param parser_data A user-defined context pointer that will be passed to the callback function. The lifetime of this
+ * pointer must exceed that of the parser.
  */
 typedef void (*epc_wrap_entry_fn)(epc_parser_t * parser, epc_parser_ctx_t * parse_ctx, void * parser_data);
 
 /**
  * @brief A callback function type for the exit point of `epc_wrap()`.
- * The function is called with the parse result and a user-defined context pointer, allowing for custom logic to be executed after attempting to match the wrapped parser. This can be used for tasks such as
- * modifying the parse result based on the outcome of the wrapped parser, implementing custom error handling, or integrating with external systems after the match attempt has completed.
- * @param result The result of the parse attempt for the wrapped parser, including success/failure status and any generated CPT nodes.
- * @param parser_data A user-defined context pointer that will be passed to the callback function. The lifetime of this pointer must exceed that of the parser.
- * @return true if the parse result should be returned as-is, or false if the callback wants to override a successful child result to be an error.
+ * The function is called with the parse result and a user-defined context pointer, allowing for custom logic to be
+ * executed after attempting to match the wrapped parser. This can be used for tasks such as modifying the parse result
+ * based on the outcome of the wrapped parser, implementing custom error handling, or integrating with external systems
+ * after the match attempt has completed.
+ * @param result The result of the parse attempt for the wrapped parser, including success/failure status and any
+ * generated CPT nodes.
+ * @param parser_data A user-defined context pointer that will be passed to the callback function. The lifetime of this
+ * pointer must exceed that of the parser.
+ * @return true if the parse result should be returned as-is, or false if the callback wants to override a successful
+ * child result to be an error.
  */
 typedef bool (*epc_wrap_exit_fn)(epc_parse_result_t result, epc_parser_ctx_t * parse_ctx, void * parser_data);
 
 /**
  * @brief A struct containing entry and exit callback functions for use with `epc_wrap()`.
  */
-typedef struct epc_wrap_callbacks {
+typedef struct epc_wrap_callbacks
+{
     epc_wrap_entry_fn on_entry;
     epc_wrap_exit_fn on_exit;
 } epc_wrap_callbacks_t;
 
 /**
- * @brief Creates a parser that wraps another parser, allowing for custom entry and exit callbacks to be invoked during parsing.
- * The entry callback is called before attempting to match the wrapped parser, and the exit callback is called after the match attempt, regardless of success or failure. This allows for custom logic to be executed at these critical points in the parsing process, such as modifying the parse result, implementing custom error handling, or integrating with external systems.
+ * @brief Creates a parser that wraps another parser, allowing for custom entry and exit callbacks to be invoked during
+ * parsing. The entry callback is called before attempting to match the wrapped parser, and the exit callback is called
+ * after the match attempt, regardless of success or failure. This allows for custom logic to be executed at these
+ * critical points in the parsing process, such as modifying the parse result, implementing custom error handling, or
+ * integrating with external systems.
  * @param name The name of the parser for debugging/CPT.
  * @param wrapped_parser The parser to wrap with the callbacks.
  * @param callbacks A struct containing the entry and exit callback functions to be invoked during parsing.
- * @param parser_data A user-defined context pointer that will be passed to the callback functions. The lifetime of this pointer must exceed that of the parser.
+ * @param parser_data A user-defined context pointer that will be passed to the callback functions. The lifetime of this
+ * pointer must exceed that of the parser.
  * @return A new `parser_t` instance, or NULL on error.
  */
-EASY_PC_API epc_parser_t * epc_wrap(
-    char const * name,
-    epc_parser_t * wrapped_parser,
-    epc_wrap_callbacks_t callbacks,
-    void * parser_data
-);
+EASY_PC_API epc_parser_t *
+epc_wrap(char const * name, epc_parser_t * wrapped_parser, epc_wrap_callbacks_t callbacks, void * parser_data);
 
 /**
- * @brief Creates a parser that wraps another parser, allowing for custom entry and exit callbacks to be invoked during parsing.
- *        This is a convenience wrapper for `epc_wrap()` that automatically adds the created parser to the provided
+ * @brief Creates a parser that wraps another parser, allowing for custom entry and exit callbacks to be invoked during
+ * parsing. This is a convenience wrapper for `epc_wrap()` that automatically adds the created parser to the provided
  *        `epc_parser_list`.
- * The entry callback is called before attempting to match the wrapped parser, and the exit callback is called after the match attempt, regardless of success or failure. This allows for custom logic to be executed at these critical points in the parsing process, such as modifying the parse result, implementing custom error handling, or integrating with external systems.
+ * The entry callback is called before attempting to match the wrapped parser, and the exit callback is called after the
+ * match attempt, regardless of success or failure. This allows for custom logic to be executed at these critical points
+ * in the parsing process, such as modifying the parse result, implementing custom error handling, or integrating with
+ * external systems.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.
  * @param wrapped_parser The parser to wrap with the callbacks.
  * @param callbacks A struct containing the entry and exit callback functions to be invoked during parsing.
- * @param parser_data A user-defined context pointer that will be passed to the callback functions. The lifetime of this pointer must exceed that of the parser.
+ * @param parser_data A user-defined context pointer that will be passed to the callback functions. The lifetime of this
+ * pointer must exceed that of the parser.
  * @return A new `parser_t` instance, or NULL on error.
  */
-static inline epc_parser_t * epc_wrap_l(
+static inline epc_parser_t *
+epc_wrap_l(
     epc_parser_list * list,
     char const * name,
     epc_parser_t * wrapped_parser,
     epc_wrap_callbacks_t callbacks,
-    void * parser_data  
+    void * parser_data
 )
 {
     return epc_parser_list_add(list, epc_wrap(name, wrapped_parser, callbacks, parser_data));
 }
-
 
 /**
  * @brief Allocates and initializes a new parser object within the grammar's memory context.
@@ -1301,13 +1340,13 @@ EASY_PC_API void epc_parser_set_ast_action(epc_parser_t * p, int action_type);
 
 /**
  * @brief Retrieves the user-defined context pointer from the parser context.
- *        This is the pointer passed in when initiating a parse session (e.g., via `epc_parse_str()`, `epc_parse_fp()`, etc.) and is accessible within parser callbacks (e.g. epc_wrap callbacks). 
+ *        This is the pointer passed in when initiating a parse session (e.g., via `epc_parse_str()`, `epc_parse_fp()`,
+ * etc.) and is accessible within parser callbacks (e.g. epc_wrap callbacks).
  * @param ctx A pointer to the `epc_parser_ctx_t` from which to retrieve the user context.
  * @return The user-defined context pointer associated with the current parse session.
  */
 EASY_PC_API
-void *
-parse_ctx_get_user_ctx(epc_parser_ctx_t const * ctx);
+void * parse_ctx_get_user_ctx(epc_parser_ctx_t const * ctx);
 
 // --- Updated Top-Level API ---
 /**
@@ -1315,7 +1354,8 @@ parse_ctx_get_user_ctx(epc_parser_ctx_t const * ctx);
  *
  * @param top_parser The starting parser for the grammar (e.g., the root rule).
  * @param input_string The null-terminated string to be parsed.
- * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of this pointer must exceed that of the parse session.
+ * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of
+ * this pointer must exceed that of the parse session.
  * @return An `easy_pc_parse_session_t` structure containing the result of the
  *         parsing operation (success CPT or error details) and an internal
  *         context for cleanup.
@@ -1332,7 +1372,8 @@ EASY_PC_API epc_parse_session_t epc_parse_str(epc_parser_t * top_parser, char co
  *
  * @param top_parser The starting parser for the grammar (e.g., the root rule).
  * @param fp A pointer to an open `FILE` stream to be parsed.
- * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of this pointer must exceed that of the parse session.
+ * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of
+ * this pointer must exceed that of the parse session.
  * @return An `easy_pc_parse_session_t` structure containing the result of the
  *         parsing operation (success CPT or error details) and an internal
  *         context for cleanup.
@@ -1348,7 +1389,8 @@ EASY_PC_API epc_parse_session_t epc_parse_fp(epc_parser_t * top_parser, FILE * f
  *
  * @param top_parser The starting parser for the grammar (e.g., the root rule).
  * @param filename A null-terminated string containing the path to the file to be parsed.
- * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of this pointer must exceed that of the parse session.
+ * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of
+ * this pointer must exceed that of the parse session.
  * @return An `easy_pc_parse_session_t` structure containing the result of the
  *         parsing operation (success CPT or error details) and an internal
  *         context for cleanup.
@@ -1365,7 +1407,8 @@ EASY_PC_API epc_parse_session_t epc_parse_file(epc_parser_t * top_parser, char c
  *
  * @param top_parser The starting parser for the grammar.
  * @param fd The file descriptor to read from.
- * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of this pointer must exceed that of the parse session.
+ * @param user_ctx A user-defined context pointer that will be passed to the internal parser context. The lifetime of
+ * this pointer must exceed that of the parse session.
  * @return An `easy_pc_parse_session_t` structure.
  */
 EASY_PC_API epc_parse_session_t epc_parse_fd(epc_parser_t * top_parser, int fd, void * user_ctx);

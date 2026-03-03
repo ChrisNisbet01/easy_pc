@@ -502,3 +502,53 @@ TEST(TerminalParsersNew, CComment_FailsOnNullInput)
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
+
+// --- epc_identifier tests ---
+TEST(TerminalParsersNew, Identifier_MatchesSimpleLetter)
+{
+    epc_parser_t * p = epc_identifier_l(list, NULL);
+    session = parse(p, "a");
+    check_success("identifier", "a", 1);
+}
+
+TEST(TerminalParsersNew, Identifier_MatchesUnderscore)
+{
+    epc_parser_t * p = epc_identifier_l(list, NULL);
+    session = parse(p, "_");
+    check_success("identifier", "_", 1);
+}
+
+TEST(TerminalParsersNew, Identifier_MatchesAlphaNumeric)
+{
+    epc_parser_t * p = epc_identifier_l(list, NULL);
+    session = parse(p, "var123_test");
+    check_success("identifier", "var123_test", 11);
+}
+
+TEST(TerminalParsersNew, Identifier_MatchesLeadingUnderscore)
+{
+    epc_parser_t * p = epc_identifier_l(list, NULL);
+    session = parse(p, "_var");
+    check_success("identifier", "_var", 4);
+}
+
+TEST(TerminalParsersNew, Identifier_FailsOnDigitStart)
+{
+    epc_parser_t * p = epc_identifier_l(list, NULL);
+    session = parse(p, "1var");
+    check_failure("Expected identifier");
+}
+
+TEST(TerminalParsersNew, Identifier_FailsOnSymbolStart)
+{
+    epc_parser_t * p = epc_identifier_l(list, NULL);
+    session = parse(p, "$var");
+    check_failure("Expected identifier");
+}
+
+TEST(TerminalParsersNew, Identifier_FailsOnEmptyInput)
+{
+    epc_parser_t * p = epc_identifier_l(list, NULL);
+    session = parse(p, "");
+    check_failure("Unexpected end of input");
+}

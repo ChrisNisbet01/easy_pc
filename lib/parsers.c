@@ -945,6 +945,64 @@ epc_double(char const * name)
 }
 
 static epc_parse_result_t
+pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+
+    if (input_result.is_eof)
+    {
+        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "identifier", "EOF");
+    }
+
+    char const * input = input_result.next_input;
+
+    // First char must be alpha or underscore
+    if (!isalpha(input[0]) && input[0] != '_')
+    {
+        char found_str[2] = {input[0], '\0'};
+        return epc_parser_error_result(ctx, input_offset, "Expected identifier", "identifier", found_str);
+    }
+
+    size_t current_len = 1;
+    while (1)
+    {
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
+        if (res.is_eof)
+        {
+            break;
+        }
+        if (!isalnum(res.next_input[0]) && res.next_input[0] != '_')
+        {
+            break;
+        }
+        current_len++;
+    }
+
+    epc_cpt_node_t * node = epc_node_alloc(self, self->tag);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, "Memory allocation error", epc_parser_get_name(self), "N/A");
+    }
+
+    node->content = input;
+    node->len = current_len;
+
+    return epc_parser_success_result(node);
+}
+
+EASY_PC_API epc_parser_t *
+epc_identifier(char const * name)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "identifier", pidentifier_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    return p;
+}
+
+static epc_parse_result_t
 por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
