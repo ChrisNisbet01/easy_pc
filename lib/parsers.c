@@ -945,13 +945,151 @@ epc_double(char const * name)
 }
 
 static epc_parse_result_t
+phex_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 2);
+
+    if (input_result.is_eof || input_result.available < 2)
+    {
+        return epc_parser_error_result(
+            ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
+        );
+    }
+
+    char const * input = input_result.next_input;
+
+    // Must start with '0x' or '0X'
+    if (input[0] != '0' || (input[1] != 'x' && input[1] != 'X'))
+    {
+        char found_str[3] = {input[0], input[1], '\0'};
+        return epc_parser_error_result(
+            ctx, input_offset, "Expected hex literal", parser_get_expected_str(self), found_str
+        );
+    }
+
+    // Must have at least one hex digit after the prefix
+    parse_get_input_result_t digit_check = parse_ctx_get_input_at_offset(ctx, input_offset + 2, 1);
+    if (digit_check.is_eof || !isxdigit(digit_check.next_input[0]))
+    {
+        char found_str[2] = {digit_check.is_eof ? '\0' : digit_check.next_input[0], '\0'};
+        return epc_parser_error_result(
+            ctx, input_offset + 2, "Expected hex digit", "hex digit", digit_check.is_eof ? "EOF" : found_str
+        );
+    }
+
+    size_t current_len = 3;
+    while (1)
+    {
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
+        if (res.is_eof)
+        {
+            break;
+        }
+        if (!isxdigit(res.next_input[0]))
+        {
+            break;
+        }
+        current_len++;
+    }
+
+    epc_cpt_node_t * node = epc_node_alloc(self, self->tag);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, "Memory allocation error", epc_parser_get_name(self), "N/A");
+    }
+
+    node->content = input;
+    node->len = current_len;
+
+    return epc_parser_success_result(node);
+}
+
+EASY_PC_API epc_parser_t *
+epc_hex(char const * name)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "hex", phex_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+    p->expected_value = "hex literal";
+
+    return p;
+}
+
+static epc_parse_result_t
+poctal_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+
+    if (input_result.is_eof)
+    {
+        return epc_parser_error_result(
+            ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
+        );
+    }
+
+    char const * input = input_result.next_input;
+
+    // Must start with '0'
+    if (input[0] != '0')
+    {
+        char found_str[2] = {input[0], '\0'};
+        return epc_parser_error_result(
+            ctx, input_offset, "Expected octal literal", parser_get_expected_str(self), found_str
+        );
+    }
+
+    size_t current_len = 1;
+    while (1)
+    {
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
+        if (res.is_eof)
+        {
+            break;
+        }
+        if (res.next_input[0] < '0' || res.next_input[0] > '7')
+        {
+            break;
+        }
+        current_len++;
+    }
+
+    epc_cpt_node_t * node = epc_node_alloc(self, self->tag);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, "Memory allocation error", epc_parser_get_name(self), "N/A");
+    }
+
+    node->content = input;
+    node->len = current_len;
+
+    return epc_parser_success_result(node);
+}
+
+EASY_PC_API epc_parser_t *
+epc_octal(char const * name)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "octal", poctal_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+    p->expected_value = "octal literal";
+
+    return p;
+}
+
+static epc_parse_result_t
 pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
 
     if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "identifier", "EOF");
+        return epc_parser_error_result(
+            ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
+        );
     }
 
     char const * input = input_result.next_input;
@@ -960,7 +1098,9 @@ pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
     if (!isalpha(input[0]) && input[0] != '_')
     {
         char found_str[2] = {input[0], '\0'};
-        return epc_parser_error_result(ctx, input_offset, "Expected identifier", "identifier", found_str);
+        return epc_parser_error_result(
+            ctx, input_offset, "Expected identifier", parser_get_expected_str(self), found_str
+        );
     }
 
     size_t current_len = 1;

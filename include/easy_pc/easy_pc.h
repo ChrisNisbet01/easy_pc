@@ -437,6 +437,52 @@ epc_identifier_l(epc_parser_list * list, char const * name)
 }
 
 /**
+ * @brief Creates a parser that matches an octal integer literal.
+ *
+ * It matches the pattern `0[0-7]*`.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_octal(char const * name);
+
+/**
+ * @brief Creates a parser that matches an octal integer literal and adds it to the list.
+ *
+ * It matches the pattern `0[0-7]*`.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t *
+epc_octal_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_octal(name));
+}
+
+/**
+ * @brief Creates a parser that matches a hexadecimal integer literal.
+ *
+ * It matches the pattern `0[xX][0-9a-fA-F]+`.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_hex(char const * name);
+
+/**
+ * @brief Creates a parser that matches a hexadecimal integer literal and adds it to the list.
+ *
+ * It matches the pattern `0[xX][0-9a-fA-F]+`.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t *
+epc_hex_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_hex(name));
+}
+
+/**
  * @brief Creates a parser that always succeeds and produces a node with specified content and adds it to the list.
  *
  * This parser consumes no input and always returns a successful result

@@ -552,3 +552,89 @@ TEST(TerminalParsersNew, Identifier_FailsOnEmptyInput)
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
+
+// --- epc_octal tests ---
+TEST(TerminalParsersNew, Octal_MatchesZero)
+{
+    epc_parser_t * p = epc_octal_l(list, NULL);
+    session = parse(p, "0");
+    check_success("octal", "0", 1);
+}
+
+TEST(TerminalParsersNew, Octal_MatchesSingleDigit)
+{
+    epc_parser_t * p = epc_octal_l(list, NULL);
+    session = parse(p, "07");
+    check_success("octal", "07", 2);
+}
+
+TEST(TerminalParsersNew, Octal_MatchesMultipleDigits)
+{
+    epc_parser_t * p = epc_octal_l(list, NULL);
+    session = parse(p, "01234567");
+    check_success("octal", "01234567", 8);
+}
+
+TEST(TerminalParsersNew, Octal_FailsOnNonZeroStart)
+{
+    epc_parser_t * p = epc_octal_l(list, NULL);
+    session = parse(p, "123");
+    check_failure("Expected octal literal");
+}
+
+TEST(TerminalParsersNew, Octal_StopsOnNonOctalDigit)
+{
+    epc_parser_t * p = epc_octal_l(list, NULL);
+    session = parse(p, "0789");
+    check_success("octal", "07", 2); // Should only match "07"
+}
+
+TEST(TerminalParsersNew, Octal_FailsOnEmptyInput)
+{
+    epc_parser_t * p = epc_octal_l(list, NULL);
+    session = parse(p, "");
+    check_failure("Unexpected end of input");
+}
+
+// --- epc_hex tests ---
+TEST(TerminalParsersNew, Hex_MatchesLowercaseX)
+{
+    epc_parser_t * p = epc_hex_l(list, NULL);
+    session = parse(p, "0x123");
+    check_success("hex", "0x123", 5);
+}
+
+TEST(TerminalParsersNew, Hex_MatchesUppercaseX)
+{
+    epc_parser_t * p = epc_hex_l(list, NULL);
+    session = parse(p, "0XABC");
+    check_success("hex", "0XABC", 5);
+}
+
+TEST(TerminalParsersNew, Hex_MatchesMixedCaseDigits)
+{
+    epc_parser_t * p = epc_hex_l(list, NULL);
+    session = parse(p, "0xdeadBEEF");
+    check_success("hex", "0xdeadBEEF", 10);
+}
+
+TEST(TerminalParsersNew, Hex_FailsIfNoDigitsAfterPrefix)
+{
+    epc_parser_t * p = epc_hex_l(list, NULL);
+    session = parse(p, "0xg");
+    check_failure("Expected hex digit");
+}
+
+TEST(TerminalParsersNew, Hex_FailsOnInvalidPrefix)
+{
+    epc_parser_t * p = epc_hex_l(list, NULL);
+    session = parse(p, "1x123");
+    check_failure("Expected hex literal");
+}
+
+TEST(TerminalParsersNew, Hex_FailsOnEmptyInput)
+{
+    epc_parser_t * p = epc_hex_l(list, NULL);
+    session = parse(p, "");
+    check_failure("Unexpected end of input");
+}
