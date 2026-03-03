@@ -1,7 +1,0 @@
-Parse Error: End of input not found
-At line 51, col 2
-Expected: <end of input>
-Found: bool
-symbol_table_co
-Attempting to parse C file: examples/c_parser/main.c
-Committed typedef: 'symbol_table_t'
