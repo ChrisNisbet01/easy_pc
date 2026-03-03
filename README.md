@@ -217,3 +217,6 @@ The `easy_pc` library comes with several example applications demonstrating its 
 
 *   **JSON Parser:** Located in [examples/json_parser/](examples/json_parser/)
     This example showcases how to create a parser for a subset of the JSON specification. It illustrates parsing complex data structures like objects and arrays, and handling string, number, boolean, and null literals.
+
+*   **C Parser:** Located in [examples/c_parser/](examples/c_parser/)
+    A more advanced example that implements a substantial subset of the C programming language (C89/C99). It demonstrates handling complex recursive declarators, function pointers, designated initializers, and uses the GDL compiler for its grammar definition. It also includes support for typedefs using transactional callbacks.

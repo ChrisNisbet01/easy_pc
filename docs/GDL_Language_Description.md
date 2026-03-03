@@ -80,10 +80,13 @@ GDL provides several predefined keywords that directly map to `easy_pc`'s built-
 | `alpha`     | Matches any alphabetic character.                               | `epc_alpha_l(list, "alpha")`                              |
 | `digit`     | Matches any digit (0-9).                                        | `epc_digit_l(list, "digit")`                              |
 | `alphanum`  | Matches any alphanumeric character.                             | `epc_alphanum_l(list, "alphanum")`                        |
+| `identifier`| Matches a standard programming identifier.                      | `epc_identifier_l(list, "identifier")`                    |
 | `underscore`| Matches the underscore character `_`.                           | `epc_char_l(list, "underscore", '_')`                     |
 | `space`     | Matches any whitespace character.                               | `epc_space_l(list, "space")`                              |
 | `hex_digit` | Matches any hexadecimal digit (0-9, a-f, A-F).                  | `epc_hex_digit_l(list, "hex_digit")`                      |
 | `int`       | Matches an integer number.                                      | `epc_int_l(list, "int")`                                  |
+| `octal`     | Matches an octal integer literal (starts with 0).               | `epc_octal_l(list, "octal")`                              |
+| `hex`       | Matches a hexadecimal integer literal (starts with 0x/0X).      | `epc_hex_l(list, "hex")`                                  |
 | `double`    | Matches a floating-point number.                                | `epc_double_l(list, "double")`                            |
 | `eoi`       | Matches the End Of Input. Essential for top-level rules.        | `epc_eoi_l(list, "eoi")`                                  |
 | `fail`      | Always fails.                                                   | `epc_fail_l(list, "fail")`                                |
@@ -116,6 +119,7 @@ GDL provides a rich set of combinators, which are functions that combine simpler
 | `optional`  | `(expression)`                          | Makes `expression` optional. (Equivalent to `expr?`)                        | `epc_optional_l(list, "optional", expression_parser)`                       |
 | `count`     | `(number, expression)`                  | Matches `expression` exactly `number` times.                                | `epc_count_l(list, "count", number, expression_parser)`                     |
 | `delimited` | `(item_expr, delimiter_expr)`           | Matches `item_expr`s separated by `delimiter_expr`. Returns only `item_expr`s. | `epc_delimited_l(list, "delimited", item_parser, delimiter_parser)`      |
+| `delimited_flex` | `(item_expr, delimiter_expr)`      | Like `delimited`, but backtracks if it finds a delimiter but no subsequent item. | `epc_delimited_flex_l(list, "delimited_flex", item_parser, delimiter_parser)` |
 | `between`   | `(open_expr, content_expr, close_expr)` | Matches `open_expr`, then `content_expr`, then `close_expr`.                | `epc_between_l(list, "between", open_parser, content_parser, close_parser)` |
 | `chainl1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, left-associative. | `epc_chainl1_l(list, "chainl1", item_parser, op_parser)`                     |
 | `chainr1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, right-associative. | `epc_chainr1_l(list, "chainr1", item_parser, op_parser)`                    |
