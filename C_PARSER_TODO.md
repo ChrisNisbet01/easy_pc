@@ -28,7 +28,7 @@
     - [x] String literals (for use in expressions)
     - [x] Character constants
 - [x] Proper Comma operator (as a binary operator in the hierarchy)
-- [ ] `sizeof` with type names (e.g., `sizeof(int)`)
+- [x] `sizeof` with type names (e.g., `sizeof(int)`)
 
 ## 5. Modern C (C99/C11)
 - [x] `inline` keyword

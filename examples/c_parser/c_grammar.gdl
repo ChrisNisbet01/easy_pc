@@ -181,7 +181,8 @@ PostfixExpression = PrimaryExpression PostfixPart*;
 
 UnaryOp = Amp | Star | Plus | Minus | Tilde | Excl;
 
-UnaryExpression = (KwSizeof UnaryExpression)
+UnaryExpression = (KwSizeof LParen TypeName RParen)
+                | (KwSizeof UnaryExpression)
                 | (UnaryOp UnaryExpression)
                 | (IncOp UnaryExpression)
                 | (DecOp UnaryExpression)
