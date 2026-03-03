@@ -3,6 +3,7 @@ project(easy_pc VERSION 0.1.0 LANGUAGES C)
 
 include(FetchContent)
 include(CTest)
+include(GNUInstallDirs)
 include(cmake/EasyPcMacros.cmake)
 
 # --- Versioning ---
@@ -64,7 +65,8 @@ if(WITH_UNIT_TESTS)
     cpputest
     GIT_REPOSITORY https://github.com/cpputest/cpputest.git
     GIT_TAG        v4.0
-    CMAKE_ARGS BUILD_INSTALL OFF # Attempt to disable CppUTest's own installation
+    EXCLUDE_FROM_ALL
+    CMAKE_ARGS -DBUILD_INSTALL=OFF -DBUILD_TESTING=OFF # Correctly disable CppUTest's own installation and tests
   )
   FetchContent_MakeAvailable(cpputest)
   add_subdirectory(tests)
@@ -98,9 +100,26 @@ if (DOXYGEN_FOUND)
     )
     add_custom_target(doxygen_docs ALL DEPENDS ${CMAKE_SOURCE_DIR}/docs/help/html/index.html)
 
+    install(
+        DIRECTORY ${CMAKE_SOURCE_DIR}/docs/help/html/
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/easy_pc
+    )
+
 else ()
     message(STATUS "Doxygen not found, skipping documentation generation.")
 endif ()
 
 add_subdirectory(tools/gdl_compiler)
 add_subdirectory(tools/gdl_debug)
+
+# --- pkg-config ---
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/easy_pc.pc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/easy_pc.pc"
+    @ONLY
+)
+
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/easy_pc.pc"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)

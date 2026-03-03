@@ -205,6 +205,37 @@ You can simply use:
 epc_parser_t* my_char_parser = epc_char_l(list, "my_char", 'A');
 ```
 
+## Installation
+
+To install the library and tools:
+
+```bash
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local ..
+cmake --build .
+cmake --install .
+```
+
+This will install:
+- The shared and static libraries.
+- All public headers.
+- The `gdl_compiler` and `gdl_debug` tools.
+- A `pkg-config` file for easy compilation.
+- HTML documentation.
+
+### Compiling Against `easy_pc`
+
+You can use `pkg-config` to get the correct compiler flags:
+
+```bash
+gcc my_app.c $(pkg-config --cflags --libs easy_pc) -o my_app
+```
+
+## Documentation
+
+After installation, full HTML documentation is available at `/usr/local/share/doc/easy_pc`.
+
 ## Example Applications
 
 The `easy_pc` library comes with several example applications demonstrating its usage and capabilities. You can explore their source code to understand how to build parsers for different scenarios.
