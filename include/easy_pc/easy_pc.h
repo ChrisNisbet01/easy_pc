@@ -62,9 +62,7 @@ typedef enum epc_parse_type_t
     EPC_PARSE_TYPE_STRING,
     EPC_PARSE_TYPE_FILE,
     EPC_PARSE_TYPE_FILENAME,
-#ifdef WITH_INPUT_STREAM_SUPPORT
     EPC_PARSE_TYPE_FD,
-#endif
 } epc_parse_type_t;
 
 /**
@@ -83,9 +81,7 @@ typedef struct epc_parse_input_t
         char const * input_string;
         FILE * fp;
         char const * filename;
-#ifdef WITH_INPUT_STREAM_SUPPORT
         int fd;
-#endif
     };
 } epc_parse_input_t;
 
@@ -178,7 +174,6 @@ typedef struct
         user_data; /**< @brief A user-defined data pointer that is passed to `enter_node` and `exit_node` callbacks. */
 } epc_cpt_visitor_t;
 
-// Function to visit a CPT (remains)
 /**
  * @brief Traverses a Concrete Parse Tree (CPT) in a depth-first manner.
  *
@@ -1444,12 +1439,13 @@ EASY_PC_API epc_parse_session_t epc_parse_fp(epc_parser_t * top_parser, FILE * f
  */
 EASY_PC_API epc_parse_session_t epc_parse_file(epc_parser_t * top_parser, char const * filename, void * user_ctx);
 
-#ifdef WITH_INPUT_STREAM_SUPPORT
 /**
  * @brief Initiates a parsing operation with a given grammar and input from a file descriptor.
  *
  * This function initiates a streaming parse from the given file descriptor (fd).
  * The parsing happens in a separate thread, while the main thread reads from the fd.
+ * Only supported if the library is compiled with `WITH_INPUT_STREAM_SUPPORT`. This allows for parsing large inputs
+ * without loading them entirely into memory, or for parsing data from a pipe or socket in real-time.
  *
  * @param top_parser The starting parser for the grammar.
  * @param fd The file descriptor to read from.
@@ -1458,7 +1454,6 @@ EASY_PC_API epc_parse_session_t epc_parse_file(epc_parser_t * top_parser, char c
  * @return An `easy_pc_parse_session_t` structure.
  */
 EASY_PC_API epc_parse_session_t epc_parse_fd(epc_parser_t * top_parser, int fd, void * user_ctx);
-#endif
 
 /**
  * @brief Destroys an `easy_pc_parse_session_t` and frees all associated resources.

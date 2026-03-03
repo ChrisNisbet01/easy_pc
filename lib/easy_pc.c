@@ -1,6 +1,7 @@
 #include "easy_pc_private.h"
-#include "easy_pc/easy_pc_version.h"
 #include "parsers.h"
+
+#include "easy_pc/easy_pc_version.h"
 
 char const *
 epc_get_version(void)
@@ -60,7 +61,7 @@ typedef struct
 static void *
 epc_parsing_thread_worker(void * arg)
 {
-    ParsingThreadArgs * args = (ParsingThreadArgs *) arg;
+    ParsingThreadArgs * args = (ParsingThreadArgs *)arg;
 
     args->result = args->top_parser->parse_fn(args->top_parser, args->ctx, 0);
 
@@ -430,56 +431,58 @@ parser_ctx_set_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t ** repl
 static epc_parse_result_t
 parse_in_thread(epc_parser_t * top_parser, epc_parser_ctx_t * ctx, epc_parse_input_t input)
 {
-        ParsingThreadArgs args = {
-            .top_parser = top_parser,
-            .ctx = ctx,
-            .result = {0},
-        };
+    ParsingThreadArgs args = {
+        .top_parser = top_parser,
+        .ctx = ctx,
+        .result = {0},
+    };
 
-        pthread_t thread;
-        if (pthread_create(&thread, NULL, epc_parsing_thread_worker, &args) != 0)
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, epc_parsing_thread_worker, &args) != 0)
+    {
+        return epc_unparsed_error_result(
+            0, "Failed to create parsing thread", "parsing thread created", "pthread_create failed"
+        );
+    }
+
+    // Producer Loop (Main Thread)
+    char read_buf[4096];
+    ssize_t bytes_read;
+    while ((bytes_read = read(input.fd, read_buf, sizeof(read_buf))) > 0)
+    {
+        pthread_mutex_lock(&ctx->mutex);
+
+        // Check if we have space in mmap buffer (100MB limit currently)
+        if (ctx->input_len + (size_t)bytes_read > MAX_MMAP_INPUT_SIZE)
         {
-            return epc_unparsed_error_result(0, "Failed to create parsing thread", "parsing thread created", "pthread_create failed");
-        }
-
-        // Producer Loop (Main Thread)
-        char read_buf[4096];
-        ssize_t bytes_read;
-        while ((bytes_read = read(input.fd, read_buf, sizeof(read_buf))) > 0)
-        {
-            pthread_mutex_lock(&ctx->mutex);
-            
-            // Check if we have space in mmap buffer (100MB limit currently)
-            if (ctx->input_len + (size_t)bytes_read > MAX_MMAP_INPUT_SIZE)
-            {
-                ctx->input_error = EFBIG;
-                pthread_cond_broadcast(&ctx->cond);
-                pthread_mutex_unlock(&ctx->mutex);
-                break;
-            }
-
-            memcpy((void *)(ctx->input_start + ctx->input_len), read_buf, (size_t)bytes_read);
-            ctx->input_len += (size_t)bytes_read;
-            
+            ctx->input_error = EFBIG;
             pthread_cond_broadcast(&ctx->cond);
             pthread_mutex_unlock(&ctx->mutex);
+            break;
         }
 
-        pthread_mutex_lock(&ctx->mutex);
-        if (bytes_read == 0)
-        {
-            ctx->is_eof = true;
-        }
-        else if (bytes_read < 0)
-        {
-            ctx->input_error = errno;
-        }
+        memcpy((void *)(ctx->input_start + ctx->input_len), read_buf, (size_t)bytes_read);
+        ctx->input_len += (size_t)bytes_read;
+
         pthread_cond_broadcast(&ctx->cond);
         pthread_mutex_unlock(&ctx->mutex);
+    }
 
-        pthread_join(thread, NULL);
+    pthread_mutex_lock(&ctx->mutex);
+    if (bytes_read == 0)
+    {
+        ctx->is_eof = true;
+    }
+    else if (bytes_read < 0)
+    {
+        ctx->input_error = errno;
+    }
+    pthread_cond_broadcast(&ctx->cond);
+    pthread_mutex_unlock(&ctx->mutex);
 
-        return args.result;
+    pthread_join(thread, NULL);
+
+    return args.result;
 }
 #endif
 
@@ -528,7 +531,9 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
         if (fp == NULL)
         {
             char error_message[256];
-            snprintf(error_message, sizeof(error_message), "Failed to open file '%s': %s", input.filename, strerror(errno));
+            snprintf(
+                error_message, sizeof(error_message), "Failed to open file '%s': %s", input.filename, strerror(errno)
+            );
             session.result = epc_unparsed_error_result(0, error_message, "file that can be opened", "unopenable file");
             return session;
         }
@@ -537,11 +542,21 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
 
         break;
 
-#ifdef WITH_INPUT_STREAM_SUPPORT
     case EPC_PARSE_TYPE_FD:
+    {
+#ifdef WITH_INPUT_STREAM_SUPPORT
         ctx = internal_create_parse_ctx_streaming();
         break;
+#else
+        session.result = epc_unparsed_error_result(
+            0,
+            "Streaming input not supported in this build",
+            "build with streaming input support",
+            "no streaming support"
+        );
+        return session;
 #endif
+    }
 
     default:
         session.result = epc_unparsed_error_result(0, "Invalid input type", "valid input type", "invalid input type");
@@ -550,13 +565,11 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
 
     if (ctx == NULL)
     {
-        session.result
-            = epc_unparsed_error_result(0, "Failed to create parse context.", "valid parse context", "NULL");
+        session.result = epc_unparsed_error_result(0, "Failed to create parse context.", "valid parse context", "NULL");
         return session;
     }
     session.internal_parse_ctx = ctx;
     ctx->user_ctx = user_ctx;
-
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
     if (ctx->is_streaming)
@@ -599,7 +612,7 @@ EASY_PC_API epc_parse_session_t
 epc_parse_str(epc_parser_t * top_parser, char const * input_string, void * user_ctx)
 {
     epc_parse_input_t input = {.type = EPC_PARSE_TYPE_STRING, .input_string = input_string};
-    
+
     return epc_parse_input(top_parser, input, user_ctx);
 }
 
@@ -607,18 +620,18 @@ EASY_PC_API epc_parse_session_t
 epc_parse_fp(epc_parser_t * top_parser, FILE * fp, void * user_ctx)
 {
     epc_parse_input_t input = {.type = EPC_PARSE_TYPE_FILE, .fp = fp};
-    
+
     return epc_parse_input(top_parser, input, user_ctx);
 }
 
-EASY_PC_API epc_parse_session_t epc_parse_file(epc_parser_t * top_parser, char const * filename, void * user_ctx)
+EASY_PC_API epc_parse_session_t
+epc_parse_file(epc_parser_t * top_parser, char const * filename, void * user_ctx)
 {
     epc_parse_input_t input = {.type = EPC_PARSE_TYPE_FILENAME, .filename = filename};
-    
+
     return epc_parse_input(top_parser, input, user_ctx);
 }
 
-#ifdef WITH_INPUT_STREAM_SUPPORT
 EASY_PC_API epc_parse_session_t
 epc_parse_fd(epc_parser_t * top_parser, int fd, void * user_ctx)
 {
@@ -626,7 +639,6 @@ epc_parse_fd(epc_parser_t * top_parser, int fd, void * user_ctx)
 
     return epc_parse_input(top_parser, input, user_ctx);
 }
-#endif
 
 EASY_PC_API void
 epc_parse_session_destroy(epc_parse_session_t * session)
