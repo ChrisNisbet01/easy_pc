@@ -12,3 +12,5 @@ target_link_libraries(${app} PRIVATE easy_pc_shared)
 
 # Set include directories for easy_pc headers
 target_include_directories(${app} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+install(TARGETS ${app} RUNTIME DESTINATION bin)

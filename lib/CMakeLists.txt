@@ -8,7 +8,11 @@ set(EASY_PC_LIB_SOURCES
 
 # Shared Library
 add_library(easy_pc_shared SHARED ${EASY_PC_LIB_SOURCES})
-set_target_properties(easy_pc_shared PROPERTIES OUTPUT_NAME "easy_pc")
+set_target_properties(easy_pc_shared PROPERTIES 
+    OUTPUT_NAME "easy_pc"
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+)
 
 # Static Library
 add_library(easy_pc_static STATIC ${EASY_PC_LIB_SOURCES})
@@ -20,11 +24,15 @@ set(EASY_PC_TARGETS easy_pc_shared easy_pc_static)
 # Common properties for both libraries
 target_include_directories(easy_pc_shared PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../include> # For generated version header
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> # For parsers.h
+    $<INSTALL_INTERFACE:include>
 )
 target_include_directories(easy_pc_static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../include> # For generated version header
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> # For parsers.h
+    $<INSTALL_INTERFACE:include>
 )
 
 target_compile_options(easy_pc_shared PRIVATE -Wall -Wextra -pedantic)
@@ -63,4 +71,8 @@ install(TARGETS ${EASY_PC_TARGETS}
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/easy_pc/
     DESTINATION include/easy_pc
     FILES_MATCHING PATTERN "*.h"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/../include/easy_pc/easy_pc_version.h
+    DESTINATION include/easy_pc
 )

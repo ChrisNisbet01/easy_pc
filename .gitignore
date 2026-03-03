@@ -6,3 +6,4 @@ build/
 /Testing/
 /docs/help/
 *.json
+/install_test/

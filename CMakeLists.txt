@@ -1,9 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
-project(easy_pc C)
+project(easy_pc VERSION 0.1.0 LANGUAGES C)
 
 include(FetchContent)
 include(CTest)
 include(cmake/EasyPcMacros.cmake)
+
+# --- Versioning ---
+set(EASY_PC_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(EASY_PC_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(EASY_PC_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(EASY_PC_VERSION "${PROJECT_VERSION}")
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/easy_pc/easy_pc_version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/include/easy_pc/easy_pc_version.h
+)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -92,3 +103,4 @@ else ()
 endif ()
 
 add_subdirectory(tools/gdl_compiler)
+add_subdirectory(tools/gdl_debug)

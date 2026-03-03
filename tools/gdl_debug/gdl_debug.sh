@@ -14,15 +14,41 @@ INPUT_STRING=$2
 
 # Resolve paths
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# 1. Try to find components in the project root (build-tree)
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." &> /dev/null && pwd )"
 GDL_COMPILER="$PROJECT_ROOT/build/tools/gdl_compiler/gdl_compiler"
 TEMPLATE_MAIN="$SCRIPT_DIR/template_main.c"
 EASY_PC_LIB="$PROJECT_ROOT/build/lib/libeasy_pc.a"
 EASY_PC_INCLUDE="$PROJECT_ROOT/include"
 
+# 2. If not found, try installed locations relative to script
 if [ ! -f "$GDL_COMPILER" ]; then
-    echo "Error: gdl_compiler not found at $GDL_COMPILER. Please build the project first."
+    GDL_COMPILER="$SCRIPT_DIR/gdl_compiler"
+fi
+if [ ! -f "$GDL_COMPILER" ]; then
+    echo "Error: gdl_compiler not found. Please ensure it is in the same directory as this script or build the project first."
     exit 1
+fi
+
+if [ ! -f "$TEMPLATE_MAIN" ]; then
+    SHARE_DIR=$(cd "$SCRIPT_DIR/../share/easy_pc" 2>/dev/null && pwd)
+    echo "share dir: ${SHARE_DIR}"
+    if [ -n "$SHARE_DIR" ]; then
+        TEMPLATE_MAIN="$SHARE_DIR/template_main.c"
+    fi
+fi
+if [ ! -f "$EASY_PC_LIB" ]; then
+    LIB_DIR=$(cd "$SCRIPT_DIR/../lib" 2>/dev/null && pwd)
+    if [ -n "$LIB_DIR" ]; then
+        EASY_PC_LIB="$LIB_DIR/libeasy_pc.a"
+    fi
+fi
+if [ ! -f "$EASY_PC_INCLUDE" ]; then
+    INCLUDE_DIR=$(cd "$SCRIPT_DIR/../include" 2>/dev/null && pwd)
+    if [ -n "$INCLUDE_DIR" ]; then
+        EASY_PC_INCLUDE="$INCLUDE_DIR"
+    fi
 fi
 
 if [ ! -f "$GDL_FILE" ]; then

@@ -1,5 +1,12 @@
 #include "easy_pc_private.h"
+#include "easy_pc/easy_pc_version.h"
 #include "parsers.h"
+
+char const *
+epc_get_version(void)
+{
+    return EASY_PC_VERSION;
+}
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
 #include <ctype.h>
