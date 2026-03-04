@@ -429,6 +429,47 @@ TEST(CombinatorParsersNew, Lexeme_ParsesWithCppStyleComments)
     check_success("lexeme", "//comment\n   hello   //another comment\n", 39, 1);
 }
 
+// --- epc_strip tests ---
+TEST(CombinatorParsersNew, Strip_ParsesWithLeadingAndTrailingSpaces)
+{
+    epc_parser_t * p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t * p_strip = epc_strip_l(list, "strip", p_word);
+    session = parse(p_strip, "   hello   world");
+    check_success("strip", "   hello   ", 11, 1);
+}
+
+TEST(CombinatorParsersNew, Strip_DoesNotConsumeComments)
+{
+    epc_parser_t * p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t * p_strip = epc_strip_l(list, "strip", p_word);
+    session = parse(p_strip, "//comment\nhello");
+    check_failure("Unexpected string");
+}
+
+TEST(CombinatorParsersNew, Stripl_ParsesLeadingSpacesOnly)
+{
+    epc_parser_t * p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t * p_stripl = epc_stripl_l(list, "stripl", p_word);
+    session = parse(p_stripl, "   hello   world");
+    check_success("stripl", "   hello", 8, 1);
+}
+
+TEST(CombinatorParsersNew, Stripr_ParsesTrailingSpacesOnly)
+{
+    epc_parser_t * p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t * p_stripr = epc_stripr_l(list, "stripr", p_word);
+    session = parse(p_stripr, "hello   world");
+    check_success("stripr", "hello   ", 8, 1);
+}
+
+TEST(CombinatorParsersNew, Stripr_FailsWithLeadingSpaces)
+{
+    epc_parser_t * p_word = epc_string_l(list, "word", "hello");
+    epc_parser_t * p_stripr = epc_stripr_l(list, "stripr", p_word);
+    session = parse(p_stripr, "   hello");
+    check_failure("Unexpected string");
+}
+
 // Helper to check CPT for chainl1/chainr1.
 // Expected structure:
 // <chain_type>_combined

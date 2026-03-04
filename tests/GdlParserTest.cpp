@@ -2676,4 +2676,18 @@ TEST(GdlParserTest, ParseDoubleKeywordRule)
     CHECK_EQUAL(0, eoi_node->children_count);
 
     epc_parse_session_destroy(&session);
-}
+    }
+
+    TEST(GdlParserTest, ParseStripCombinators)
+    {
+    char const * gdl_input = 
+        "Rule1 = strip(alpha);\n"
+        "Rule2 = stripl(digit);\n"
+        "Rule3 = stripr(alphanum);";
+    session = parse(gdl_parser_root, gdl_input);
+
+    if (session.result.is_error)
+    {
+        print_error_and_fail(session.result.data.error);
+    }
+    }
