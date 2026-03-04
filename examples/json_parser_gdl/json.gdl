@@ -1,4 +1,3 @@
-Whitespace = space*;
 Backslash = '\\';
 Quote = "\"";
 EscapeChar = oneof("\"\\/bfnrt");
@@ -12,12 +11,12 @@ EscapedChar = SimpleEscape | UnicodeEscape;
 NonQuoteNonBackslash = noneof("\\\"");
 StringContentChar = NonQuoteNonBackslash | EscapedChar;
 
-Comma = lexeme(',');
-OBracket = lexeme('[');
-CBracket = lexeme(']');
-OObject = lexeme('{');
-CObject = lexeme('}');
-Colon = lexeme(':');
+Comma = strip(',');
+OBracket = strip('[');
+CBracket = strip(']');
+OObject = strip('{');
+CObject = strip('}');
+Colon = strip(':');
 
 True = "true";
 False = "false";
@@ -26,7 +25,7 @@ Number = double                                 @JSON_ACTION_CREATE_NUMBER;
 Null = "null"                                   @JSON_ACTION_CREATE_NULL;
 QuotedString = Quote StringContentChar* Quote   @JSON_ACTION_CREATE_STRING;
 
-Value = Whitespace (QuotedString | Null | Boolean | Number | Object | Array) Whitespace;
+Value = strip(QuotedString | Null | Boolean | Number | Object | Array);
 
 ArrayElements = delimited(Value, Comma)         @JSON_ACTION_CREATE_ARRAY_ELEMENTS;
 OptionalArrayElements = ArrayElements?          @JSON_ACTION_CREATE_OPTIONAL_ARRAY_ELEMENTS;

@@ -63,13 +63,6 @@ json_number(epc_parser_list * list)
     return epc_double_l(list, "number");
 }
 
-static epc_parser_t *
-json_whitespace(epc_parser_list * list)
-{
-    epc_parser_t * ws_char = epc_one_of_l(list, "ws_char", " \n\r\t");
-    return epc_many_l(list, "whitespace", ws_char);
-}
-
 // Forward references (allocated here, duplicated later)
 static epc_parser_t *
 json_value_parser_ref(epc_parser_list * list)
@@ -110,16 +103,12 @@ create_json_grammar(epc_parser_list * list)
     epc_parser_t * number_p = json_number(list);
     epc_parser_set_ast_action(number_p, JSON_ACTION_CREATE_NUMBER);
 
-    epc_parser_t * whitespace_p = json_whitespace(list);
-
     // --- Define Actual JSON Grammar Components using the refs ---
 
     // json_value
-    epc_parser_t * json_value_actual = epc_and_l(
+    epc_parser_t * json_value_actual = epc_strip_l(
         list,
         "json_value",
-        3,
-        whitespace_p,
         epc_or_l(
             list,
             "value_choice",
@@ -128,52 +117,50 @@ create_json_grammar(epc_parser_list * list)
             number_p,
             boolean_p,
             null_p,
-            object_ref, // Use the reference here for recursion
-            array_ref   // Use the reference here for recursion
-        ),
-        whitespace_p
+            object_ref,
+            array_ref
+        )
     );
 
     // json_array
-    epc_parser_t * comma_lexeme = epc_lexeme_l(list, "comma_lexeme", epc_char_l(list, "comma", ','));
-    epc_parser_t * open_bracket_lexeme
-        = epc_lexeme_l(list, "open_bracket_lexeme", epc_char_l(list, "open_bracket", '['));
-    epc_parser_t * close_bracket_lexeme
-        = epc_lexeme_l(list, "close_bracket_lexeme", epc_char_l(list, "close_bracket", ']'));
+    epc_parser_t * comma_strip = epc_strip_l(list, "comma_strip", epc_char_l(list, "comma", ','));
+    epc_parser_t * open_bracket_strip = epc_strip_l(list, "open_bracket_strip", epc_char_l(list, "open_bracket", '['));
+    epc_parser_t * close_bracket_strip
+        = epc_strip_l(list, "close_bracket_strip", epc_char_l(list, "close_bracket", ']'));
 
-    epc_parser_t * array_elements = epc_delimited_l(list, "array_elements", value_ref, comma_lexeme); // Use value_ref
+    epc_parser_t * array_elements = epc_delimited_l(list, "array_elements", value_ref, comma_strip); // Use value_ref
     epc_parser_set_ast_action(array_elements, JSON_ACTION_CREATE_ARRAY_ELEMENTS);
 
     epc_parser_t * optional_array_elements = epc_optional_l(list, "optional_elements_in_array", array_elements);
     epc_parser_set_ast_action(optional_array_elements, JSON_ACTION_CREATE_OPTIONAL_ARRAY_ELEMENTS);
 
     epc_parser_t * json_array_actual
-        = epc_and_l(list, "json_array_parser", 3, open_bracket_lexeme, optional_array_elements, close_bracket_lexeme);
+        = epc_and_l(list, "json_array_parser", 3, open_bracket_strip, optional_array_elements, close_bracket_strip);
     epc_parser_set_ast_action(json_array_actual, JSON_ACTION_CREATE_ARRAY);
 
     // json_object
-    epc_parser_t * colon_lexeme = epc_lexeme_l(list, "colon_lexeme", epc_char_l(list, "colon", ':'));
-    epc_parser_t * open_brace_lexeme = epc_lexeme_l(list, "open_brace_lexeme", epc_char_l(list, "open_brace", '{'));
-    epc_parser_t * close_brace_lexeme = epc_lexeme_l(list, "close_brace_lexeme", epc_char_l(list, "close_brace", '}'));
+    epc_parser_t * colon_strip = epc_strip_l(list, "colon_strip", epc_char_l(list, "colon", ':'));
+    epc_parser_t * open_brace_strip = epc_strip_l(list, "open_brace_strip", epc_char_l(list, "open_brace", '{'));
+    epc_parser_t * close_brace_strip = epc_strip_l(list, "close_brace_strip", epc_char_l(list, "close_brace", '}'));
 
     epc_parser_t * member = epc_and_l(
         list,
         "member",
         3,
         quoted_string_p, // Key
-        colon_lexeme,
+        colon_strip,
         value_ref // Value (Use value_ref)
     );
     epc_parser_set_ast_action(member, JSON_ACTION_CREATE_MEMBER);
 
-    epc_parser_t * object_elements = epc_delimited_l(list, "object_members", member, comma_lexeme);
+    epc_parser_t * object_elements = epc_delimited_l(list, "object_members", member, comma_strip);
     epc_parser_set_ast_action(object_elements, JSON_ACTION_CREATE_OBJECT_ELEMENTS);
 
     epc_parser_t * optional_object_elements = epc_optional_l(list, "optional_elements_in_object", object_elements);
     epc_parser_set_ast_action(optional_object_elements, JSON_ACTION_CREATE_OPTIONAL_OBJECT_ELEMENTS);
 
     epc_parser_t * json_object_actual
-        = epc_and_l(list, "json_object_parser", 3, open_brace_lexeme, optional_object_elements, close_brace_lexeme);
+        = epc_and_l(list, "json_object_parser", 3, open_brace_strip, optional_object_elements, close_brace_strip);
     epc_parser_set_ast_action(json_object_actual, JSON_ACTION_CREATE_OBJECT);
 
     // 3. Resolve forward references using epc_parser_duplicate
