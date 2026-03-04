@@ -115,7 +115,10 @@ GDL provides a rich set of combinators, which are functions that combine simpler
 
 | Combinator  | Arguments                               | Description                                                                 | Generated `easy_pc` Call (Example)                                          |
 | :---------- | :-------------------------------------- | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| `lexeme`    | `(expression)`                          | Groups the matched input of `expression` into a single semantic token.      | `epc_lexeme_l(list, "lexeme", expression_parser)`                           |
+| `lexeme`    | `(expression)`                          | Groups the matched input of `expression` into a single semantic token. Consumes leading/trailing whitespace and comments. | `epc_lexeme_l(list, "lexeme", expression_parser)` |
+| `strip`     | `(expression)`                          | Strips leading and trailing whitespace from the matched input of `expression`. | `epc_strip_l(list, "strip", expression_parser)` |
+| `stripl`    | `(expression)`                          | Strips leading whitespace from the matched input of `expression`. | `epc_stripl_l(list, "stripl", expression_parser)` |
+| `stripr`    | `(expression)`                          | Strips trailing whitespace from the matched input of `expression`. | `epc_stripr_l(list, "stripr", expression_parser)` |
 | `optional`  | `(expression)`                          | Makes `expression` optional. (Equivalent to `expr?`)                        | `epc_optional_l(list, "optional", expression_parser)`                       |
 | `count`     | `(number, expression)`                  | Matches `expression` exactly `number` times.                                | `epc_count_l(list, "count", number, expression_parser)`                     |
 | `delimited` | `(item_expr, delimiter_expr)`           | Matches `item_expr`s separated by `delimiter_expr`. Returns only `item_expr`s. | `epc_delimited_l(list, "delimited", item_parser, delimiter_parser)`      |
