@@ -433,6 +433,9 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
     case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
     {
         traverse_expression_for_references(expression_node->data.unary_combinator_call.expr, current_rule_info, all_rules);
@@ -1212,6 +1215,39 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
         fprintf(source_file, "epc_lexeme_l(list, %s%s%s, ", q, expr_name, q);
+        if (!generate_expression_code(
+                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
+            ))
+        {
+            return false;
+        }
+        fprintf(source_file, ")");
+        break;
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
+        fprintf(source_file, "epc_strip_l(list, %s%s%s, ", q, expr_name, q);
+        if (!generate_expression_code(
+                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
+            ))
+        {
+            return false;
+        }
+        fprintf(source_file, ")");
+        break;
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
+        fprintf(source_file, "epc_stripl_l(list, %s%s%s, ", q, expr_name, q);
+        if (!generate_expression_code(
+                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
+            ))
+        {
+            return false;
+        }
+        fprintf(source_file, ")");
+        break;
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
+        fprintf(source_file, "epc_stripr_l(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))

@@ -151,6 +151,12 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_one_of = epc_lexeme_l(l, "oneof", p_one_of_raw);
     epc_parser_t * p_lexeme_raw = epc_string_l(l, "lexeme", "lexeme");
     epc_parser_t * p_lexeme = epc_lexeme_l(l, "lexeme", p_lexeme_raw);
+    epc_parser_t * p_strip_raw = epc_string_l(l, "strip", "strip");
+    epc_parser_t * p_strip = epc_lexeme_l(l, "strip", p_strip_raw);
+    epc_parser_t * p_stripl_raw = epc_string_l(l, "stripl", "stripl");
+    epc_parser_t * p_stripl = epc_lexeme_l(l, "stripl", p_stripl_raw);
+    epc_parser_t * p_stripr_raw = epc_string_l(l, "stripr", "stripr");
+    epc_parser_t * p_stripr = epc_lexeme_l(l, "stripr", p_stripr_raw);
     epc_parser_t * p_chainl1_raw = epc_string_l(l, "chainl1", "chainl1");
     epc_parser_t * p_chainl1 = epc_lexeme_l(l, "chainl1", p_chainl1_raw);
     epc_parser_t * p_chainr1_raw = epc_string_l(l, "chainr1", "chainr1");
@@ -196,7 +202,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * combinator_parser = epc_or_l(
         l,
         "CombinatorKeyword",
-        18,
+        21,
         p_string_raw,
         p_char_range_raw,
         p_none_of_raw,
@@ -210,6 +216,9 @@ create_gdl_parser(epc_parser_list * l)
         p_not_raw,
         p_one_of_raw,
         p_lexeme_raw,
+        p_strip_raw,
+        p_stripl_raw,
+        p_stripr_raw,
         p_chainl1_raw,
         p_chainr1_raw,
         p_skip_raw,
@@ -332,6 +341,15 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * lexeme_call = epc_and_l(l, "LexemeCall", 4, p_lexeme, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(lexeme_call, GDL_AST_ACTION_CREATE_LEXEME_CALL);
 
+    epc_parser_t * strip_call = epc_and_l(l, "StripCall", 4, p_strip, gdl_lparen, gdl_expression_arg, gdl_rparen);
+    epc_parser_set_ast_action(strip_call, GDL_AST_ACTION_CREATE_STRIP_CALL);
+
+    epc_parser_t * stripl_call = epc_and_l(l, "StriplCall", 4, p_stripl, gdl_lparen, gdl_expression_arg, gdl_rparen);
+    epc_parser_set_ast_action(stripl_call, GDL_AST_ACTION_CREATE_STRIPL_CALL);
+
+    epc_parser_t * stripr_call = epc_and_l(l, "StriprCall", 4, p_stripr, gdl_lparen, gdl_expression_arg, gdl_rparen);
+    epc_parser_set_ast_action(stripr_call, GDL_AST_ACTION_CREATE_STRIPR_CALL);
+
     epc_parser_t * chain_args = epc_and_l(l, "ChainArgs", 3, gdl_expression_arg, gdl_comma, gdl_expression_arg);
 
     epc_parser_t * chainl1_call = epc_and_l(l, "ChainL1Call", 4, p_chainl1, gdl_lparen, chain_args, gdl_rparen);
@@ -366,7 +384,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_combinator_call = epc_or_l(
         l,
         "CombinatorCall",
-        15,
+        18,
         none_of_call,
         count_call,
         between_call,
@@ -377,6 +395,9 @@ create_gdl_parser(epc_parser_list * l)
         fail_call,
         oneof_call,
         lexeme_call,
+        strip_call,
+        stripl_call,
+        stripr_call,
         chainl1_call,
         chainr1_call,
         skip_call,

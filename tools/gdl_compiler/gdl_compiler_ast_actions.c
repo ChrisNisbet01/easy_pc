@@ -181,6 +181,9 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
     case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
     case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
         gdl_ast_node_free(node->data.unary_combinator_call.expr, user_data);
         break;
@@ -1262,6 +1265,27 @@ handle_create_lexeme_call(
     handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_LEXEME);
 }
 static void
+handle_create_strip_call(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIP);
+}
+static void
+handle_create_stripl_call(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIPL);
+}
+static void
+handle_create_stripr_call(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIPR);
+}
+static void
 handle_create_skip_call(
     epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
@@ -1819,6 +1843,9 @@ gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_LOOKAHEAD_CALL, handle_create_lookahead_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_NOT_CALL, handle_create_not_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_LEXEME_CALL, handle_create_lexeme_call);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_STRIP_CALL, handle_create_strip_call);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_STRIPL_CALL, handle_create_stripl_call);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_STRIPR_CALL, handle_create_stripr_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_SKIP_CALL, handle_create_skip_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_CHAINL1_CALL, handle_create_chainl1_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_CHAINR1_CALL, handle_create_chainr1_call);
