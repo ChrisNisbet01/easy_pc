@@ -16,4 +16,15 @@ main(void)
     char * s = "Hello, \"World\"!\n";
     char c = 'A';
     char esc = '\n';
+
+    long l = 1;
+    long l2 = 1L;
+    float f = 1.23f;
+    double d = 1.23;
+
+    long long ll1 = 1;
+    long double ld1 = 1.23;
+
+    long double ld = 1.23L;
+    long long ll = 123456789012345LL;
 }
