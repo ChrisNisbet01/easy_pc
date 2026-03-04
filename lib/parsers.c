@@ -358,7 +358,9 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 
     char const * input = input_result.next_input;
 
-    fprintf(stderr, "parsing: name: %s. input `%s`, offset: %zu\n", epc_parser_get_name(self), input, input_offset);
+    fprintf(
+        stderr, "parsing: name: %s. input `%.*s`, offset: %zu\n", epc_parser_get_name(self), 25, input, input_offset
+    );
 #endif
 
     epc_parse_result_t result = self->parse_fn(self, ctx, input_offset);
@@ -367,7 +369,10 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
     if (result.is_error)
     {
         fprintf(
-            stderr, "\tfailed to parse: name: %s (expected: %s)\n", epc_parser_get_name(self), self->expected_value
+            stderr,
+            "\tfailed to parse: name: %s (expected: %s)\n",
+            epc_parser_get_name(self),
+            parser_get_expected_str(self)
         );
     }
     else
