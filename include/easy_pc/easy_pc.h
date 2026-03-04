@@ -175,6 +175,19 @@ typedef struct
 } epc_cpt_visitor_t;
 
 /**
+ * @brief Flags for controlling whitespace and comment consumption in lexeme and strip parsers.
+ */
+typedef enum
+{
+    EPC_CONSUME_WS = 1 << 0,           /**< Consume standard whitespace (isspace). */
+    EPC_CONSUME_C_COMMENT = 1 << 1,    /**< Consume C-style comments (slash star ... star slash). */
+    EPC_CONSUME_CPP_COMMENT = 1 << 2,  /**< Consume C++-style comments (// ...). */
+    EPC_CONSUME_BASH_COMMENT = 1 << 3, /**< Consume Bash-style comments (# ...). */
+    EPC_CONSUME_ALL_COMMENTS = (EPC_CONSUME_C_COMMENT | EPC_CONSUME_CPP_COMMENT | EPC_CONSUME_BASH_COMMENT),
+    EPC_CONSUME_ALL = (EPC_CONSUME_WS | EPC_CONSUME_ALL_COMMENTS)
+} epc_consume_flags_t;
+
+/**
  * @brief Traverses a Concrete Parse Tree (CPT) in a depth-first manner.
  *
  * This function applies a given `pt_visitor_t` to each node in the CPT,
@@ -898,6 +911,57 @@ static inline epc_parser_t *
 epc_lexeme_l(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, epc_lexeme(name, p));
+}
+
+/**
+ * @brief Creates a parser that strips leading and trailing whitespace from its child parser.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p The child parser to wrap.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_strip(char const * name, epc_parser_t * p);
+
+/**
+ * @brief Convenience wrapper for epc_strip.
+ */
+static inline epc_parser_t *
+epc_strip_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_strip(name, p));
+}
+
+/**
+ * @brief Creates a parser that strips leading whitespace from its child parser.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p The child parser to wrap.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_stripl(char const * name, epc_parser_t * p);
+
+/**
+ * @brief Convenience wrapper for epc_stripl.
+ */
+static inline epc_parser_t *
+epc_stripl_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_stripl(name, p));
+}
+
+/**
+ * @brief Creates a parser that strips trailing whitespace from its child parser.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p The child parser to wrap.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_stripr(char const * name, epc_parser_t * p);
+
+/**
+ * @brief Convenience wrapper for epc_stripr.
+ */
+static inline epc_parser_t *
+epc_stripr_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_stripr(name, p));
 }
 
 /**

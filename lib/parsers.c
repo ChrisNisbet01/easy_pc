@@ -2916,7 +2916,7 @@ typedef struct
 } consume_ws_result_t;
 
 static consume_ws_result_t
-consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, bool consume_comments)
+consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t flags)
 {
     size_t len = 0;
     bool consumed_something;
@@ -2926,28 +2926,31 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, bool consume_comments)
     {
         consumed_something = false;
 
-        while (1)
+        if (flags & EPC_CONSUME_WS)
         {
-            parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + len, 1);
-            if (res.is_eof)
+            while (1)
             {
-                return (consume_ws_result_t){.len = len, .interrupted = is_streaming && !parse_ctx_is_eof(ctx)};
-            }
-            if (isspace((unsigned char)res.next_input[0]))
-            {
-                len++;
-                consumed_something = true;
-            }
-            else
-            {
-                break;
+                parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + len, 1);
+                if (res.is_eof)
+                {
+                    return (consume_ws_result_t){.len = len, .interrupted = is_streaming && !parse_ctx_is_eof(ctx)};
+                }
+                if (isspace((unsigned char)res.next_input[0]))
+                {
+                    len++;
+                    consumed_something = true;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
 
-        if (consume_comments)
+        if (flags & EPC_CONSUME_ALL_COMMENTS)
         {
             parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + len, 2);
-            if (!res.is_eof && res.available >= 2 && res.next_input[0] == '/' && res.next_input[1] == '/')
+            if ((flags & EPC_CONSUME_CPP_COMMENT) && !res.is_eof && res.available >= 2 && res.next_input[0] == '/' && res.next_input[1] == '/')
             {
                 len += 2;
                 while (1)
@@ -2966,7 +2969,7 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, bool consume_comments)
                 }
                 consumed_something = true;
             }
-            else if (!res.is_eof && res.available >= 2 && res.next_input[0] == '/' && res.next_input[1] == '*')
+            else if ((flags & EPC_CONSUME_C_COMMENT) && !res.is_eof && res.available >= 2 && res.next_input[0] == '/' && res.next_input[1] == '*')
             {
                 len += 2;
                 while (1)
@@ -2987,7 +2990,7 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, bool consume_comments)
                 }
                 consumed_something = true;
             }
-            else if (!res.is_eof && res.available >= 1 && res.next_input[0] == '#')
+            else if ((flags & EPC_CONSUME_BASH_COMMENT) && !res.is_eof && res.available >= 1 && res.next_input[0] == '#')
             {
                 len += 1;
                 while (1)
@@ -3027,32 +3030,35 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
 
     if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "lexeme", "EOF");
+        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", self->tag, "EOF");
     }
 
     lexeme_data_t * data = &self->data.lexeme;
     epc_parser_t * child_parser = data->parser;
-    bool consume_comments = data->consume_comments;
+    epc_consume_flags_t flags = data->consume_flags;
 
     if (child_parser == NULL)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "epc_lexeme received NULL child parser", epc_parser_get_name(self), "NULL"
+            ctx, input_offset, "Lexeme/Strip received NULL child parser", epc_parser_get_name(self), "NULL"
         );
     }
 
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
     size_t current_input_offset = input_offset;
 
-    // 1. Consume leading whitespace
+    // 1. Consume leading whitespace/comments
     size_t leading_ws_len = 0;
-    while (1)
+    if (data->strip_leading)
     {
-        consume_ws_result_t ws_res = consume_whitespace(ctx, input_offset + leading_ws_len, consume_comments);
-        leading_ws_len += ws_res.len;
-        if (!ws_res.interrupted)
+        while (1)
         {
-            break;
+            consume_ws_result_t ws_res = consume_whitespace(ctx, input_offset + leading_ws_len, flags);
+            leading_ws_len += ws_res.len;
+            if (!ws_res.interrupted)
+            {
+                break;
+            }
         }
     }
     current_input_offset += leading_ws_len;
@@ -3066,27 +3072,30 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     }
     current_input_offset += item_result.data.success->len;
 
-    // 3. Consume trailing whitespace
+    // 3. Consume trailing whitespace/comments
     size_t trailing_ws_len = 0;
-    while (1)
+    if (data->strip_trailing)
     {
-        consume_ws_result_t ws_res = consume_whitespace(ctx, current_input_offset + trailing_ws_len, consume_comments);
-        trailing_ws_len += ws_res.len;
-        if (!ws_res.interrupted)
+        while (1)
         {
-            break;
+            consume_ws_result_t ws_res = consume_whitespace(ctx, current_input_offset + trailing_ws_len, flags);
+            trailing_ws_len += ws_res.len;
+            if (!ws_res.interrupted)
+            {
+                break;
+            }
         }
     }
     current_input_offset += trailing_ws_len;
 
-    // Success - create a node for 'lexeme'
+    // Success - create a node for 'lexeme' or 'strip'
     epc_cpt_node_t * parent_node = epc_node_alloc(self, self->tag);
     if (parent_node == NULL)
     {
         epc_parser_result_cleanup(&item_result);
         epc_parser_error_free(original_furthest_error);
         return epc_parser_error_result(
-            ctx, input_offset, "Memory allocation failure for lexeme parent node", epc_parser_get_name(self), "N/A"
+            ctx, input_offset, "Memory allocation failure for lexeme/strip parent node", epc_parser_get_name(self), "N/A"
         );
     }
 
@@ -3097,7 +3106,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         epc_parser_error_free(original_furthest_error);
         epc_node_free(parent_node);
         return epc_parser_error_result(
-            ctx, input_offset, "Memory allocation failure for lexeme children array", epc_parser_get_name(self), "N/A"
+            ctx, input_offset, "Memory allocation failure for lexeme/strip children array", epc_parser_get_name(self), "N/A"
         );
     }
 
@@ -3126,7 +3135,60 @@ epc_lexeme(char const * name, epc_parser_t * p)
     }
     lex->data.type = PARSER_DATA_TYPE_LEXEME;
     lex->data.lexeme.parser = p;
-    lex->data.lexeme.consume_comments = true;
+    lex->data.lexeme.consume_flags = EPC_CONSUME_ALL;
+    lex->data.lexeme.strip_leading = true;
+    lex->data.lexeme.strip_trailing = true;
+
+    return lex;
+}
+
+EASY_PC_API epc_parser_t *
+epc_strip(char const * name, epc_parser_t * p)
+{
+    epc_parser_t * lex = epc_parser_allocate(name, "strip", plexeme_parse_fn);
+    if (lex == NULL)
+    {
+        return NULL;
+    }
+    lex->data.type = PARSER_DATA_TYPE_LEXEME;
+    lex->data.lexeme.parser = p;
+    lex->data.lexeme.consume_flags = EPC_CONSUME_WS;
+    lex->data.lexeme.strip_leading = true;
+    lex->data.lexeme.strip_trailing = true;
+
+    return lex;
+}
+
+EASY_PC_API epc_parser_t *
+epc_stripl(char const * name, epc_parser_t * p)
+{
+    epc_parser_t * lex = epc_parser_allocate(name, "stripl", plexeme_parse_fn);
+    if (lex == NULL)
+    {
+        return NULL;
+    }
+    lex->data.type = PARSER_DATA_TYPE_LEXEME;
+    lex->data.lexeme.parser = p;
+    lex->data.lexeme.consume_flags = EPC_CONSUME_WS;
+    lex->data.lexeme.strip_leading = true;
+    lex->data.lexeme.strip_trailing = false;
+
+    return lex;
+}
+
+EASY_PC_API epc_parser_t *
+epc_stripr(char const * name, epc_parser_t * p)
+{
+    epc_parser_t * lex = epc_parser_allocate(name, "stripr", plexeme_parse_fn);
+    if (lex == NULL)
+    {
+        return NULL;
+    }
+    lex->data.type = PARSER_DATA_TYPE_LEXEME;
+    lex->data.lexeme.parser = p;
+    lex->data.lexeme.consume_flags = EPC_CONSUME_WS;
+    lex->data.lexeme.strip_leading = false;
+    lex->data.lexeme.strip_trailing = true;
 
     return lex;
 }

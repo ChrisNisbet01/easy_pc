@@ -138,7 +138,9 @@ typedef struct
 typedef struct
 {
     epc_parser_t * parser;
-    bool consume_comments;
+    epc_consume_flags_t consume_flags;
+    bool strip_leading;
+    bool strip_trailing;
 } lexeme_data_t;
 
 typedef struct

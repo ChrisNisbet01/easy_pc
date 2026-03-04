@@ -418,7 +418,7 @@ TEST(CombinatorParsersNew, Lexeme_NullChildParserFails)
 {
     epc_parser_t * p_lex = epc_lexeme_l(list, "lexeme", NULL);
     session = parse(p_lex, "abc");
-    check_failure("epc_lexeme received NULL child parser");
+    check_failure("Lexeme/Strip received NULL child parser");
 }
 
 TEST(CombinatorParsersNew, Lexeme_ParsesWithCppStyleComments)
