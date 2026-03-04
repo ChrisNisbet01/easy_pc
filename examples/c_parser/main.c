@@ -8,54 +8,107 @@
 
 // --- Symbol Table Implementation ---
 
-#define MAX_SYMBOLS 1024
+// Initial capacity for dynamically sized symbol tables
+#define INITIAL_SYMBOL_CAPACITY 16
 
 typedef struct
 {
-    char * names[MAX_SYMBOLS];
-    int count;
+    char ** names;   // Dynamically allocated array of names
+    int count;       // Current number of names
+    size_t capacity; // Current capacity of the names array
 } symbol_table_t;
 
 symbol_table_t *
 symbol_table_create()
 {
-    return calloc(1, sizeof(symbol_table_t));
+    symbol_table_t * st = calloc(1, sizeof(symbol_table_t));
+    if (st == NULL)
+        return NULL;
+
+    st->capacity = INITIAL_SYMBOL_CAPACITY;
+    st->names = malloc(sizeof(char *) * st->capacity);
+    if (st->names == NULL)
+    {
+        free(st);
+        return NULL;
+    }
+    st->count = 0;
+    return st;
 }
 
 void
 symbol_table_free(symbol_table_t * st)
 {
-    if (!st)
+    if (st == NULL)
+    {
         return;
+    }
+
     for (int i = 0; i < st->count; i++)
     {
         free(st->names[i]);
     }
+    free(st->names); // Free the dynamically allocated array
     free(st);
 }
 
 void
 symbol_table_add(symbol_table_t * st, char const * name)
 {
-    if (st->count >= MAX_SYMBOLS)
+    if (st == NULL || name == NULL)
+    {
         return;
-    // Check if already exists
+    }
+
+    // Check if name already exists
     for (int i = 0; i < st->count; i++)
     {
         if (strcmp(st->names[i], name) == 0)
+        {
+            // Already exists, do nothing
             return;
+        }
     }
+
+    // Resize if capacity is reached
+    if (st->count >= st->capacity)
+    {
+        st->capacity *= 2;
+        char ** new_names = realloc(st->names, sizeof(*st->names) * st->capacity);
+        if (new_names == NULL)
+        {
+            // Handle realloc failure, maybe print an error and stop or return.
+            // For now, we'll assume it succeeds or the program might crash later.
+            // A more robust solution would propagate an error.
+            fprintf(stderr, "Error: Failed to resize symbol table names array.\n");
+            return;
+        }
+        st->names = new_names;
+    }
+
     st->names[st->count++] = strdup(name);
 }
 
 bool
 symbol_table_contains(symbol_table_t * st, char const * name)
 {
+    if (st == NULL || name == NULL)
+    {
+        return false;
+    }
+    if (st->count == 0)
+    {
+        return false;
+    }
+
     for (int i = 0; i < st->count; i++)
     {
         if (strcmp(st->names[i], name) == 0)
+        {
             return true;
+        }
     }
+
     return false;
 }
 
@@ -63,7 +116,8 @@ symbol_table_contains(symbol_table_t * st, char const * name)
 
 typedef struct
 {
-    symbol_table_t * symbols;
+    symbol_table_t * symbols;  // For user-defined typedefs
+    symbol_table_t * builtins; // For pre-registered built-in types
     char ** pending;
     int pending_count;
     int pending_capacity;
@@ -76,20 +130,69 @@ parse_session_ctx_t *
 session_ctx_create()
 {
     parse_session_ctx_t * ctx = calloc(1, sizeof(parse_session_ctx_t));
+    if (ctx == NULL)
+    {
+        return NULL;
+    }
+
     ctx->symbols = symbol_table_create();
+    if (ctx->symbols == NULL)
+    {
+        free(ctx);
+        return NULL;
+    }
+
+    ctx->builtins = symbol_table_create();
+    if (ctx->builtins == NULL)
+    {
+        symbol_table_free(ctx->symbols);
+        free(ctx);
+        return NULL;
+    }
+
+    // Pre-register common built-in types that are often used without explicit typedefs
+    // Based on the content of temp_main.c and typical C environments
+    symbol_table_add(ctx->builtins, "__builtin_va_list");
+
     ctx->pending_capacity = 16;
-    ctx->pending = malloc(sizeof(char *) * ctx->pending_capacity);
+    ctx->pending = malloc(sizeof(*ctx->pending) * ctx->pending_capacity);
+    if (ctx->pending == NULL)
+    {
+        symbol_table_free(ctx->builtins);
+        symbol_table_free(ctx->symbols);
+        free(ctx);
+        return NULL;
+    }
+
     ctx->marker_capacity = 16;
-    ctx->marker_stack = malloc(sizeof(int) * ctx->marker_capacity);
+    ctx->marker_stack = malloc(sizeof(*ctx->marker_stack) * ctx->marker_capacity);
+    if (ctx->marker_stack == NULL)
+    {
+        // Clean up allocated resources before returning NULL
+        for (int i = 0; i < ctx->pending_count; i++)
+        {
+            free(ctx->pending[i]); // Free any pending strings if allocated
+        }
+        free(ctx->pending);
+        symbol_table_free(ctx->builtins);
+        symbol_table_free(ctx->symbols);
+        free(ctx);
+        return NULL;
+    }
+
     return ctx;
 }
 
 void
 session_ctx_free(parse_session_ctx_t * ctx)
 {
-    if (!ctx)
+    if (ctx == NULL)
+    {
         return;
+    }
+
     symbol_table_free(ctx->symbols);
+    symbol_table_free(ctx->builtins); // Free the new builtins table
     for (int i = 0; i < ctx->pending_count; i++)
     {
         free(ctx->pending[i]);
@@ -102,10 +205,22 @@ session_ctx_free(parse_session_ctx_t * ctx)
 void
 session_ctx_push_pending(parse_session_ctx_t * ctx, char const * name)
 {
+    if (ctx == NULL || name == NULL)
+    {
+        return;
+    }
     if (ctx->pending_count >= ctx->pending_capacity)
     {
         ctx->pending_capacity *= 2;
-        ctx->pending = realloc(ctx->pending, sizeof(char *) * ctx->pending_capacity);
+        char ** new_pending = realloc(ctx->pending, sizeof(*ctx->pending) * ctx->pending_capacity);
+        if (new_pending == NULL)
+        {
+            fprintf(stderr, "Error: Failed to resize pending names array.\n");
+            // In a real application, you might want to handle this more gracefully,
+            // e.g., by returning an error code or exiting.
+            return;
+        }
+        ctx->pending = new_pending;
     }
     ctx->pending[ctx->pending_count++] = strdup(name);
 }
@@ -117,15 +232,24 @@ is_typedef_name(epc_cpt_node_t * token, epc_parser_ctx_t * parse_ctx, void * par
 {
     (void)parser_data;
     parse_session_ctx_t * session = (parse_session_ctx_t *)parse_ctx_get_user_ctx(parse_ctx);
-    if (!session)
+    if (session == NULL)
+    {
         return false;
+    }
 
-    // Use semantic content to automatically handle whitespace if lexeme was used
     char const * name = epc_cpt_node_get_semantic_content(token);
     size_t len = epc_cpt_node_get_semantic_len(token);
 
     char * name_copy = strndup(name, len);
-    bool found = symbol_table_contains(session->symbols, name_copy);
+    if (name_copy == NULL)
+    {
+        return false;
+    }
+
+    // Check both user-defined symbols and pre-registered built-ins
+    bool found
+        = symbol_table_contains(session->symbols, name_copy) || symbol_table_contains(session->builtins, name_copy);
+
     free(name_copy);
     return found;
 }
@@ -144,15 +268,24 @@ on_capture_exit(epc_parse_result_t result, epc_parser_ctx_t * parse_ctx, void * 
 {
     (void)parser_data;
     if (result.is_error)
+    {
         return true;
+    }
 
     parse_session_ctx_t * session = (parse_session_ctx_t *)parse_ctx_get_user_ctx(parse_ctx);
-    if (!session)
+    if (session == NULL)
+    {
         return true;
+    }
 
     char const * name = epc_cpt_node_get_semantic_content(result.data.success);
     size_t len = epc_cpt_node_get_semantic_len(result.data.success);
     char * name_copy = strndup(name, len);
+    if (name_copy == NULL)
+    {
+        // Handle potential strndup failure
+        return true;
+    }
 
     session_ctx_push_pending(session, name_copy);
     free(name_copy);
@@ -167,13 +300,22 @@ on_commit_entry(epc_parser_t * parser, epc_parser_ctx_t * parse_ctx, void * pars
     (void)parser;
     (void)parser_data;
     parse_session_ctx_t * session = (parse_session_ctx_t *)parse_ctx_get_user_ctx(parse_ctx);
-    if (!session)
+    if (session == NULL)
+    {
         return;
+    }
 
     if (session->marker_top >= session->marker_capacity)
     {
         session->marker_capacity *= 2;
-        session->marker_stack = realloc(session->marker_stack, sizeof(int) * session->marker_capacity);
+        int * new_marker_stack
+            = realloc(session->marker_stack, sizeof(*session->marker_stack) * session->marker_capacity);
+        if (new_marker_stack == NULL)
+        {
+            fprintf(stderr, "Error: Failed to resize marker stack.\n");
+            return;
+        }
+        session->marker_stack = new_marker_stack;
     }
     session->marker_stack[session->marker_top++] = session->pending_count;
 }
@@ -183,8 +325,10 @@ on_commit_exit(epc_parse_result_t result, epc_parser_ctx_t * parse_ctx, void * p
 {
     (void)parser_data;
     parse_session_ctx_t * session = (parse_session_ctx_t *)parse_ctx_get_user_ctx(parse_ctx);
-    if (!session || session->marker_top == 0)
+    if (session == NULL || session->marker_top == 0)
+    {
         return true;
+    }
 
     int marker = session->marker_stack[--session->marker_top];
 
@@ -230,17 +374,23 @@ main(int argc, char * argv[])
     printf("Attempting to parse C file: %s\n", filename);
 
     epc_parser_list * list = epc_parser_list_create();
-    if (!list)
+    if (list == NULL)
     {
         fprintf(stderr, "Failed to create parser list.\n");
         return EXIT_FAILURE;
     }
 
     parse_session_ctx_t * session_ctx = session_ctx_create();
+    if (session_ctx == NULL)
+    {
+        fprintf(stderr, "Failed to create session context.\n");
+        epc_parser_list_free(list);
+        return EXIT_FAILURE;
+    }
 
     // create_c_grammar_parser is generated from c_grammar.gdl
     epc_parser_t * c_parser = create_c_grammar_parser(list);
-    if (!c_parser)
+    if (c_parser == NULL)
     {
         fprintf(stderr, "Failed to create C parser.\n");
         session_ctx_free(session_ctx);
@@ -269,7 +419,7 @@ main(int argc, char * argv[])
 
     // Print the CPT
     char * cpt_str = epc_cpt_to_string(session.internal_parse_ctx, session.result.data.success);
-    if (cpt_str)
+    if (cpt_str != NULL)
     {
         printf("Concrete Parse Tree:\n%s\n", cpt_str);
         free(cpt_str);
