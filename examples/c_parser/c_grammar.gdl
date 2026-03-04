@@ -14,9 +14,9 @@ KwAuto = lexeme("auto" IdBoundary);
 KwRegister = lexeme("register" IdBoundary);
 
 // Keywords - Type Qualifiers
-KwConst = lexeme("const" IdBoundary);
-KwVolatile = lexeme("volatile" IdBoundary);
-KwRestrict = lexeme("restrict" IdBoundary);
+KwConst = lexeme("const" IdBoundary) | lexeme("__const" IdBoundary) | lexeme("__const__" IdBoundary);
+KwVolatile = lexeme("volatile" IdBoundary) | lexeme("__volatile" IdBoundary) | lexeme("__volatile__" IdBoundary);
+KwRestrict = lexeme("restrict" IdBoundary) | lexeme("__restrict" IdBoundary) | lexeme("__restrict__" IdBoundary);
 
 // Keywords - Types
 KwVoid = lexeme("void" IdBoundary);
@@ -50,15 +50,26 @@ KwGoto = lexeme("goto" IdBoundary);
 KwContinue = lexeme("continue" IdBoundary);
 KwBreak = lexeme("break" IdBoundary);
 KwSizeof = lexeme("sizeof" IdBoundary);
-KwInline = lexeme("inline" IdBoundary);
+KwInline = lexeme("inline" IdBoundary) | lexeme("__inline" IdBoundary) | lexeme("__inline__" IdBoundary);
 
-ReservedWord = KwStatic | KwExtern | KwAuto | KwRegister 
+// Keywords - Extensions
+KwAlignof = lexeme("__alignof__" IdBoundary) | lexeme("_Alignof" IdBoundary);
+KwAligned = lexeme("__aligned__" IdBoundary);
+KwAttribute = lexeme("__attribute__" IdBoundary);
+KwAsm = lexeme("asm" IdBoundary) | lexeme("__asm__" IdBoundary) | lexeme("__asm" IdBoundary);
+KwExtension = lexeme("__extension__" IdBoundary);
+
+StandardReservedWord = KwStatic | KwExtern | KwAuto | KwRegister 
              | KwConst | KwVolatile | KwRestrict
              | KwVoid | KwChar | KwShort | KwInt | KwLong | KwFloat | KwDouble | KwSigned | KwUnsigned
              | KwBool | KwComplex | KwImaginary
              | KwStruct | KwUnion | KwEnum | KwTypedef
              | KwReturn | KwIf | KwElse | KwWhile | KwDo | KwFor | KwSwitch | KwCase | KwDefault | KwGoto | KwContinue | KwBreak | KwSizeof
              | KwInline;
+
+ExtensionReservedWord = KwAlignof | KwAligned | KwAttribute | KwAsm | KwExtension;
+
+ReservedWord = StandardReservedWord | ExtensionReservedWord;
 
 Identifier = lexeme(not(ReservedWord) identifier);
 
@@ -70,7 +81,8 @@ DecDigit = [1-9];
 DecimalLiteral = DecDigit digit* | '0';
 
 IntegerLiteral = HexLiteral | OctalLiteral | DecimalLiteral;
-IntegerSuffix = (oneof("uU") oneof("lL")?) | (oneof("lL") oneof("uU")?);
+LongSuffix = "ll" | "LL" | oneof("lL");
+IntegerSuffix = (oneof("uU") LongSuffix?) | (LongSuffix oneof("uU")?);
 
 DigitSeq = digit+;
 Exponent = oneof("eE") oneof("+-")? DigitSeq;
@@ -145,7 +157,7 @@ DecOp = lexeme("--");
 
 StorageClassSpecifier = KwStatic | KwExtern | KwAuto | KwRegister;
 
-TypeQualifier = KwConst | KwVolatile | KwRestrict;
+TypeQualifier = KwConst | KwVolatile | KwRestrict | Attribute;
 
 FunctionSpecifier = KwInline;
 
@@ -175,6 +187,8 @@ UnaryOp = Amp | Star | Plus | Minus | Tilde | Excl;
 
 UnaryExpression = (KwSizeof LParen TypeName RParen)
                 | (KwSizeof UnaryExpression)
+                | (KwAlignof LParen TypeName RParen)
+                | (KwAlignof UnaryExpression)
                 | (UnaryOp UnaryExpression)
                 | (IncOp UnaryExpression)
                 | (DecOp UnaryExpression)
@@ -244,45 +258,72 @@ StructDeclarator = (Declarator? Colon ConditionalExpression)
 
 StructDeclaratorList = delimited(StructDeclarator, Comma);
 
-SpecifierQualifierList = (TypeSpecifier | TypeQualifier)+;
+// --- Attribute Support ---
+// Rule for a single attribute argument. It can be an Identifier, Literal, CastExpression, or a general Expression.
+AlignedAttribute = KwAligned LParen (Expression | TypeName) RParen;
 
-StructDeclaration = SpecifierQualifierList StructDeclaratorList Semicolon;
+AttributeArgument = AlignedAttribute | Identifier | NumberLiteral | StringLiteral | CastExpression | Expression;
+
+// Rule for the list of arguments within an attribute.
+// This is a simplified approach; a full C attribute parser would need more complex handling for nested parentheses and expressions.
+// For now, it matches one or more AttributeArguments separated by commas.
+AttributeArgList = AttributeArgument (Comma AttributeArgument)*;
+
+// Rule for matching a C attribute: __attribute__((...))
+// We make it more flexible to handle nested parens and various head types
+AttributeHead = lexeme(identifier) | NumberLiteral | KwAligned;
+AttributeArg = (LParen AttributeArgList? RParen) | AttributeArgument;
+Attribute = KwAttribute LParen LParen AttributeHead AttributeArg* RParen RParen;
+
+// Assembler name extension: __asm__("name")
+AsmName = KwAsm LParen StringLiteral+ RParen;
+
+// --- End of Attribute Support Rules ---
+
+
+StructDeclaration = KwExtension? SpecifierQualifierList StructDeclaratorList? Semicolon;
 
 StructDeclarationList = StructDeclaration+;
 
-StructOrUnionSpecifier = ((KwStruct | KwUnion) Identifier? LBrace StructDeclarationList RBrace)
-                       | ((KwStruct | KwUnion) Identifier);
+StructOrUnionSpecifier = ((KwStruct | KwUnion) Attribute* Identifier? LBrace StructDeclarationList RBrace Attribute*)
+                       | ((KwStruct | KwUnion) Attribute* Identifier);
 
 Enumerator = Identifier (Assign ConditionalExpression)?;
 
-EnumSpecifier = (KwEnum Identifier? LBrace delimited_flex(Enumerator, Comma) Comma? RBrace)
-              | (KwEnum Identifier);
+EnumSpecifier = (KwEnum Attribute* Identifier? LBrace delimited_flex(Enumerator, Comma) Comma? RBrace Attribute*)
+              | (KwEnum Attribute* Identifier);
 
 // Typedef names are identifiers that have been registered
 TypedefName = satisfy(Identifier, "typedef-name", is_typedef_name, NULL);
 
-TypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
-              | KwFloat | KwDouble | KwSigned | KwUnsigned
-              | KwBool | KwComplex | KwImaginary
-              | TypedefName
-              | StructOrUnionSpecifier
-              | EnumSpecifier;
+NonTypedefTypeSpecifier = KwVoid | KwChar | KwShort | KwInt | KwLong 
+                        | KwFloat | KwDouble | KwSigned | KwUnsigned
+                        | KwBool | KwComplex | KwImaginary
+                        | StructOrUnionSpecifier
+                        | EnumSpecifier;
+
+TypeSpecifier = NonTypedefTypeSpecifier | TypedefName;
 
 // --- Declarations ---
 
 DeclarationSpecifier = StorageClassSpecifier
                      | TypeQualifier
-                     | TypeSpecifier
+                     | NonTypedefTypeSpecifier
                      | FunctionSpecifier;
 
-DeclarationSpecifiers = DeclarationSpecifier+;
+// We ensure that only one TypedefName can be present in a set of specifiers,
+// and it cannot be combined with other type specifiers (standard C rules).
+DeclarationSpecifiers = (DeclarationSpecifier* TypedefName DeclarationSpecifier*)
+                      | (DeclarationSpecifier | NonTypedefTypeSpecifier)+;
 
+SpecifierQualifierList = (TypeQualifier* TypedefName TypeQualifier*)
+                       | (TypeQualifier | NonTypedefTypeSpecifier)+;
 
 // Common Declarator: supports pointers, arrays, and function pointers
 Pointer = Star TypeQualifier*;
 
 DirectDeclarator = (LParen Declarator RParen)
-                 | Identifier;
+                 | (Identifier Attribute*);
 
 // Declarator suffix: arrays or function parameters
 DeclaratorSuffix = (LBracket (TypeQualifier* KwStatic? Expression) RBracket)
@@ -292,13 +333,13 @@ DeclaratorSuffix = (LBracket (TypeQualifier* KwStatic? Expression) RBracket)
                  | (LBracket Expression? RBracket)
                  | (LParen ParameterTypeList? RParen);
 
-Declarator = Pointer* DirectDeclarator DeclaratorSuffix*;
+Declarator = Pointer* DirectDeclarator DeclaratorSuffix* Attribute*;
 
-InitDeclarator = Declarator (Assign Initializer)?;
+InitDeclarator = Declarator Attribute* AsmName? Attribute* (Assign Initializer)?;
 
 InitDeclaratorList = delimited(InitDeclarator, Comma);
 
-Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
+Declaration = KwExtension? DeclarationSpecifiers InitDeclaratorList? Semicolon;
 
 // --- Typedef Specific Rules ---
 
@@ -306,17 +347,17 @@ Declaration = DeclarationSpecifiers InitDeclaratorList? Semicolon;
 TypedefDefiningIdentifier = wrap(Identifier, typedef_capture_callbacks, NULL);
 
 TypedefDirectDeclarator = (LParen TypedefDeclarator RParen)
-                        | TypedefDefiningIdentifier;
+                        | (TypedefDefiningIdentifier Attribute*);
 
 // A specialized declarator that uses the capturing identifier
-TypedefDeclarator = Pointer* TypedefDirectDeclarator DeclaratorSuffix*;
+TypedefDeclarator = Pointer* TypedefDirectDeclarator DeclaratorSuffix* Attribute*;
 
-TypedefInitDeclarator = TypedefDeclarator (Assign Initializer)?;
+TypedefInitDeclarator = TypedefDeclarator Attribute* AsmName? Attribute* (Assign Initializer)?;
 
 TypedefInitDeclaratorList = delimited(TypedefInitDeclarator, Comma);
 
 // The whole typedef declaration is wrapped to commit/discard the captured names
-TypedefDeclaration = wrap(KwTypedef DeclarationSpecifiers TypedefInitDeclaratorList Semicolon, typedef_commit_callbacks, NULL);
+TypedefDeclaration = wrap(KwExtension? KwTypedef DeclarationSpecifiers TypedefInitDeclaratorList Semicolon, typedef_commit_callbacks, NULL);
 
 // --- Statements ---
 
@@ -329,7 +370,8 @@ LabeledStatement = (Identifier Colon Statement)
 JumpStatement = (KwGoto Identifier Semicolon)
               | (KwContinue Semicolon)
               | (KwBreak Semicolon)
-              | (KwReturn Expression? Semicolon);
+              | (KwReturn Expression? Semicolon)
+              | (KwAsm Attribute* LParen delimited(Expression, Comma) RParen Semicolon);
 
 SelectionStatement = (KwIf LParen Expression RParen Statement (KwElse Statement)?)
                    | (KwSwitch LParen Expression RParen Statement);
@@ -347,17 +389,18 @@ Statement = LabeledStatement
           | Declaration
           | JumpStatement
           | ExpressionStatement
+          | (KwAsm Attribute* LParen delimited(Expression, Comma) RParen Semicolon)
           ;
 
 // --- Top Level ---
 
-ParameterDeclaration = DeclarationSpecifiers Declarator?;
+ParameterDeclaration = KwExtension? DeclarationSpecifiers (Declarator | AbstractDeclarator)?;
 
 ParameterTypeList = delimited_flex(ParameterDeclaration, Comma) (Comma Ellipsis)?;
 
 ParameterList = LParen ParameterTypeList? RParen;
 
-ExternalDeclaration = FunctionDefinition | TypedefDeclaration | Declaration;
+ExternalDeclaration = KwExtension? (FunctionDefinition | TypedefDeclaration | Declaration);
 
 FunctionDefinition = DeclarationSpecifiers Declarator CompoundStatement;
 
