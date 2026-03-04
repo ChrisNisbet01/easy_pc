@@ -1,0 +1,40 @@
+Whitespace = space*;
+Backslash = '\\';
+Quote = "\"";
+EscapeChar = oneof("\"\\/bfnrt");
+SimpleEscape = '\\' EscapeChar;
+HexDigit = hex_digit;
+UnicodePrefix = "\\u";
+UnicodeDigits = count(4, HexDigit);
+UnicodeEscape = UnicodePrefix UnicodeDigits;
+EscapedChar = SimpleEscape | UnicodeEscape;
+
+NonQuoteNonBackslash = noneof("\\\"");
+StringContentChar = NonQuoteNonBackslash | EscapedChar;
+
+Comma = lexeme(',');
+OBracket = lexeme('[');
+CBracket = lexeme(']');
+OObject = lexeme('{');
+CObject = lexeme('}');
+Colon = lexeme(':');
+
+True = "true";
+False = "false";
+Boolean = True | False                          @JSON_ACTION_CREATE_BOOLEAN;
+Number = double                                 @JSON_ACTION_CREATE_NUMBER;
+Null = "null"                                   @JSON_ACTION_CREATE_NULL;
+QuotedString = Quote StringContentChar* Quote   @JSON_ACTION_CREATE_STRING;
+
+Value = Whitespace (QuotedString | Null | Boolean | Number | Object | Array) Whitespace;
+
+ArrayElements = delimited(Value, Comma)         @JSON_ACTION_CREATE_ARRAY_ELEMENTS;
+OptionalArrayElements = ArrayElements?          @JSON_ACTION_CREATE_OPTIONAL_ARRAY_ELEMENTS;
+Array = OBracket OptionalArrayElements CBracket @JSON_ACTION_CREATE_ARRAY;
+
+Member = QuotedString Colon Value               @JSON_ACTION_CREATE_MEMBER;
+Members = delimited(Member, Comma)              @JSON_ACTION_CREATE_OBJECT_ELEMENTS;
+OptionalMembers = Members?                      @JSON_ACTION_CREATE_OPTIONAL_OBJECT_ELEMENTS;
+Object = OObject OptionalMembers CObject        @JSON_ACTION_CREATE_OBJECT;
+
+Json = Value eoi;
