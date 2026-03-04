@@ -15,6 +15,7 @@ main(int argc, char ** argv)
     char const * gdl_filepath = NULL;
     char const * output_dir = "."; // Default output directory
     char const * header_to_include = NULL;
+    bool bootstrap_ast = false;
 
     // Parse command line arguments
     for (int i = 1; i < argc; ++i)
@@ -65,7 +66,7 @@ main(int argc, char ** argv)
         }
         else if (strcmp(argv[i], "--bootstrap-ast") == 0)
         {
-            // This flag is handled after parsing, ignore it here.
+            bootstrap_ast = true;
         }
         else if (gdl_filepath == NULL)
         {
@@ -181,17 +182,10 @@ main(int argc, char ** argv)
                     printf("C code generation completed successfully.\n");
                 }
 
-                // Check for bootstrap flag and call the generator
-                for (int i = 1; i < argc; ++i)
+                if (bootstrap_ast)
                 {
-                    if (strcmp(argv[i], "--bootstrap-ast") == 0)
-                    {
-                        printf("AST bootstrap files generation requested.\n");
-                        generate_ast_bootstrap_files(
-                            (gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir
-                        );
-                        break;
-                    }
+                    printf("AST bootstrap files generation requested.\n");
+                    generate_ast_bootstrap_files((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir);
                 }
 
                 gdl_ast_node_free((gdl_ast_node_t *)ast_build_result.ast_root, NULL);
