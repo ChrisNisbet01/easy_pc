@@ -20,7 +20,24 @@ main(int argc, char ** argv)
     // Parse command line arguments
     for (int i = 1; i < argc; ++i)
     {
-        if (strncmp(argv[i], "--output-dir", strlen("--output-dir")) == 0)
+        if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0)
+        {
+            printf("gdl_compiler version: %s\n", GDL_COMPILER_VERSION);
+            printf("easy_pc library version: %s\n", epc_get_version());
+            return EXIT_SUCCESS;
+        }
+        else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+        {
+            printf("Usage: %s <gdl_file> [options]\n", argv[0]);
+            printf("Options:\n");
+            printf("  --output-dir <dir>  Set the output directory for generated files.\n");
+            printf("  --header <header>   Add an extra #include to the generated .c file.\n");
+            printf("  --bootstrap-ast     Generate skeleton AST and semantic action files.\n");
+            printf("  --version, -v       Show version information and exit.\n");
+            printf("  --help, -h          Show this help message and exit.\n");
+            return EXIT_SUCCESS;
+        }
+        else if (strncmp(argv[i], "--output-dir", strlen("--output-dir")) == 0)
         {
             char const * arg = argv[i];
             char const * value_start = strchr(arg, '=');
@@ -74,14 +91,16 @@ main(int argc, char ** argv)
         }
         else
         {
-            fprintf(stderr, "Usage: %s <gdl_file> [--output-dir <directory>]\n", argv[0]);
+            fprintf(stderr, "Usage: %s <gdl_file> [options]\n", argv[0]);
+            fprintf(stderr, "Try '%s --help' for more information.\n", argv[0]);
             return EXIT_FAILURE;
         }
     }
 
     if (gdl_filepath == NULL)
     {
-        fprintf(stderr, "Usage: %s <gdl_file> [--output-dir <directory>]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <gdl_file> [options]\n", argv[0]);
+        fprintf(stderr, "Try '%s --help' for more information.\n", argv[0]);
         return EXIT_FAILURE;
     }
 
