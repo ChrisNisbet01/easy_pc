@@ -157,6 +157,22 @@ typedef struct
     void * parser_data;
 } wrap_data_t;
 
+typedef struct epc_memo_entry_t
+{
+    epc_parser_t * parser;
+    size_t input_offset;
+    epc_parse_result_t result;
+    size_t hit_count;
+    struct epc_memo_entry_t * next; // For separate chaining
+} epc_memo_entry_t;
+
+typedef struct epc_memo_table_t
+{
+    epc_memo_entry_t ** buckets;
+    size_t bucket_count;
+    size_t entry_count;
+} epc_memo_table_t;
+
 typedef enum parser_data_type_t
 {
     PARSER_DATA_TYPE_NONE,
@@ -170,6 +186,7 @@ typedef enum parser_data_type_t
     PARSER_DATA_TYPE_LEXEME,
     PARSER_DATA_TYPE_PREDICATE,
     PARSER_DATA_TYPE_WRAP,
+    PARSER_DATA_TYPE_MEMOIZE,
 } parser_data_type_t;
 
 typedef struct parser_data_type_st
@@ -232,21 +249,67 @@ EASY_PC_API
 epc_cpt_node_t * epc_node_alloc(epc_parser_t * parser, char const * const tag);
 
 EASY_PC_HIDDEN
+epc_cpt_node_t * epc_node_copy(epc_cpt_node_t * node);
+
+EASY_PC_HIDDEN
 void epc_node_free(epc_cpt_node_t * node);
 
 EASY_PC_HIDDEN
 char const * epc_node_id(epc_cpt_node_t const * node);
 
+void epc_parser_free(epc_parser_t * parser);
+
+EASY_PC_HIDDEN
+epc_memo_table_t * epc_parser_ctx_get_memo_table(epc_parser_ctx_t * ctx);
+
+EASY_PC_HIDDEN
+epc_parse_result_t * epc_memo_table_get(epc_parser_ctx_t * ctx, epc_parser_t * parser, size_t input_offset);
+
+EASY_PC_HIDDEN
+void epc_memo_table_set(epc_parser_ctx_t * ctx, epc_parser_t * parser, size_t input_offset, epc_parse_result_t result);
+
+EASY_PC_HIDDEN
+void epc_memo_table_cleanup(epc_parser_ctx_t * ctx);
+
+#define INCLUDE_MEMOIZATION_DEBUG 0
+#if INCLUDE_MEMOIZATION_DEBUG
+EASY_PC_HIDDEN
+void epc_memo_table_print(epc_parser_ctx_t * ctx);
+#endif
+
+EASY_PC_HIDDEN
+epc_parser_error_t * epc_parser_error_alloc(
+    epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
+);
+
 EASY_PC_HIDDEN
 void epc_parser_error_free(epc_parser_error_t * error);
 
 EASY_PC_HIDDEN
-epc_parser_error_t * parser_furthest_error_copy(epc_parser_ctx_t * ctx);
-
-void epc_parser_free(epc_parser_t * parser);
+epc_parser_error_t * epc_parser_error_copy(epc_parser_ctx_t * ctx, epc_parser_error_t * e);
 
 EASY_PC_HIDDEN
-epc_line_col_t epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t offset);
+epc_parser_error_t * parser_furthest_error_copy(epc_parser_ctx_t * ctx);
+
+EASY_PC_HIDDEN
+void update_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t * new_error);
+
+EASY_PC_HIDDEN
+epc_parse_result_t epc_parser_error_result(
+    epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
+);
+
+EASY_PC_HIDDEN
+epc_parse_result_t epc_parser_success_result(epc_cpt_node_t * success_node);
+
+EASY_PC_HIDDEN
+epc_parse_result_t epc_parse_result_copy(epc_parser_ctx_t * ctx, epc_parse_result_t result);
+
+EASY_PC_HIDDEN
+void parser_furthest_error_restore(epc_parser_ctx_t * ctx, epc_parser_error_t ** replacement);
 
 EASY_PC_HIDDEN
 char const * epc_parser_get_name(epc_parser_t const * p);
+
+EASY_PC_HIDDEN
+epc_line_col_t epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t offset);

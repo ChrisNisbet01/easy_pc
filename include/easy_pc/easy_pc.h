@@ -1384,6 +1384,32 @@ epc_wrap_l(
 }
 
 /**
+ * @brief Creates a parser that wraps another parser and memoizes its results.
+ * When the memoized parser is executed, it checks if the wrapped parser has already been
+ * run at the current input position. If so, the cached result is returned.
+ * Otherwise, the wrapped parser is executed, and its result is stored in the memo table.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p_to_memoize The parser to wrap and memoize.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_memoize(char const * name, epc_parser_t * p_to_memoize);
+
+/**
+ * @brief Creates a parser that wraps another parser and memoizes its results.
+ * This is a convenience wrapper for `epc_memoize()` that automatically adds the created
+ * parser to the provided `epc_parser_list`.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p_to_memoize The parser to wrap and memoize.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t *
+epc_memoize_l(epc_parser_list * list, char const * name, epc_parser_t * p_to_memoize)
+{
+    return epc_parser_list_add(list, epc_memoize(name, p_to_memoize));
+}
+
+/**
  * @brief Allocates and initializes a new parser object within the grammar's memory context.
  *
  * This function is typically used to create a forward reference to a parser that is needed to

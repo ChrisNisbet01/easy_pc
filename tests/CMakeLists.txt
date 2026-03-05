@@ -360,3 +360,26 @@ add_test(
     NAME WrapTest
     COMMAND WrapTest
 )
+
+add_executable(MemoizeTest
+    AllTests.cpp
+    MemoizeTest.cpp
+)
+
+add_dependencies(all_unit_tests MemoizeTest)
+
+target_include_directories(MemoizeTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+)
+
+target_link_libraries(MemoizeTest PRIVATE
+    easy_pc_shared
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME MemoizeTest
+    COMMAND MemoizeTest
+)

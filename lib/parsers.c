@@ -83,6 +83,7 @@ parser_data_free(parser_data_type_st * data)
     case PARSER_DATA_TYPE_LEXEME:
     case PARSER_DATA_TYPE_PREDICATE:
     case PARSER_DATA_TYPE_WRAP:
+    case PARSER_DATA_TYPE_MEMOIZE:
         /* Nothing to do. */
         break;
 
@@ -146,188 +147,6 @@ epc_parser_t *
 epc_parser_fwd_decl(char const * name)
 {
     return epc_parser_allocate(name, "forward_decl", NULL);
-}
-
-EASY_PC_HIDDEN
-void
-epc_parser_error_free(epc_parser_error_t * error)
-{
-    if (error == NULL)
-    {
-        return;
-    }
-    free((char *)error->message);
-    free((char *)error->expected);
-    free((char *)error->found);
-    free(error);
-}
-
-EASY_PC_HIDDEN
-epc_line_col_t
-epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
-{
-    epc_line_col_t res = {0};
-    char const * const input_start = parse_ctx_get_input_start(ctx);
-    size_t const input_len = parse_ctx_get_input_len(ctx);
-
-    if (input_start == NULL || offset >= input_len)
-    {
-        return res;
-    }
-
-    char const * current = input_start + offset;
-    if (current > input_start + input_len)
-    {
-        return res;
-    }
-
-    {
-        char const * line_start = input_start;
-
-        for (char const * nl = strchr(input_start, '\n'); nl != NULL && nl <= current; nl = strchr(nl + 1, '\n'))
-        {
-            res.line++;
-            line_start = nl;
-        }
-        res.col = current - line_start;
-    }
-
-    return res;
-}
-
-EASY_PC_HIDDEN
-char const *
-epc_parser_get_name(epc_parser_t const * p)
-{
-    if (p == NULL)
-    {
-        return "NULL_PARSER";
-    }
-    else if (p->name != NULL)
-    {
-        return p->name;
-    }
-    else if (p->tag != NULL)
-    {
-        return p->tag;
-    }
-    else
-    {
-        return "Unnamed parser";
-    }
-}
-
-epc_parser_error_t *
-epc_parser_error_alloc(
-    epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
-)
-{
-    epc_parser_error_t * error = calloc(1, sizeof(*error));
-    if (error == NULL)
-    {
-        return error;
-    }
-
-    char const * input_start = parse_ctx_get_input_start(ctx);
-    char const * current = input_start + input_offset;
-
-    error->input_position = current;
-    error->position = epc_calculate_line_and_column(ctx, input_offset);
-
-    error->message = strdup(message != NULL ? message : "");
-    error->expected = strdup(expected != NULL ? expected : "");
-    error->found = strdup(found != NULL ? found : "");
-
-    return error;
-}
-
-void
-epc_parser_result_cleanup(epc_parse_result_t * result)
-{
-    if (result->is_error)
-    {
-        epc_parser_error_free(result->data.error);
-    }
-    else
-    {
-        epc_node_free(result->data.success);
-    }
-    memset(result, 0, sizeof(*result));
-}
-
-epc_parse_result_t
-epc_unparsed_error_result(size_t input_offset, char const * message, char const * expected, char const * found)
-{
-    epc_parse_result_t result = {
-        .is_error = true,
-        .data.error = epc_parser_error_alloc(NULL, input_offset, message, expected, found),
-    };
-    return result;
-}
-
-static void
-parser_furthest_error_restore(epc_parser_ctx_t * ctx, epc_parser_error_t ** replacement)
-{
-    parser_ctx_set_furthest_error(ctx, replacement);
-}
-
-static epc_parser_error_t *
-parser_error_copy(epc_parser_ctx_t * ctx, epc_parser_error_t * e)
-{
-    if (e == NULL)
-    {
-        return NULL;
-    }
-    return epc_parser_error_alloc(
-        ctx, parse_ctx_get_offset_from_input(ctx, e->input_position), e->message, e->expected, e->found
-    );
-}
-
-static void
-update_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t * new_error)
-{
-    if (ctx == NULL || new_error == NULL)
-    {
-        return;
-    }
-
-    epc_parser_error_t const * furthest_error = parse_ctx_get_furthest_error(ctx);
-
-    if (furthest_error == NULL || (new_error->input_position >= furthest_error->input_position))
-    {
-        epc_parser_error_t * e_copy = parser_error_copy(ctx, new_error);
-        parser_furthest_error_restore(ctx, &e_copy);
-    }
-}
-
-static epc_parse_result_t
-epc_parser_error_result(
-    epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
-)
-{
-    epc_parse_result_t result = {
-        .is_error = true,
-        .data.error = epc_parser_error_alloc(ctx, input_offset, message, expected, found),
-    };
-    update_furthest_error(ctx, result.data.error);
-    return result;
-}
-
-epc_parse_result_t
-epc_parser_success_result(epc_cpt_node_t * success_node)
-{
-    epc_parse_result_t result = {
-        .data.success = success_node,
-    };
-
-    return result;
-}
-
-EASY_PC_HIDDEN
-epc_parser_error_t *
-parser_furthest_error_copy(epc_parser_ctx_t * ctx)
-{
-    return parser_error_copy(ctx, parse_ctx_get_furthest_error(ctx));
 }
 
 static char const *
@@ -2950,7 +2769,8 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t fl
         if (flags & EPC_CONSUME_ALL_COMMENTS)
         {
             parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + len, 2);
-            if ((flags & EPC_CONSUME_CPP_COMMENT) && !res.is_eof && res.available >= 2 && res.next_input[0] == '/' && res.next_input[1] == '/')
+            if ((flags & EPC_CONSUME_CPP_COMMENT) && !res.is_eof && res.available >= 2 && res.next_input[0] == '/'
+                && res.next_input[1] == '/')
             {
                 len += 2;
                 while (1)
@@ -2969,7 +2789,8 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t fl
                 }
                 consumed_something = true;
             }
-            else if ((flags & EPC_CONSUME_C_COMMENT) && !res.is_eof && res.available >= 2 && res.next_input[0] == '/' && res.next_input[1] == '*')
+            else if ((flags & EPC_CONSUME_C_COMMENT) && !res.is_eof && res.available >= 2 && res.next_input[0] == '/'
+                     && res.next_input[1] == '*')
             {
                 len += 2;
                 while (1)
@@ -2990,7 +2811,8 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t fl
                 }
                 consumed_something = true;
             }
-            else if ((flags & EPC_CONSUME_BASH_COMMENT) && !res.is_eof && res.available >= 1 && res.next_input[0] == '#')
+            else if ((flags & EPC_CONSUME_BASH_COMMENT) && !res.is_eof && res.available >= 1
+                     && res.next_input[0] == '#')
             {
                 len += 1;
                 while (1)
@@ -3095,7 +2917,11 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         epc_parser_result_cleanup(&item_result);
         epc_parser_error_free(original_furthest_error);
         return epc_parser_error_result(
-            ctx, input_offset, "Memory allocation failure for lexeme/strip parent node", epc_parser_get_name(self), "N/A"
+            ctx,
+            input_offset,
+            "Memory allocation failure for lexeme/strip parent node",
+            epc_parser_get_name(self),
+            "N/A"
         );
     }
 
@@ -3106,7 +2932,11 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         epc_parser_error_free(original_furthest_error);
         epc_node_free(parent_node);
         return epc_parser_error_result(
-            ctx, input_offset, "Memory allocation failure for lexeme/strip children array", epc_parser_get_name(self), "N/A"
+            ctx,
+            input_offset,
+            "Memory allocation failure for lexeme/strip children array",
+            epc_parser_get_name(self),
+            "N/A"
         );
     }
 
@@ -3585,6 +3415,7 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
     case PARSER_DATA_TYPE_LEXEME:
     case PARSER_DATA_TYPE_PREDICATE:
     case PARSER_DATA_TYPE_WRAP:
+    case PARSER_DATA_TYPE_MEMOIZE:
         dst->data = src->data;
         break;
 
@@ -3736,6 +3567,41 @@ epc_wrap(char const * name, epc_parser_t * wrapped_parser, epc_wrap_callbacks_t 
     p->data.wrap.parser = wrapped_parser;
     p->data.wrap.callbacks = callbacks;
     p->data.wrap.parser_data = parser_data;
+
+    return p;
+}
+
+static epc_parse_result_t
+pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    epc_parser_t * wrapped_parser = self->data.parser;
+
+    /* 1. Look up in memo table */
+    epc_parse_result_t * cached_result = epc_memo_table_get(ctx, wrapped_parser, input_offset);
+    if (cached_result != NULL)
+    {
+        return epc_parse_result_copy(ctx, *cached_result);
+    }
+
+    /* 2. Not found, parse it */
+    epc_parse_result_t result = parse(wrapped_parser, ctx, input_offset);
+
+    /* 3. Store in memo table (set handles the copy) */
+    epc_memo_table_set(ctx, wrapped_parser, input_offset, result);
+
+    return result;
+}
+
+EASY_PC_API epc_parser_t *
+epc_memoize(char const * name, epc_parser_t * p_to_memoize)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "memoize", pmemoize_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+    p->data.type = PARSER_DATA_TYPE_MEMOIZE;
+    p->data.parser = p_to_memoize;
 
     return p;
 }

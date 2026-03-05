@@ -18,8 +18,8 @@ TEST_GROUP(CombinatorParsersNew)
 
     void teardown() override
     {
-        epc_parser_list_free(list);
         epc_parse_session_destroy(&session);
+        epc_parser_list_free(list);
     }
 
     // New helper for checking a CPT node directly

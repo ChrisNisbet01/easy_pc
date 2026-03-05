@@ -4,6 +4,8 @@ set(EASY_PC_LIB_SOURCES
   parsers.c
   easy_pc_ast.c
   child_list.c
+  result.c
+  memo.c
 )
 
 # Shared Library

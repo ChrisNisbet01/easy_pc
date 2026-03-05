@@ -41,6 +41,8 @@ struct epc_parser_ctx_t
 
     void * user_ctx; /* User-defined context that can be used in predicates (e.g. epc_wrap()). */
 
+    epc_memo_table_t memo_table;
+
 #ifdef WITH_INPUT_STREAM_SUPPORT
     pthread_mutex_t mutex;
     pthread_cond_t cond;
@@ -68,40 +70,6 @@ epc_parsing_thread_worker(void * arg)
     return NULL;
 }
 #endif
-
-// --- CPT Visitor ---
-static void
-pt_visit_recursive(epc_cpt_node_t * node, epc_cpt_visitor_t * visitor)
-{
-    if (!node || !visitor)
-    {
-        return;
-    }
-
-    if (visitor->enter_node)
-    {
-        visitor->enter_node(node, visitor->user_data);
-    }
-    for (int i = 0; i < node->children_count; ++i)
-    {
-        pt_visit_recursive(node->children[i], visitor);
-    }
-
-    if (visitor->exit_node)
-    {
-        visitor->exit_node(node, visitor->user_data);
-    }
-}
-
-EASY_PC_API void
-epc_cpt_visit_nodes(epc_cpt_node_t * root, epc_cpt_visitor_t * visitor)
-{
-    if (!root || !visitor)
-    {
-        return;
-    }
-    pt_visit_recursive(root, visitor);
-}
 
 // --- Top-Level API ---
 
@@ -272,6 +240,13 @@ parse_ctx_get_user_ctx(epc_parser_ctx_t const * ctx)
     return ctx ? ctx->user_ctx : NULL;
 }
 
+EASY_PC_HIDDEN
+epc_memo_table_t *
+epc_parser_ctx_get_memo_table(epc_parser_ctx_t * ctx)
+{
+    return ctx ? &ctx->memo_table : NULL;
+}
+
 // Internal parser_ctx_t destruction (for parse results)
 static void
 internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
@@ -282,6 +257,15 @@ internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
     }
 
     epc_parser_error_free(ctx->furthest_error);
+
+#if INCLUDE_MEMOIZATION_DEBUG
+    /*
+     *   Be careful not to clean up the parsers before printing this table, as it contains pointers to
+     *   memory owned by them.
+     */
+    epc_memo_table_print(ctx);
+#endif
+    epc_memo_table_cleanup(ctx);
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
     pthread_mutex_destroy(&ctx->mutex);
@@ -686,43 +670,6 @@ epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session)
     }
 }
 
-ATTR_NONNULL(1, 2)
-EASY_PC_API
-epc_cpt_node_t *
-epc_node_alloc(epc_parser_t * parser, char const * tag)
-{
-    epc_cpt_node_t * node = calloc(1, sizeof(*node));
-    if (node == NULL)
-    {
-        return NULL;
-    }
-    node->content = ""; /* Make non-NULL. */
-    node->tag = tag;
-    node->name = parser->name;
-    node->ast_config = parser->ast_config;
-
-    return node;
-}
-
-EASY_PC_HIDDEN
-void
-epc_node_free(epc_cpt_node_t * node)
-{
-    if (node == NULL)
-    {
-        return;
-    }
-    if (node->children != NULL)
-    {
-        for (int i = 0; i < node->children_count; i++)
-        {
-            epc_node_free(node->children[i]);
-        }
-        free(node->children);
-    }
-    free(node);
-}
-
 EASY_PC_HIDDEN
 char const *
 epc_node_id(epc_cpt_node_t const * node)
@@ -800,68 +747,4 @@ epc_parser_list_free(epc_parser_list * list)
 
     free(list->parsers);
     free(list);
-}
-
-EASY_PC_API const char *
-epc_cpt_node_get_semantic_content(epc_cpt_node_t * node)
-{
-    if (node == NULL || node->content == NULL)
-    {
-        return NULL;
-    }
-    // Ensure start offset does not go beyond the actual content.
-    // If it does, effectively, there is no semantic content.
-    if (node->semantic_start_offset >= node->len)
-    {
-        return node->content + node->len; // Point to end of string or null
-    }
-
-    return node->content + node->semantic_start_offset;
-}
-
-EASY_PC_API size_t
-epc_cpt_node_get_semantic_len(epc_cpt_node_t * node)
-{
-    if (node == NULL)
-    {
-        return 0;
-    }
-    // Calculate the total trimmed length.
-    // Ensure start offset is not beyond actual length
-    if (node->semantic_start_offset >= node->len)
-    {
-        return 0;
-    }
-    size_t effective_len = node->len - node->semantic_start_offset;
-
-    // Ensure end offset is not beyond the remaining effective length
-    if (node->semantic_end_offset >= effective_len)
-    {
-        return 0;
-    }
-    effective_len -= node->semantic_end_offset;
-
-    return effective_len;
-}
-
-EASY_PC_API const char *
-epc_cpt_node_get_content(epc_cpt_node_t * node)
-{
-    if (node == NULL || node->content == NULL)
-    {
-        return NULL;
-    }
-
-    return node->content;
-}
-
-EASY_PC_API size_t
-epc_cpt_node_get_len(epc_cpt_node_t * node)
-{
-    if (node == NULL)
-    {
-        return 0;
-    }
-
-    return node->len;
 }
