@@ -157,7 +157,8 @@ DecOp = lexeme("--");
 
 StorageClassSpecifier = KwStatic | KwExtern | KwAuto | KwRegister;
 
-TypeQualifier = KwConst | KwVolatile | KwRestrict | Attribute;
+TypeQualifierRaw = KwConst | KwVolatile | KwRestrict | Attribute;
+TypeQualifier = memoize(TypeQualifierRaw);
 
 FunctionSpecifier = KwInline;
 
@@ -185,7 +186,7 @@ PostfixExpression = PrimaryExpression PostfixPart*;
 
 UnaryOp = Amp | Star | Plus | Minus | Tilde | Excl;
 
-UnaryExpression = (KwSizeof LParen TypeName RParen)
+UnaryExpressionRaw = (KwSizeof LParen TypeName RParen)
                 | (KwSizeof UnaryExpression)
                 | (KwAlignof LParen TypeName RParen)
                 | (KwAlignof UnaryExpression)
@@ -194,13 +195,18 @@ UnaryExpression = (KwSizeof LParen TypeName RParen)
                 | (DecOp UnaryExpression)
                 | PostfixExpression
                 ;
+UnaryExpression = memoize(UnaryExpressionRaw);
 
 // Abstract declarators are used in type names (e.g., in casts)
 AbstractDeclarator = (Pointer+ DeclaratorSuffix*) | DeclaratorSuffix+;
-TypeName = SpecifierQualifierList AbstractDeclarator?;
 
-CastExpression = (LParen TypeName RParen CastExpression)
+TypeNameRaw = SpecifierQualifierList AbstractDeclarator?;
+TypeName = memoize(TypeNameRaw);
+
+CastExpressionRaw = (LParen TypeName RParen CastExpression)
                | UnaryExpression;
+CastExpression = memoize(CastExpressionRaw);
+
 
 MulOp = Star | Slash | Percent;
 MultiplicativeExpression = chainl1(CastExpression, MulOp);
@@ -273,7 +279,9 @@ AttributeArgList = AttributeArgument (Comma AttributeArgument)*;
 // We make it more flexible to handle nested parens and various head types
 AttributeHead = lexeme(identifier) | NumberLiteral | KwAligned;
 AttributeArg = (LParen AttributeArgList? RParen) | AttributeArgument;
-Attribute = KwAttribute LParen LParen AttributeHead AttributeArg* RParen RParen;
+
+AttributeRaw = KwAttribute LParen LParen AttributeHead AttributeArg* RParen RParen;
+Attribute = memoize(AttributeRaw);
 
 // Assembler name extension: __asm__("name")
 AsmName = KwAsm LParen StringLiteral+ RParen;
@@ -306,15 +314,17 @@ TypeSpecifier = NonTypedefTypeSpecifier | TypedefName;
 
 // --- Declarations ---
 
-DeclarationSpecifier = StorageClassSpecifier
+DeclarationSpecifierRaw = StorageClassSpecifier
                      | TypeQualifier
                      | NonTypedefTypeSpecifier
                      | FunctionSpecifier;
+DeclarationSpecifier = memoize(DeclarationSpecifierRaw);
 
 // We ensure that only one TypedefName can be present in a set of specifiers,
 // and it cannot be combined with other type specifiers (standard C rules).
-DeclarationSpecifiers = (DeclarationSpecifier* TypedefName DeclarationSpecifier*)
+DeclarationSpecifiersRaw = (DeclarationSpecifier* TypedefName DeclarationSpecifier*)
                       | (DeclarationSpecifier | NonTypedefTypeSpecifier)+;
+DeclarationSpecifiers = memoize(DeclarationSpecifiersRaw);
 
 SpecifierQualifierList = (TypeQualifier* TypedefName TypeQualifier*)
                        | (TypeQualifier | NonTypedefTypeSpecifier)+;
@@ -322,8 +332,9 @@ SpecifierQualifierList = (TypeQualifier* TypedefName TypeQualifier*)
 // Common Declarator: supports pointers, arrays, and function pointers
 Pointer = Star TypeQualifier*;
 
-DirectDeclarator = (LParen Declarator RParen)
+DirectDeclaratorRaw = (LParen Declarator RParen)
                  | (Identifier Attribute*);
+DirectDeclarator = memoize(DirectDeclaratorRaw);
 
 // Declarator suffix: arrays or function parameters
 DeclaratorSuffix = (LBracket (TypeQualifier* KwStatic? Expression) RBracket)
@@ -333,7 +344,8 @@ DeclaratorSuffix = (LBracket (TypeQualifier* KwStatic? Expression) RBracket)
                  | (LBracket Expression? RBracket)
                  | (LParen ParameterTypeList? RParen);
 
-Declarator = Pointer* DirectDeclarator DeclaratorSuffix* Attribute*;
+DeclaratorRaw = Pointer* DirectDeclarator DeclaratorSuffix* Attribute*;
+Declarator = memoize(DeclaratorRaw);
 
 InitDeclarator = Declarator Attribute* AsmName? Attribute* (Assign Initializer)?;
 
