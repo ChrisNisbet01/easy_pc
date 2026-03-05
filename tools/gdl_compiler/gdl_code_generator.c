@@ -437,6 +437,7 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
+    case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
     {
         traverse_expression_for_references(expression_node->data.unary_combinator_call.expr, current_rule_info, all_rules);
         break;
@@ -1146,6 +1147,19 @@ generate_expression_code(
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
     {
         fprintf(source_file, "epc_skip_l(list, %s%s%s, ", q, expr_name, q);
+        if (!generate_expression_code(
+                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
+            ))
+        {
+            return false;
+        }
+        fprintf(source_file, ")");
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
+    {
+        fprintf(source_file, "epc_memoize_l(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))

@@ -163,6 +163,8 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_chainr1 = epc_lexeme_l(l, "chainr1", p_chainr1_raw);
     epc_parser_t * p_skip_raw = epc_string_l(l, "skip", "skip");
     epc_parser_t * p_skip = epc_lexeme_l(l, "skip", p_skip_raw);
+    epc_parser_t * p_memoize_raw = epc_string_l(l, "memoize", "memoize");
+    epc_parser_t * p_memoize = epc_lexeme_l(l, "memoize", p_memoize_raw);
     epc_parser_t * p_satisfy_raw = epc_string_l(l, "satisfy", "satisfy");
     epc_parser_t * p_satisfy = epc_lexeme_l(l, "satisfy", p_satisfy_raw);
     epc_parser_t * p_wrap_raw = epc_string_l(l, "wrap", "wrap");
@@ -202,7 +204,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * combinator_parser = epc_or_l(
         l,
         "CombinatorKeyword",
-        21,
+        22,
         p_string_raw,
         p_char_range_raw,
         p_none_of_raw,
@@ -222,6 +224,7 @@ create_gdl_parser(epc_parser_list * l)
         p_chainl1_raw,
         p_chainr1_raw,
         p_skip_raw,
+        p_memoize_raw,
         p_satisfy_raw,
         p_wrap_raw
     );
@@ -361,6 +364,9 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * skip_call = epc_and_l(l, "SkipCall", 4, p_skip, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(skip_call, GDL_AST_ACTION_CREATE_SKIP_CALL);
 
+    epc_parser_t * memoize_call = epc_and_l(l, "MemoizeCall", 4, p_memoize, gdl_lparen, gdl_expression_arg, gdl_rparen);
+    epc_parser_set_ast_action(memoize_call, GDL_AST_ACTION_CREATE_MEMOIZE_CALL);
+
     epc_parser_t * satisfy_args = epc_and_l(
         l,
         "SatisfyArgs",
@@ -384,7 +390,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_combinator_call = epc_or_l(
         l,
         "CombinatorCall",
-        18,
+        19,
         none_of_call,
         count_call,
         between_call,
@@ -401,6 +407,7 @@ create_gdl_parser(epc_parser_list * l)
         chainl1_call,
         chainr1_call,
         skip_call,
+        memoize_call,
         satisfy_call,
         wrap_call
     );

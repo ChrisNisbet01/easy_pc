@@ -185,6 +185,7 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
+    case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
         gdl_ast_node_free(node->data.unary_combinator_call.expr, user_data);
         break;
 
@@ -1292,6 +1293,13 @@ handle_create_skip_call(
 {
     handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_SKIP);
 }
+static void
+handle_create_memoize_call(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE);
+}
 
 static void
 handle_create_chainl1_call(
@@ -1847,6 +1855,7 @@ gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_STRIPL_CALL, handle_create_stripl_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_STRIPR_CALL, handle_create_stripr_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_SKIP_CALL, handle_create_skip_call);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_MEMOIZE_CALL, handle_create_memoize_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_CHAINL1_CALL, handle_create_chainl1_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_CHAINR1_CALL, handle_create_chainr1_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_FAIL_CALL, handle_create_fail_call);
