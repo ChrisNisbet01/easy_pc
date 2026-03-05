@@ -1,33 +1,28 @@
-set(GDL_INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/c_grammar.gdl)
-set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
-file(MAKE_DIRECTORY ${GENERATED_DIR})
+set(app "c_parser_example")
 
-set(GENERATED_HEADER ${GENERATED_DIR}/c_grammar.h)
-set(GENERATED_SOURCE ${GENERATED_DIR}/c_grammar.c)
-set(GENERATED_ACTIONS_HEADER ${GENERATED_DIR}/c_grammar_actions.h)
-
-add_custom_command(
-    OUTPUT ${GENERATED_HEADER} ${GENERATED_SOURCE} ${GENERATED_ACTIONS_HEADER}
-    COMMAND gdl_compiler ${GDL_INPUT_FILE} --output-dir=${GENERATED_DIR} --header=callbacks.h --bootstrap-ast
-    DEPENDS ${GDL_INPUT_FILE} gdl_compiler ${CMAKE_CURRENT_SOURCE_DIR}/callbacks.h
-    VERBATIM
-    COMMENT "Generating parser code for ${GDL_INPUT_FILE}"
+# Generate the grammar library using the macro
+epc_generate_grammar(
+    TARGET c_grammar
+    GDL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/c_grammar.gdl
+    HEADER callbacks.h
 )
 
-add_executable(c_parser_example
-    main.c
-    ${GENERATED_SOURCE}
-)
-add_dependencies(c_parser_example all_unit_tests)
-
-target_include_directories(c_parser_example PRIVATE
-    ${GENERATED_DIR}
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}
+add_executable(${app} 
+  main.c 
 )
 
-target_link_libraries(c_parser_example PRIVATE
+add_dependencies(${app} all_unit_tests)
+
+target_compile_options(${app} PRIVATE -Wall -Wextra -pedantic)
+
+target_link_libraries(${app} PRIVATE
     easy_pc_shared
+    c_grammar
+)
+
+target_include_directories(${app} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 # Copy test files to build directory
