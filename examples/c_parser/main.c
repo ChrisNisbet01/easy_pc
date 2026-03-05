@@ -14,7 +14,7 @@
 typedef struct
 {
     char ** names;   // Dynamically allocated array of names
-    int count;       // Current number of names
+    size_t count;    // Current number of names
     size_t capacity; // Current capacity of the names array
 } symbol_table_t;
 
@@ -44,7 +44,7 @@ symbol_table_free(symbol_table_t * st)
         return;
     }
 
-    for (int i = 0; i < st->count; i++)
+    for (size_t i = 0; i < st->count; i++)
     {
         free(st->names[i]);
     }
@@ -61,7 +61,7 @@ symbol_table_add(symbol_table_t * st, char const * name)
     }
 
     // Check if name already exists
-    for (int i = 0; i < st->count; i++)
+    for (size_t i = 0; i < st->count; i++)
     {
         if (strcmp(st->names[i], name) == 0)
         {
@@ -101,7 +101,7 @@ symbol_table_contains(symbol_table_t * st, char const * name)
         return false;
     }
 
-    for (int i = 0; i < st->count; i++)
+    for (size_t i = 0; i < st->count; i++)
     {
         if (strcmp(st->names[i], name) == 0)
         {
