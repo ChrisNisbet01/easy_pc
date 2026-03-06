@@ -359,10 +359,9 @@ TEST(CombinatorParsersNew, Fail_AlwaysFailsWithCustomMessage)
 // --- p_succeed tests ---
 TEST(CombinatorParsersNew, Succeed_AlwaysSucceedsConsumingNoContent)
 {
-    epc_parser_t * p_succeed_hello = epc_succeed(NULL);
+    epc_parser_t * p_succeed_hello = epc_succeed_l(list, NULL);
     session = parse(p_succeed_hello, "hello");
     check_success("succeed", "", 0, 0);
-    epc_parsers_free(1, p_succeed_hello);
 }
 
 // --- epc_lexeme tests ---
@@ -489,19 +488,18 @@ check_chain_node(epc_cpt_node_t * node, char const * expected_tag, char const * 
 // --- epc_chainl1 tests ---
 TEST(CombinatorParsersNew, ChainL1_SingleItem)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_plus = epc_char(NULL, '+');
-    epc_parser_t * p_chain = epc_chainl1(NULL, p_num, p_plus);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_plus = epc_char_l(list, NULL, '+');
+    epc_parser_t * p_chain = epc_chainl1_l(list, NULL, p_num, p_plus);
     session = parse(p_chain, "5");
     check_success("integer", "5", 1, 0); // Single item, so not "chainl1_combined"
-    epc_parsers_free(3, p_num, p_plus, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainL1_TwoItems)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_plus = epc_char(NULL, '+');
-    epc_parser_t * p_chain = epc_chainl1(NULL, p_num, p_plus);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_plus = epc_char_l(list, NULL, '+');
+    epc_parser_t * p_chain = epc_chainl1_l(list, NULL, p_num, p_plus);
     session = parse(p_chain, "1+2");
     check_success("chainl1", "1+2", 3, 3);
     // Access children through session.result.data.success directly for further checks
@@ -510,14 +508,13 @@ TEST(CombinatorParsersNew, ChainL1_TwoItems)
     check_cpt_node(root_node->children[0], "integer", "1", 1, 0);
     check_cpt_node(root_node->children[1], "char", "+", 1, 0);
     check_cpt_node(root_node->children[2], "integer", "2", 1, 0);
-    epc_parsers_free(3, p_num, p_plus, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainL1_MultipleItemsLeftAssociative)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_minus = epc_char(NULL, '-');
-    epc_parser_t * p_chain = epc_chainl1(NULL, p_num, p_minus);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_minus = epc_char_l(list, NULL, '-');
+    epc_parser_t * p_chain = epc_chainl1_l(list, NULL, p_num, p_minus);
     session = parse(p_chain, "1-2-3"); // Should be (1-2)-3
     check_success("chainl1", "1-2-3", 5, 3);
     epc_cpt_node_t * root_node = session.result.data.success;
@@ -528,54 +525,49 @@ TEST(CombinatorParsersNew, ChainL1_MultipleItemsLeftAssociative)
     check_cpt_node(root_node->children[0]->children[2], "integer", "2", 1, 0);
     check_cpt_node(root_node->children[1], "char", "-", 1, 0);    // -
     check_cpt_node(root_node->children[2], "integer", "3", 1, 0); // 3
-    epc_parsers_free(3, p_num, p_minus, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainL1_FailsIfFirstItemMissing)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_plus = epc_char(NULL, '+');
-    epc_parser_t * p_chain = epc_chainl1(NULL, p_num, p_plus);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_plus = epc_char_l(list, NULL, '+');
+    epc_parser_t * p_chain = epc_chainl1_l(list, NULL, p_num, p_plus);
     session = parse(p_chain, "+1");
     check_failure("Expected an integer");
-    epc_parsers_free(3, p_num, p_plus, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainL1_FailsIfSubsequentItemMissing)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_plus = epc_char(NULL, '+');
-    epc_parser_t * p_chain = epc_chainl1(NULL, p_num, p_plus);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_plus = epc_char_l(list, NULL, '+');
+    epc_parser_t * p_chain = epc_chainl1_l(list, NULL, p_num, p_plus);
     session = parse(p_chain, "1+");
     check_failure("Unexpected end of input");
-    epc_parsers_free(3, p_num, p_plus, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainL1_FailsNullChildParser)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_chain = epc_chainl1(NULL, p_num, NULL);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_chain = epc_chainl1_l(list, NULL, p_num, NULL);
     session = parse(p_chain, "1+2");
     check_failure("epc_chainl1 received NULL child parser(s)");
-    epc_parsers_free(2, p_num, p_chain);
 }
 
 // --- epc_chainr1 tests ---
 TEST(CombinatorParsersNew, ChainR1_SingleItem)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_caret = epc_char(NULL, '^');
-    epc_parser_t * p_chain = epc_chainr1(NULL, p_num, p_caret);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_caret = epc_char_l(list, NULL, '^');
+    epc_parser_t * p_chain = epc_chainr1_l(list, NULL, p_num, p_caret);
     session = parse(p_chain, "5");
     check_success("integer", "5", 1, 0); // Single item, so not "chainr1_combined"
-    epc_parsers_free(3, p_num, p_caret, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainR1_TwoItems)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_caret = epc_char(NULL, '^');
-    epc_parser_t * p_chain = epc_chainr1(NULL, p_num, p_caret);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_caret = epc_char_l(list, NULL, '^');
+    epc_parser_t * p_chain = epc_chainr1_l(list, NULL, p_num, p_caret);
     session = parse(p_chain, "1^2");
     check_success("chainr1", "1^2", 3, 3);
     epc_cpt_node_t * root_node = session.result.data.success;
@@ -593,14 +585,13 @@ TEST(CombinatorParsersNew, ChainR1_TwoItems)
     check_cpt_node(root_node->children[0], "integer", "1", 1, 0);
     check_cpt_node(root_node->children[1], "char", "^", 1, 0);
     check_cpt_node(root_node->children[2], "integer", "2", 1, 0);
-    epc_parsers_free(3, p_num, p_caret, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainR1_MultipleItemsRightAssociative)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_caret = epc_char(NULL, '^');
-    epc_parser_t * p_chain = epc_chainr1(NULL, p_num, p_caret);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_caret = epc_char_l(list, NULL, '^');
+    epc_parser_t * p_chain = epc_chainr1_l(list, NULL, p_num, p_caret);
     session = parse(p_chain, "1^2^3"); // Should be 1^(2^3)
     check_success("chainr1", "1^2^3", 5, 3);
     epc_cpt_node_t * root_node = session.result.data.success;
@@ -611,34 +602,30 @@ TEST(CombinatorParsersNew, ChainR1_MultipleItemsRightAssociative)
     check_cpt_node(root_node->children[2]->children[0], "integer", "2", 1, 0);
     check_cpt_node(root_node->children[2]->children[1], "char", "^", 1, 0);
     check_cpt_node(root_node->children[2]->children[2], "integer", "3", 1, 0);
-    epc_parsers_free(3, p_num, p_caret, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainR1_FailsIfFirstItemMissing)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_caret = epc_char(NULL, '^');
-    epc_parser_t * p_chain = epc_chainr1(NULL, p_num, p_caret);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_caret = epc_char_l(list, NULL, '^');
+    epc_parser_t * p_chain = epc_chainr1_l(list, NULL, p_num, p_caret);
     session = parse(p_chain, "^1");
     check_failure("Expected an integer");
-    epc_parsers_free(3, p_num, p_caret, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainR1_FailsIfSubsequentItemMissing)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_caret = epc_char(NULL, '^');
-    epc_parser_t * p_chain = epc_chainr1(NULL, p_num, p_caret);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_caret = epc_char_l(list, NULL, '^');
+    epc_parser_t * p_chain = epc_chainr1_l(list, NULL, p_num, p_caret);
     session = parse(p_chain, "1^");
     check_failure("Unexpected end of input");
-    epc_parsers_free(3, p_num, p_caret, p_chain);
 }
 
 TEST(CombinatorParsersNew, ChainR1_FailsNullChildParser)
 {
-    epc_parser_t * p_num = epc_int(NULL);
-    epc_parser_t * p_chain = epc_chainr1(NULL, p_num, NULL);
+    epc_parser_t * p_num = epc_int_l(list, NULL);
+    epc_parser_t * p_chain = epc_chainr1_l(list, NULL, p_num, NULL);
     session = parse(p_chain, "1^2");
     check_failure("epc_chainr1 received NULL child parser(s)");
-    epc_parsers_free(2, p_num, p_chain);
 }

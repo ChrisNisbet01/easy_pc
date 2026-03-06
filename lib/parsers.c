@@ -120,20 +120,6 @@ epc_parser_free(epc_parser_t * parser)
     free(parser);
 }
 
-void
-epc_parsers_free(size_t const count, ...)
-{
-    va_list parsers;
-
-    va_start(parsers, count);
-    for (size_t i = 0; i < count; i++)
-    {
-        epc_parser_t * parser = va_arg(parsers, epc_parser_t *);
-        epc_parser_free(parser);
-    }
-    va_end(parsers);
-}
-
 ATTR_NONNULL(2)
 static epc_parser_t *
 epc_parser_allocate(char const * name, char const * tag, parse_fn_t parse_fn)

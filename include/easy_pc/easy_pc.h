@@ -1654,14 +1654,6 @@ EASY_PC_API size_t epc_cpt_node_get_len(epc_cpt_node_t * node);
 EASY_PC_API char * epc_cpt_to_string(epc_parser_ctx_t * parse_ctx, epc_cpt_node_t * node);
 
 /**
- * @brief Frees the supplied list of parsers. Call this once the parsers are
- * no longer needed.
- *
- * @param count The number of parsers to follow in the pargument list.
- */
-void epc_parsers_free(size_t const count, ...);
-
-/**
  * @brief Returns the version of the easy_pc library.
  *
  * @return A string representing the version (e.g., "0.1.0").
