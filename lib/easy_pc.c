@@ -1,5 +1,7 @@
+#include "cpt_node.h"
 #include "easy_pc_private.h"
 #include "parsers.h"
+#include "result.h"
 
 #include "easy_pc/easy_pc_version.h"
 
@@ -19,38 +21,6 @@ epc_get_version(void)
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
-
-#define MAX_MMAP_INPUT_SIZE (100 * 1024 * 1024) /* 100 MB */
-
-typedef struct mmap_input_buffer_t
-{
-    char * buffer;     /**< Pointer to the start of the memory-mapped input buffer. */
-    size_t total_size; /**< Total size of the memory-mapped region (including guard page). */
-    size_t input_size; /**< Actual size of the input string stored in the buffer. */
-} mmap_input_buffer_t;
-
-// The Parsing Context (for a single parse operation and its results)
-// This will be internally managed by epc_parse_input
-struct epc_parser_ctx_t
-{
-    char const * input_start;
-    size_t input_len;
-
-    mmap_input_buffer_t mmap_buffer; /* Internal buffer management for input data, using mmap for large inputs. */
-    epc_parser_error_t * furthest_error;
-
-    void * user_ctx; /* User-defined context that can be used in predicates (e.g. epc_wrap()). */
-
-    epc_memo_table_t memo_table;
-
-#ifdef WITH_INPUT_STREAM_SUPPORT
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-    bool is_streaming;
-    bool is_eof;
-    int input_error;
-#endif
-};
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
 typedef struct
@@ -700,22 +670,6 @@ epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session)
     }
 }
 
-EASY_PC_HIDDEN
-char const *
-epc_node_id(epc_cpt_node_t const * node)
-{
-    if (node == NULL)
-    {
-        return "NULL";
-    }
-    if (node->name)
-    {
-        return node->name;
-    }
-
-    return node->tag;
-}
-
 EASY_PC_API epc_parser_list *
 epc_parser_list_create(void)
 {
@@ -777,4 +731,37 @@ epc_parser_list_free(epc_parser_list * list)
 
     free(list->parsers);
     free(list);
+}
+
+static void
+pt_visit_recursive(epc_cpt_node_t * node, epc_cpt_visitor_t * visitor)
+{
+    if (!node || !visitor)
+    {
+        return;
+    }
+
+    if (visitor->enter_node)
+    {
+        visitor->enter_node(node, visitor->user_data);
+    }
+    for (int i = 0; i < node->children_count; ++i)
+    {
+        pt_visit_recursive(node->children[i], visitor);
+    }
+
+    if (visitor->exit_node)
+    {
+        visitor->exit_node(node, visitor->user_data);
+    }
+}
+
+EASY_PC_API void
+epc_cpt_visit_nodes(epc_cpt_node_t * root, epc_cpt_visitor_t * visitor)
+{
+    if (!root || !visitor)
+    {
+        return;
+    }
+    pt_visit_recursive(root, visitor);
 }

@@ -1,3 +1,4 @@
+#include "cpt_node.h"
 #include "easy_pc_private.h"
 
 #include "CppUTest/TestHarness.h"

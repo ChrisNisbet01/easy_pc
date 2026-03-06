@@ -1,4 +1,7 @@
 #include "easy_pc_private.h"
+#include "epc_parser_ctx.h"
+#include "memo.h"
+#include "result.h"
 
 #include <stdio.h>
 #include <stdlib.h>

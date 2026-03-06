@@ -1,3 +1,4 @@
+#include "cpt_node.h"
 #include "easy_pc_private.h"
 
 #include <easy_pc/easy_pc_ast.h> // Public header for AST API

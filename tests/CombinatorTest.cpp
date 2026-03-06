@@ -3,6 +3,7 @@
 #include <iostream>
 
 extern "C" {
+#include "cpt_node.h"
 #include "easy_pc_private.h"
 
 #include <stdlib.h> // For calloc, free

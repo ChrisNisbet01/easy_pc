@@ -4,7 +4,7 @@
 
 EASY_PC_HIDDEN
 bool
-child_list_init(child_list_t * list, size_t initial_capacity)
+child_list_init(epc_parser_ctx_t * ctx, child_list_t * list, size_t initial_capacity)
 {
     if (list == NULL)
     {
@@ -13,6 +13,7 @@ child_list_init(child_list_t * list, size_t initial_capacity)
     list->count = 0;
     list->capacity = initial_capacity > 0 ? initial_capacity : 4; // Default initial capacity
     list->children = calloc(list->capacity, sizeof(epc_cpt_node_t *));
+    list->ctx = ctx;
     return list->children != NULL;
 }
 
@@ -92,4 +93,3 @@ child_list_transfer(child_list_t * list, epc_cpt_node_t * parent)
     list->count = 0;
     list->capacity = 0;
 }
-

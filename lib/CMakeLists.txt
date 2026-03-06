@@ -1,5 +1,6 @@
 set(EASY_PC_LIB_SOURCES
   easy_pc.c
+  cpt_node.c
   cpt_printer.c
   parsers.c
   easy_pc_ast.c
