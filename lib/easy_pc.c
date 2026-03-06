@@ -80,6 +80,76 @@ create_mmap_input_buffer(size_t input_size)
     return buffer;
 }
 
+static void
+node_pool_append_node(epc_node_pool_t * pool, epc_cpt_node_t * node)
+{
+    if (pool->count == pool->capacity)
+    {
+        size_t const new_capacity = pool->capacity == 0 ? 1024 : pool->capacity * 2;
+        epc_cpt_node_t ** new_nodes = realloc(pool->nodes, new_capacity * sizeof(*new_nodes));
+        if (new_nodes == NULL)
+        {
+            /* If we can't store it in free nodes, we just leak it in the arena. */
+            return;
+        }
+        pool->nodes = new_nodes;
+        pool->capacity = new_capacity;
+    }
+
+    pool->nodes[pool->count++] = node;
+}
+
+static epc_cpt_node_t *
+node_pool_pull_node(epc_node_pool_t * pool)
+{
+    if (pool->count > 0)
+    {
+        return pool->nodes[--pool->count];
+    }
+
+    return NULL;
+}
+
+static void
+node_pool_cleanup(epc_node_pool_t * pool)
+{
+    if (pool->nodes != NULL)
+    {
+        /* Don't free the nodes stored in the array as this would result in them getting added to the
+         * array again.
+         */
+        free(pool->nodes);
+        pool->nodes = NULL;
+    }
+    pool->count = 0;
+    pool->capacity = 0;
+}
+
+static bool
+internal_init_parse_ctx(epc_parser_ctx_t * ctx)
+{
+    if (ctx == NULL)
+    {
+        return false;
+    }
+
+    ctx->node_arena = epc_arena_create(MAX_NODE_ARENA_SIZE);
+    if (ctx->node_arena.base == NULL)
+    {
+        return false;
+    }
+
+    ctx->node_pool.capacity = 1024;
+    ctx->node_pool.nodes = calloc(ctx->node_pool.capacity, sizeof(*ctx->node_pool.nodes));
+    if (ctx->node_pool.nodes == NULL)
+    {
+        epc_arena_destroy(&ctx->node_arena);
+        return false;
+    }
+
+    return true;
+}
+
 // Internal parser_ctx_t creation (for parse results)
 static epc_parser_ctx_t *
 internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
@@ -95,6 +165,13 @@ internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
     if (ctx == NULL)
     {
         munmap(buffer.buffer, buffer.total_size);
+        return NULL;
+    }
+
+    if (!internal_init_parse_ctx(ctx))
+    {
+        munmap(buffer.buffer, buffer.total_size);
+        free(ctx);
         return NULL;
     }
 
@@ -176,6 +253,13 @@ internal_create_parse_ctx_from_fp(FILE * fp)
         return NULL;
     }
 
+    if (!internal_init_parse_ctx(ctx))
+    {
+        munmap(buffer.buffer, buffer.total_size);
+        free(ctx);
+        return NULL;
+    }
+
 #ifdef WITH_INPUT_STREAM_SUPPORT
     pthread_mutex_init(&ctx->mutex, NULL);
     pthread_cond_init(&ctx->cond, NULL);
@@ -202,6 +286,13 @@ internal_create_parse_ctx_streaming(void)
     if (ctx == NULL)
     {
         munmap(buffer.buffer, buffer.total_size);
+        return NULL;
+    }
+
+    if (!internal_init_parse_ctx(ctx))
+    {
+        munmap(buffer.buffer, buffer.total_size);
+        free(ctx);
         return NULL;
     }
 
@@ -261,7 +352,58 @@ internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
         munmap((void *)ctx->mmap_buffer.buffer, ctx->mmap_buffer.total_size);
     }
 
+    epc_arena_destroy(&ctx->node_arena);
+    node_pool_cleanup(&ctx->node_pool);
+
     free(ctx);
+}
+
+EASY_PC_HIDDEN
+epc_cpt_node_t *
+parse_ctx_alloc_node(epc_parser_ctx_t * ctx)
+{
+    epc_cpt_node_t * node;
+
+    if (ctx == NULL)
+    {
+        node = calloc(1, sizeof(*node));
+
+        return node;
+    }
+
+    /* Pull from previously allocated nodes first. */
+    node = node_pool_pull_node(&ctx->node_pool);
+
+    /* Resort to the arena if the pool is empty. */
+    if (node == NULL)
+    {
+        node = epc_arena_alloc(&ctx->node_arena, sizeof(epc_cpt_node_t));
+    }
+
+    if (node != NULL)
+    {
+        memset(node, 0, sizeof(*node));
+    }
+
+    return node;
+}
+
+EASY_PC_HIDDEN
+void
+parse_ctx_free_node(epc_parser_ctx_t * ctx, epc_cpt_node_t * node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    if (ctx == NULL)
+    {
+        free(node);
+        return;
+    }
+
+    node_pool_append_node(&ctx->node_pool, node);
 }
 
 EASY_PC_HIDDEN

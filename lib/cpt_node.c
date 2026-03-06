@@ -1,27 +1,14 @@
 #include "cpt_node.h"
 
 #include <stdlib.h>
-
-static epc_cpt_node_t *
-node_alloc(void)
-{
-    epc_cpt_node_t * node = calloc(1, sizeof *node);
-
-    return node;
-}
+#include <string.h>
 
 EASY_PC_API
 epc_cpt_node_t *
 epc_node_alloc(epc_parser_ctx_t * ctx, epc_parser_t * parser, char const * tag)
 {
 
-    epc_cpt_node_t * node;
-
-    if (true || ctx == NULL)
-    {
-        node = node_alloc();
-    }
-    // TODO: Alloc from an arena managed by the parse context if one was supplied.
+    epc_cpt_node_t * node = parse_ctx_alloc_node(ctx);
 
     if (node == NULL)
     {
@@ -40,20 +27,12 @@ EASY_PC_HIDDEN
 epc_cpt_node_t *
 epc_node_copy(epc_cpt_node_t * node)
 {
-    /* TODO: Allocate from an arena managed by the parse context available in the node to be copied. */
-
     if (node == NULL)
     {
         return NULL;
     }
 
-    epc_cpt_node_t * copy;
-
-    if (true || node->ctx == NULL)
-    {
-        copy = node_alloc();
-    }
-    // TODO: obtain the copy from the parser context.
+    epc_cpt_node_t * copy = parse_ctx_alloc_node(node->ctx);
 
     if (copy == NULL)
     {
@@ -71,7 +50,7 @@ epc_node_copy(epc_cpt_node_t * node)
 
     if (node->children_count > 0)
     {
-        copy->children = calloc(node->children_count, sizeof(*copy->children));
+        copy->children = calloc((size_t)node->children_count, sizeof(*copy->children));
         if (copy->children == NULL)
         {
             epc_node_free(copy);
@@ -103,7 +82,6 @@ EASY_PC_HIDDEN
 void
 epc_node_free(epc_cpt_node_t * node)
 {
-    /* TODO: return the node to a table of free nodes managed by the parse context in the parse context. */
     if (node == NULL)
     {
         return;
@@ -115,12 +93,10 @@ epc_node_free(epc_cpt_node_t * node)
             epc_node_free(node->children[i]);
         }
         free(node->children);
+        node->children = NULL;
     }
-    if (true || node->ctx == NULL)
-    {
-        free(node);
-    }
-    /* TODO: Use the parser context to manage the freed node. */
+
+    parse_ctx_free_node(node->ctx, node);
 }
 
 EASY_PC_API const char *
