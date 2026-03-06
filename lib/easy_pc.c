@@ -111,6 +111,36 @@ node_pool_pull_node(epc_node_pool_t * pool)
 }
 
 static void
+error_pool_append_error(epc_error_pool_t * pool, epc_parser_error_t * error)
+{
+    if (pool->count == pool->capacity)
+    {
+        size_t const new_capacity = pool->capacity == 0 ? 1024 : pool->capacity * 2;
+        epc_parser_error_t ** new_errors = realloc(pool->errors, new_capacity * sizeof(*new_errors));
+        if (new_errors == NULL)
+        {
+            /* If we can't store it in free errors, we just leak it in the arena. */
+            return;
+        }
+        pool->errors = new_errors;
+        pool->capacity = new_capacity;
+    }
+
+    pool->errors[pool->count++] = error;
+}
+
+static epc_parser_error_t *
+error_pool_pull_error(epc_error_pool_t * pool)
+{
+    if (pool->count > 0)
+    {
+        return pool->errors[--pool->count];
+    }
+
+    return NULL;
+}
+
+static void
 node_pool_cleanup(epc_node_pool_t * pool)
 {
     if (pool->nodes != NULL)
@@ -120,6 +150,18 @@ node_pool_cleanup(epc_node_pool_t * pool)
          */
         free(pool->nodes);
         pool->nodes = NULL;
+    }
+    pool->count = 0;
+    pool->capacity = 0;
+}
+
+static void
+error_pool_cleanup(epc_error_pool_t * pool)
+{
+    if (pool->errors != NULL)
+    {
+        free(pool->errors);
+        pool->errors = NULL;
     }
     pool->count = 0;
     pool->capacity = 0;
@@ -143,6 +185,15 @@ internal_init_parse_ctx(epc_parser_ctx_t * ctx)
     ctx->node_pool.nodes = calloc(ctx->node_pool.capacity, sizeof(*ctx->node_pool.nodes));
     if (ctx->node_pool.nodes == NULL)
     {
+        epc_arena_destroy(&ctx->node_arena);
+        return false;
+    }
+
+    ctx->error_pool.capacity = 128;
+    ctx->error_pool.errors = calloc(ctx->error_pool.capacity, sizeof(*ctx->error_pool.errors));
+    if (ctx->error_pool.errors == NULL)
+    {
+        node_pool_cleanup(&ctx->node_pool);
         epc_arena_destroy(&ctx->node_arena);
         return false;
     }
@@ -354,6 +405,7 @@ internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
 
     epc_arena_destroy(&ctx->node_arena);
     node_pool_cleanup(&ctx->node_pool);
+    error_pool_cleanup(&ctx->error_pool);
 
     free(ctx);
 }
@@ -404,6 +456,55 @@ parse_ctx_free_node(epc_parser_ctx_t * ctx, epc_cpt_node_t * node)
     }
 
     node_pool_append_node(&ctx->node_pool, node);
+}
+
+EASY_PC_HIDDEN
+epc_parser_error_t *
+parse_ctx_alloc_error(epc_parser_ctx_t * ctx)
+{
+    epc_parser_error_t * error;
+
+    if (ctx == NULL)
+    {
+        error = calloc(1, sizeof(*error));
+
+        return error;
+    }
+
+    /* Pull from previously allocated errors first. */
+    error = error_pool_pull_error(&ctx->error_pool);
+
+    /* Resort to the arena if the pool is empty. */
+    if (error == NULL)
+    {
+        error = epc_arena_alloc(&ctx->node_arena, sizeof(epc_parser_error_t));
+    }
+
+    if (error != NULL)
+    {
+        memset(error, 0, sizeof(*error));
+        error->internal_parse_ctx = ctx;
+    }
+
+    return error;
+}
+
+EASY_PC_HIDDEN
+void
+parse_ctx_free_error(epc_parser_ctx_t * ctx, epc_parser_error_t * error)
+{
+    if (error == NULL)
+    {
+        return;
+    }
+
+    if (ctx == NULL)
+    {
+        free(error);
+        return;
+    }
+
+    error_pool_append_error(&ctx->error_pool, error);
 }
 
 EASY_PC_HIDDEN

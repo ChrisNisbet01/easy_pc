@@ -27,6 +27,13 @@ typedef struct
     size_t capacity;
 } epc_node_pool_t;
 
+typedef struct
+{
+    epc_parser_error_t ** errors;
+    size_t count;
+    size_t capacity;
+} epc_error_pool_t;
+
 // The Parsing Context (for a single parse operation and its results)
 // This will be internally managed by epc_parse_input
 struct epc_parser_ctx_t
@@ -43,6 +50,7 @@ struct epc_parser_ctx_t
 
     epc_arena_t node_arena;
     epc_node_pool_t node_pool;
+    epc_error_pool_t error_pool;
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
     pthread_mutex_t mutex;
@@ -65,6 +73,12 @@ epc_cpt_node_t * parse_ctx_alloc_node(epc_parser_ctx_t * ctx);
 
 EASY_PC_HIDDEN
 void parse_ctx_free_node(epc_parser_ctx_t * ctx, epc_cpt_node_t * node);
+
+EASY_PC_HIDDEN
+epc_parser_error_t * parse_ctx_alloc_error(epc_parser_ctx_t * ctx);
+
+EASY_PC_HIDDEN
+void parse_ctx_free_error(epc_parser_ctx_t * ctx, epc_parser_error_t * error);
 
 EASY_PC_HIDDEN
 parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t input_offset, size_t count);

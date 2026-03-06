@@ -119,6 +119,8 @@ typedef struct epc_parser_error_t
     char expected[EPC_ERROR_EXPECTED_MAX_LEN + 1];
     /**< @brief A string describing what the parser actually found at the error position. */
     char found[EPC_ERROR_FOUND_MAX_LEN + 1];
+    epc_parser_ctx_t *
+        internal_parse_ctx; /**< @brief Internal context for the parsing operation, managing CPT/error memory. */
 } epc_parser_error_t;
 
 // Structure to hold AST-related metadata for each parser

@@ -15,7 +15,8 @@ epc_parser_error_free(epc_parser_error_t * error)
     {
         return;
     }
-    free(error);
+    epc_parser_ctx_t * ctx = error->internal_parse_ctx;
+    parse_ctx_free_error(ctx, error);
 }
 
 EASY_PC_HIDDEN
@@ -69,11 +70,7 @@ epc_parser_error_alloc(
         found = "";
     }
 
-    /*
-     * TODO: use the parser context arena along with freed error pool) to allocate
-     * epc parser error instances.
-     */
-    epc_parser_error_t * error = calloc(1, sizeof(*error));
+    epc_parser_error_t * error = parse_ctx_alloc_error(ctx);
 
     if (error == NULL)
     {
@@ -133,17 +130,17 @@ EASY_PC_HIDDEN
 epc_parser_error_t *
 epc_parser_error_copy(epc_parser_ctx_t * ctx, epc_parser_error_t * e)
 {
-    (void)ctx;
-
     if (e == NULL)
     {
         return NULL;
     }
-    epc_parser_error_t * error = calloc(1, sizeof(*error));
+
+    epc_parser_error_t * error = parse_ctx_alloc_error(ctx);
     if (error == NULL)
     {
         return error;
     }
+
     /* Errors contain no other allocated memory, so the contents can simply be copied over. */
     *error = *e;
 
