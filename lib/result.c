@@ -15,9 +15,6 @@ epc_parser_error_free(epc_parser_error_t * error)
     {
         return;
     }
-    free((char *)error->message);
-    free((char *)error->expected);
-    free((char *)error->found);
     free(error);
 }
 
@@ -59,7 +56,26 @@ epc_parser_error_alloc(
     epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
 )
 {
-    epc_parser_error_t * error = calloc(1, sizeof(*error));
+    if (message == NULL)
+    {
+        message = "";
+    }
+    size_t const message_len = strlen(message);
+    if (expected == NULL)
+    {
+        expected = "";
+    }
+    size_t const expected_len = strlen(expected);
+    if (found == NULL)
+    {
+        found = "";
+    }
+    size_t const found_len = strlen(found);
+
+    epc_parser_error_t * error;
+    size_t total_size = sizeof(*error) + message_len + 1 + expected_len + 1 + found_len + 1;
+
+    error = calloc(1, total_size);
     if (error == NULL)
     {
         return error;
@@ -71,9 +87,14 @@ epc_parser_error_alloc(
     error->input_position = current;
     error->position = epc_calculate_line_and_column(ctx, input_offset);
 
-    error->message = strdup(message != NULL ? message : "");
-    error->expected = strdup(expected != NULL ? expected : "");
-    error->found = strdup(found != NULL ? found : "");
+    error->message = (char const *)(error + 1);
+    memcpy((char *)error->message, message, message_len + 1);
+
+    error->expected = error->message + message_len + 1;
+    memcpy((char *)error->expected, expected, expected_len + 1);
+
+    error->found = error->expected + expected_len + 1;
+    memcpy((char *)error->found, found, found_len + 1);
 
     return error;
 }
