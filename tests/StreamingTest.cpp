@@ -118,9 +118,8 @@ TEST_GROUP(StreamingTest)
         if (result.is_error)
         {
             std::cout << "Parse error: " << result.data.error->message << std::endl;
-            std::cout << "Expected: " << (result.data.error->expected ? result.data.error->expected : "unknown")
-                      << std::endl;
-            std::cout << "Found: " << (result.data.error->found ? result.data.error->found : "unknown") << std::endl;
+            std::cout << "Expected: " << result.data.error->expected << std::endl;
+            std::cout << "Found: " << result.data.error->found << std::endl;
             FAIL("Expected success but got error");
         }
         CHECK_TRUE(result.data.success != NULL);

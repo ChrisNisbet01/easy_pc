@@ -47,11 +47,8 @@ TEST_GROUP(MemoizeTest)
         if (session.result.is_error)
         {
             std::cout << "Parse error: " << session.result.data.error->message << std::endl;
-            std::cout << "Expected: "
-                      << (session.result.data.error->expected ? session.result.data.error->expected : "unknown")
-                      << std::endl;
-            std::cout << "Found: " << (session.result.data.error->found ? session.result.data.error->found : "unknown")
-                      << std::endl;
+            std::cout << "Expected: " << session.result.data.error->expected << std::endl;
+            std::cout << "Found: " << session.result.data.error->found << std::endl;
             FAIL("Expected success but got error");
         }
         CHECK_TRUE(session.result.data.success != NULL);

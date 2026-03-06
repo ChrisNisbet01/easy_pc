@@ -41,6 +41,13 @@
 extern "C" {
 #endif
 
+typedef enum
+{
+    EPC_ERROR_MESSAGE_MAX_LEN = 60,
+    EPC_ERROR_FOUND_MAX_LEN = 40,
+    EPC_ERROR_EXPECTED_MAX_LEN = 40,
+} EPC_ERROR_MAX_MESSAGE_LENGTHS;
+
 // Forward declarations of structs
 typedef struct epc_parser_t epc_parser_t;
 typedef struct epc_cpt_node_t epc_cpt_node_t;
@@ -101,13 +108,17 @@ typedef struct epc_parse_input_t
  */
 typedef struct epc_parser_error_t
 {
-    char const * message; /**< @brief A descriptive error message. */
     char const *
         input_position; /**< @brief Pointer to the exact position in the input string where the error occurred. */
     epc_line_col_t
         position; /**< @brief Line and column if the input where the error occurred (0-indexed, calculated later). */
-    char const * expected; /**< @brief A string describing what the parser expected at the error position. */
-    char const * found;    /**< @brief A string describing what the parser actually found at the error position. */
+
+    /**< @brief A descriptive error message. */
+    char message[EPC_ERROR_MESSAGE_MAX_LEN + 1];
+    /**< @brief A string describing what the parser expected at the error position. */
+    char expected[EPC_ERROR_EXPECTED_MAX_LEN + 1];
+    /**< @brief A string describing what the parser actually found at the error position. */
+    char found[EPC_ERROR_FOUND_MAX_LEN + 1];
 } epc_parser_error_t;
 
 // Structure to hold AST-related metadata for each parser

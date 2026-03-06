@@ -797,8 +797,8 @@ epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session)
         epc_parser_error_t * err = session->result.data.error;
         fprintf(fp, "Parse Error: %s\n", err->message);
         fprintf(fp, "At line %zu, col %zu\n", err->position.line + 1, err->position.col + 1);
-        fprintf(fp, "Expected: %s\n", err->expected ? err->expected : "unknown");
-        fprintf(fp, "Found: %s\n", err->found ? err->found : "unknown");
+        fprintf(fp, "Expected: %s\n", err->expected);
+        fprintf(fp, "Found: %s\n", err->found);
     }
     else
     {

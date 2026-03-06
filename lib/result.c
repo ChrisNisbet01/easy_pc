@@ -60,22 +60,21 @@ epc_parser_error_alloc(
     {
         message = "";
     }
-    size_t const message_len = strlen(message);
     if (expected == NULL)
     {
         expected = "";
     }
-    size_t const expected_len = strlen(expected);
     if (found == NULL)
     {
         found = "";
     }
-    size_t const found_len = strlen(found);
 
-    epc_parser_error_t * error;
-    size_t total_size = sizeof(*error) + message_len + 1 + expected_len + 1 + found_len + 1;
+    /*
+     * TODO: use the parser context arena along with freed error pool) to allocate
+     * epc parser error instances.
+     */
+    epc_parser_error_t * error = calloc(1, sizeof(*error));
 
-    error = calloc(1, total_size);
     if (error == NULL)
     {
         return error;
@@ -87,14 +86,14 @@ epc_parser_error_alloc(
     error->input_position = current;
     error->position = epc_calculate_line_and_column(ctx, input_offset);
 
-    error->message = (char const *)(error + 1);
-    memcpy((char *)error->message, message, message_len + 1);
+    strncpy(error->message, message, sizeof(error->message));
+    error->message[sizeof(error->message) - 1] = '\0';
 
-    error->expected = error->message + message_len + 1;
-    memcpy((char *)error->expected, expected, expected_len + 1);
+    strncpy(error->expected, expected, sizeof(error->expected));
+    error->expected[sizeof(error->expected) - 1] = '\0';
 
-    error->found = error->expected + expected_len + 1;
-    memcpy((char *)error->found, found, found_len + 1);
+    strncpy(error->found, found, sizeof(error->found));
+    error->found[sizeof(error->found) - 1] = '\0';
 
     return error;
 }
@@ -134,13 +133,21 @@ EASY_PC_HIDDEN
 epc_parser_error_t *
 epc_parser_error_copy(epc_parser_ctx_t * ctx, epc_parser_error_t * e)
 {
+    (void)ctx;
+
     if (e == NULL)
     {
         return NULL;
     }
-    return epc_parser_error_alloc(
-        ctx, parse_ctx_get_offset_from_input(ctx, e->input_position), e->message, e->expected, e->found
-    );
+    epc_parser_error_t * error = calloc(1, sizeof(*error));
+    if (error == NULL)
+    {
+        return error;
+    }
+    /* Errors contain no other allocated memory, so the contents can simply be copied over. */
+    *error = *e;
+
+    return error;
 }
 
 EASY_PC_HIDDEN

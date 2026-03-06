@@ -42,11 +42,8 @@ TEST_GROUP(CptPrinter)
                       << " at '"
                       << (result.data.error && result.data.error->input_position ? result.data.error->input_position
                                                                                  : "NULL")
-                      << "', expected '"
-                      << (result.data.error && result.data.error->expected ? result.data.error->expected : "N/A")
-                      << "', found '"
-                      << (result.data.error && result.data.error->found ? result.data.error->found : "N/A") << "'"
-                      << std::endl;
+                      << "', expected '" << result.data.error->expected << "', found '" << result.data.error->found
+                      << "'" << std::endl;
             return NULL;
         }
         char * printed_cpt = epc_cpt_to_string(session.internal_parse_ctx, result.data.success);

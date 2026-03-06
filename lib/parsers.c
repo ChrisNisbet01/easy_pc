@@ -2589,7 +2589,7 @@ pnot_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
 
     // Child succeeded, p_not fails.
     // Create a specific error message for p_not.
-    char expected_str[64];
+    char expected_str[FOUND_BUFFER_SIZE];
 
     snprintf(expected_str, sizeof(expected_str), "not %s", parser_get_expected_str(child_parser));
 
