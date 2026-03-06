@@ -1,5 +1,5 @@
+#include "ast_private.h"
 #include "cpt_node.h"
-#include "easy_pc_private.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTestExt/MockSupport.h"

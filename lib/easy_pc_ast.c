@@ -1,8 +1,7 @@
+#include "ast_private.h"
 #include "cpt_node.h"
-#include "easy_pc_private.h"
 
-#include <easy_pc/easy_pc_ast.h> // Public header for AST API
-#include <stdio.h>               // For snprintf, vsnprintf, fprintf
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
