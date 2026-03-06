@@ -51,10 +51,6 @@ if(WITH_INPUT_STREAM_SUPPORT)
     target_compile_definitions(easy_pc_static PUBLIC WITH_INPUT_STREAM_SUPPORT)
 endif()
 
-# LTO settings
-include(CheckIPOSupported)
-check_ipo_supported(RESULT lto_supported)
-
 if(lto_supported)
   message(STATUS "LTO enabled for library targets.")
   foreach(target IN LISTS EASY_PC_TARGETS)

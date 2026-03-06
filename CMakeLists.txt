@@ -20,6 +20,17 @@ configure_file(
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# Optimization settings
+add_compile_options(-O3)
+
+# LTO settings
+include(CheckIPOSupported)
+check_ipo_supported(RESULT lto_supported)
+
+if(lto_supported)
+    message(STATUS "LTO (Interprocedural Optimization) is supported by the toolchain.")
+endif()
+
 option(WITH_INPUT_STREAM_SUPPORT "Enable streaming input support" ON)
 
 if(WITH_INPUT_STREAM_SUPPORT)
