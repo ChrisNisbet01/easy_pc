@@ -36,7 +36,7 @@ struct epc_parser_ctx_t
     char const * input_start;
     size_t input_len;
 
-    mmap_input_buffer_t mmap_buffer; /* Internal buffer management for input string, using mmap for large inputs. */
+    mmap_input_buffer_t mmap_buffer; /* Internal buffer management for input data, using mmap for large inputs. */
     epc_parser_error_t * furthest_error;
 
     void * user_ctx; /* User-defined context that can be used in predicates (e.g. epc_wrap()). */

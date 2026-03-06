@@ -42,7 +42,7 @@ TEST(CombinatorTest, PStarMatchesZero)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("many", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("", result.data.success->content, 0);
     LONGS_EQUAL(0, result.data.success->len);
     LONGS_EQUAL(0, result.data.success->children_count);
@@ -58,7 +58,7 @@ TEST(CombinatorTest, PStarMatchesOne)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("many", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("a", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
     LONGS_EQUAL(1, result.data.success->children_count);
@@ -75,7 +75,7 @@ TEST(CombinatorTest, PStarMatchesMultiple)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("many", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("aaa", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
@@ -94,7 +94,7 @@ TEST(CombinatorTest, PStarMatchesMultipleThenFails)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("many", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("aaa", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
@@ -113,7 +113,7 @@ TEST(CombinatorTest, PPlusMatchesOne)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("plus", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("plus", result.data.success->name);
     STRNCMP_EQUAL("a", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
     LONGS_EQUAL(1, result.data.success->children_count);
@@ -130,7 +130,7 @@ TEST(CombinatorTest, PPlusMatchesMultiple)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("plus", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("plus", result.data.success->name);
     STRNCMP_EQUAL("aaa", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
@@ -164,7 +164,7 @@ TEST(CombinatorTest, PPlusMatchesMultipleThenFails)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("plus", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("plus", result.data.success->name);
     STRNCMP_EQUAL("aaa", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);

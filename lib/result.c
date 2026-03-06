@@ -16,7 +16,7 @@ epc_node_alloc(epc_parser_t * parser, char const * tag)
     }
     node->content = ""; /* Make non-NULL. */
     node->tag = tag;
-    node->name = parser->name;
+    node->name = epc_parser_get_name(parser);
     node->ast_config = parser->ast_config;
 
     return node;

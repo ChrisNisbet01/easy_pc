@@ -40,7 +40,7 @@ TEST(TerminalParsers, PCharMatchesCorrectCharacter)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("char", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("char", result.data.success->name);
     STRNCMP_EQUAL("a", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -80,7 +80,7 @@ TEST(TerminalParsers, PStringMatchesCorrectString)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("string", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("string", result.data.success->name);
     STRNCMP_EQUAL("hello", result.data.success->content, 5);
     LONGS_EQUAL(5, result.data.success->len);
 }
@@ -129,7 +129,7 @@ TEST(TerminalParsers, PDigitMatchesCorrectDigit)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("digit", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("digit", result.data.success->name);
     STRNCMP_EQUAL("1", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -171,7 +171,7 @@ TEST(TerminalParsers, POrMatchesFirstAlternative)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("or", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("or", result.data.success->name);
     STRNCMP_EQUAL("a", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -186,7 +186,7 @@ TEST(TerminalParsers, POrMatchesLaterAlternative)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("or", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("or", result.data.success->name);
     STRNCMP_EQUAL("b", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -225,7 +225,7 @@ TEST(TerminalParsers, PAndMatchesSequenceOfParsers)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("and", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("and", result.data.success->name);
     STRNCMP_EQUAL("abc", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
@@ -295,7 +295,7 @@ TEST(TerminalParsers, PSpaceMatchesSpace)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("space", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("space", result.data.success->name);
     STRNCMP_EQUAL(" ", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -308,7 +308,7 @@ TEST(TerminalParsers, PSpaceMatchesTab)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("space", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("space", result.data.success->name);
     STRNCMP_EQUAL("\t", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -321,7 +321,7 @@ TEST(TerminalParsers, PSpaceMatchesNewline)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("space", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("space", result.data.success->name);
     STRNCMP_EQUAL("\n", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -364,7 +364,7 @@ TEST(TerminalParsers, PSkipSkipsMultipleSpaces)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("skip", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("skip", result.data.success->name);
     STRCMP_EQUAL(input_str, result.data.success->content);
     LONGS_EQUAL(3, result.data.success->len); // Skipped 3 spaces
 }
@@ -380,7 +380,7 @@ TEST(TerminalParsers, PSkipSkipsZeroSpaces)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("skip", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("skip", result.data.success->name);
     STRCMP_EQUAL(input_str, result.data.success->content);
     LONGS_EQUAL(0, result.data.success->len); // Skipped 0 spaces
 }
@@ -396,7 +396,7 @@ TEST(TerminalParsers, PSkipSkipsMixedWhitespace)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("skip", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL);           // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("skip", result.data.success->name);
     STRNCMP_EQUAL(input_str, result.data.success->content, 5); // Should be at the start of the input string
     LONGS_EQUAL(5, result.data.success->len);                  // Skipped 5 chars
 }
@@ -451,7 +451,7 @@ TEST(DoubleParser, PDoubleMatchesInteger)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("123", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
 }
@@ -464,7 +464,7 @@ TEST(DoubleParser, PDoubleMatchesSimpleDecimal)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("123.45", result.data.success->content, 6);
     LONGS_EQUAL(6, result.data.success->len);
 }
@@ -477,7 +477,7 @@ TEST(DoubleParser, PDoubleMatchesLeadingDecimal)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL(".45", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
 }
@@ -490,7 +490,7 @@ TEST(DoubleParser, PDoubleMatchesTrailingDecimal)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("123.", result.data.success->content, 4);
     LONGS_EQUAL(4, result.data.success->len);
 }
@@ -503,7 +503,7 @@ TEST(DoubleParser, PDoubleMatchesPositiveSign)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("+123.45", result.data.success->content, 7);
     LONGS_EQUAL(7, result.data.success->len);
 }
@@ -516,7 +516,7 @@ TEST(DoubleParser, PDoubleMatchesNegativeSign)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("-123", result.data.success->content, 4);
     LONGS_EQUAL(4, result.data.success->len);
 }
@@ -529,7 +529,7 @@ TEST(DoubleParser, PDoubleMatchesExponentPositive)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("1.23e5", result.data.success->content, 6);
     LONGS_EQUAL(6, result.data.success->len);
 }
@@ -542,7 +542,7 @@ TEST(DoubleParser, PDoubleMatchesExponentNegative)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("1.23E-5", result.data.success->content, 7);
     LONGS_EQUAL(7, result.data.success->len);
 }
@@ -555,7 +555,7 @@ TEST(DoubleParser, PDoubleMatchesExponentWithSign)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("-1e+2", result.data.success->content, 5);
     LONGS_EQUAL(5, result.data.success->len);
 }
@@ -568,7 +568,7 @@ TEST(DoubleParser, PDoubleMatchesZero)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("0", result.data.success->content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
@@ -581,7 +581,7 @@ TEST(DoubleParser, PDoubleMatchesZeroDecimal)
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
     STRCMP_EQUAL("double", result.data.success->tag);
-    POINTERS_EQUAL(result.data.success->name, NULL); // Name should be NULL since we didn't set it
+    STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("0.0", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);
 }
