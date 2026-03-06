@@ -63,6 +63,7 @@ typedef enum epc_parse_type_t
     EPC_PARSE_TYPE_FILE,
     EPC_PARSE_TYPE_FILENAME,
     EPC_PARSE_TYPE_FD,
+    EPC_PARSE_TYPE_BUFFER,
 } epc_parse_type_t;
 
 /**
@@ -82,6 +83,11 @@ typedef struct epc_parse_input_t
         FILE * fp;
         char const * filename;
         int fd;
+        struct
+        {
+            char const * buf;
+            size_t len;
+        } buffer;
     };
 } epc_parse_input_t;
 
@@ -1556,8 +1562,34 @@ EASY_PC_API epc_parse_session_t epc_parse_fd(epc_parser_t * top_parser, int fd, 
  */
 EASY_PC_API void epc_parse_session_destroy(epc_parse_session_t * session);
 
-EASY_PC_API
-void epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session);
+EASY_PC_API void epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session);
+
+/**
+ * @brief Creates a parser that matches a single specific byte and adds it to the list.
+ * @param name The name of the parser for debugging/CPT.
+ * @param b The byte to match.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_byte(char const * name, char b);
+
+static inline epc_parser_t *
+epc_byte_l(epc_parser_list * list, char const * name, char b)
+{
+    return epc_parser_list_add(list, epc_byte(name, b));
+}
+
+/**
+ * @brief Initiates a parsing operation with a given grammar and a byte buffer.
+ *
+ * @param top_parser The starting parser for the grammar (e.g., the root rule).
+ * @param buf A pointer to the byte buffer to be parsed.
+ * @param len The length of the buffer.
+ * @param user_ctx A user-defined context pointer that will be passed to the internal parser context.
+ * @return An `easy_pc_parse_session_t` structure containing the result.
+ *         This session MUST be destroyed with `easy_pc_parse_session_destroy`.
+ */
+EASY_PC_API epc_parse_session_t
+epc_parse_bytes(epc_parser_t * top_parser, char const * buf, size_t len, void * user_ctx);
 
 /**
  * @brief Retrieves the semantically relevant content from a CPT node.

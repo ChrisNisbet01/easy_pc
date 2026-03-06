@@ -112,11 +112,9 @@ create_mmap_input_buffer(size_t input_size)
 
 // Internal parser_ctx_t creation (for parse results)
 static epc_parser_ctx_t *
-internal_create_parse_ctx_from_string(char const * input_start)
+internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
 {
-    size_t input_len = input_start == NULL ? 0 : strlen(input_start);
-
-    mmap_input_buffer_t buffer = create_mmap_input_buffer(input_len + 1);
+    mmap_input_buffer_t buffer = create_mmap_input_buffer(len);
 
     if (buffer.buffer == NULL)
     {
@@ -135,17 +133,33 @@ internal_create_parse_ctx_from_string(char const * input_start)
     pthread_cond_init(&ctx->cond, NULL);
 #endif
 
-    if (input_start != NULL)
-    {
-        memcpy(buffer.buffer, input_start, input_len + 1); /* +1 to include null terminator */
-    }
-    else
-    {
-        buffer.buffer[0] = '\0'; /* Ensure null termination for NULL input */
-    }
+    memcpy(buffer.buffer, buf, len);
 
     ctx->mmap_buffer = buffer;
     ctx->input_start = ctx->mmap_buffer.buffer;
+    ctx->input_len = len;
+
+    return ctx;
+}
+
+static epc_parser_ctx_t *
+internal_create_parse_ctx_from_string(char const * input_start)
+{
+    size_t input_len = input_start == NULL ? 0 : strlen(input_start);
+    char const * start = input_start == NULL ? "" : input_start;
+
+    epc_parser_ctx_t * ctx = internal_create_parse_ctx_from_buffer(start, input_len + 1);
+    if (ctx == NULL)
+    {
+        return NULL;
+    }
+
+    if (start == NULL)
+    {
+        ctx->mmap_buffer.buffer[0] = '\0'; /* Ensure nul termination for NULL input */
+    }
+
+    /* Don't include the NUL terminator in the input length. */
     ctx->input_len = input_len;
 
     return ctx;
@@ -526,6 +540,15 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
 
         break;
 
+    case EPC_PARSE_TYPE_BUFFER:
+        if (input.buffer.buf == NULL)
+        {
+            session.result = epc_unparsed_error_result(0, "Input buffer is NULL", "non-NULL input buffer", "NULL");
+            return session;
+        }
+        ctx = internal_create_parse_ctx_from_buffer(input.buffer.buf, input.buffer.len);
+        break;
+
     case EPC_PARSE_TYPE_FD:
     {
 #ifdef WITH_INPUT_STREAM_SUPPORT
@@ -621,6 +644,13 @@ epc_parse_fd(epc_parser_t * top_parser, int fd, void * user_ctx)
 {
     epc_parse_input_t input = {.type = EPC_PARSE_TYPE_FD, .fd = fd};
 
+    return epc_parse_input(top_parser, input, user_ctx);
+}
+
+EASY_PC_API epc_parse_session_t
+epc_parse_bytes(epc_parser_t * top_parser, char const * buf, size_t len, void * user_ctx)
+{
+    epc_parse_input_t input = {.type = EPC_PARSE_TYPE_BUFFER, .buffer = {.buf = buf, .len = len}};
     return epc_parse_input(top_parser, input, user_ctx);
 }
 

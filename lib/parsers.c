@@ -96,7 +96,15 @@ parser_data_free(parser_data_type_st * data)
         parser_list_free(data->parser_list);
         data->parser_list = NULL;
         break;
+
+    case PARSER_DATA_TYPE_BYTE:
+        free((char *)data->byte.str);
+        data->byte.str = NULL;
+        break;
+
+
     }
+
     data->type = PARSER_DATA_TYPE_NONE;
 }
 
@@ -208,8 +216,8 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 static epc_parse_result_t
 pchar_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    char const * expected_str = self->data.string;
-    char expected_char = expected_str[0];
+    char const * expected_str = parser_get_expected_str(self);
+    char expected_char = self->data.string[0];
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
 
     if (input_result.is_eof)
@@ -265,10 +273,71 @@ epc_char(char const * name, char c)
 }
 
 static epc_parse_result_t
+pbyte_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    char const * expected_str = parser_get_expected_str(self);
+    uint8_t expected_byte = self->data.byte.byte;
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+
+    if (input_result.is_eof)
+    {
+        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
+    }
+
+    uint8_t * input = (uint8_t *)input_result.next_input;
+
+    if (input[0] == expected_byte)
+    {
+        epc_cpt_node_t * node = epc_node_alloc(self, self->tag);
+        if (node == NULL)
+        {
+            return epc_parser_error_result(
+                ctx, input_offset, "Memory allocation error", epc_parser_get_name(self), "N/A"
+            );
+        }
+
+        node->content = (char *)input;
+        node->len = 1;
+
+        return epc_parser_success_result(node);
+    }
+
+    // else Mismatch
+    char found_str[2] = {input[0], '\0'};
+
+    return epc_parser_error_result(ctx, input_offset, "Unexpected byte", expected_str, found_str);
+}
+
+epc_parser_t *
+epc_byte(char const * name, char b)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "byte", pbyte_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    char * data;
+    int len = asprintf(&data, "0x%02x", (unsigned char)b);
+    if (len < 0 || data == NULL)
+    {
+        free(p);
+        return NULL;
+    }
+    p->data.type = PARSER_DATA_TYPE_BYTE;
+    p->data.byte.str = data;
+    p->data.byte.byte = b;
+    p->expected_value = p->data.byte.str;
+
+    return p;
+}
+
+static epc_parse_result_t
 pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    char const * expected_str = self->data.string;
-    size_t expected_len = strlen(expected_str);
+    char const * expected_str = parser_get_expected_str(self);
+    char const * match_string = self->data.string;
+    size_t expected_len = strlen(match_string);
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, expected_len);
     char const * input = input_result.next_input;
 
@@ -289,7 +358,7 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, found_str);
     }
 
-    if (strncmp(input, expected_str, expected_len) == 0)
+    if (strncmp(input, match_string, expected_len) == 0)
     {
         epc_cpt_node_t * node = epc_node_alloc(self, self->tag);
         if (node == NULL)
@@ -3423,12 +3492,21 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
         dst->data.string = strdup(src->data.string);
         break;
 
+    case PARSER_DATA_TYPE_BYTE:
+        dst->data.byte = src->data.byte;
+        dst->data.byte.str = strdup(src->data.byte.str);
+        break;
+
     case PARSER_DATA_TYPE_PARSER_LIST:
         dst->data.parser_list = parser_list_duplicate(src->data.parser_list);
         break;
     }
 
-    if (src->expected_value == src->data.string)
+    if (src->data.type == PARSER_DATA_TYPE_BYTE && src->expected_value == src->data.byte.str)
+    {
+        dst->expected_value = dst->data.byte.str;
+    }
+    else if (src->expected_value == src->data.string)
     {
         dst->expected_value = dst->data.string;
     }

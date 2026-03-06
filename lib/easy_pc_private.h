@@ -4,6 +4,7 @@
 #include <easy_pc/easy_pc_ast.h> // Include the new AST header
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // The Parse Tree Node
 /**
@@ -157,6 +158,12 @@ typedef struct
     void * parser_data;
 } wrap_data_t;
 
+typedef struct epc_byte_data_t
+{
+    char const * str; /* The byte represented as a string (e.g. 0x42) */
+    uint8_t byte;     /* The byte value; */
+} epc_byte_data_t;
+
 typedef struct epc_memo_entry_t
 {
     epc_parser_t * parser;
@@ -187,6 +194,7 @@ typedef enum parser_data_type_t
     PARSER_DATA_TYPE_PREDICATE,
     PARSER_DATA_TYPE_WRAP,
     PARSER_DATA_TYPE_MEMOIZE,
+    PARSER_DATA_TYPE_BYTE,
 } parser_data_type_t;
 
 typedef struct parser_data_type_st
@@ -204,6 +212,7 @@ typedef struct parser_data_type_st
         lexeme_data_t lexeme;
         predicate_data_t predicate;
         wrap_data_t wrap;
+        epc_byte_data_t byte;
     };
 } parser_data_type_st;
 
