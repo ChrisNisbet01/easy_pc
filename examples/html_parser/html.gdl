@@ -1,0 +1,44 @@
+// HTML Parser Grammar
+
+// Character classes
+lt = '<';
+gt = '>';
+slash = '/';
+eq = '=';
+quote = '"';
+squote = '\'';
+
+// Whitespace and Comments (to be skipped by strip)
+// GDL doesn't have a built-in comment skip for HTML comments, but we can define them.
+Comment = "<!--" noneof("-")* "-->" ;
+
+// Basic elements
+TagName = alpha (alphanum | '-' | '_')*;
+AttrName = alpha (alphanum | '-' | '_')*;
+
+// Attributes can have double, single, or no quotes (simplified)
+AttrValue = (quote noneof("\"")* quote) 
+          | (squote noneof("'")* squote)
+          | (noneof(" >=")+);
+
+Attribute = strip(AttrName (eq AttrValue)?) @CREATE_ATTRIBUTE;
+Attributes = Attribute*;
+
+// Tags
+SelfClosingTag = strip(lt TagName Attributes slash gt) @CREATE_SELF_CLOSING_TAG;
+OpenTag = strip(lt TagName Attributes gt) @CREATE_OPEN_TAG;
+CloseTag = strip(lt slash TagName gt) @CREATE_CLOSE_TAG;
+
+// Special tags
+Doctype = strip(lt '!' "DOCTYPE" noneof(">")* gt) @CREATE_DOCTYPE;
+
+// Content
+// Text matches anything that is NOT a '<'
+Text = noneof("<")+ @CREATE_TEXT;
+
+// Recursion: Element can be a self-closing tag OR an open tag, content, and a close tag.
+// Use memoize to handle the recursive nature of Element efficiently.
+Element = memoize(SelfClosingTag | (OpenTag (Element | Text | Comment)* CloseTag)) @CREATE_ELEMENT;
+
+// Top-level
+Document = (Doctype | Element | Text | Comment)* eoi @CREATE_DOCUMENT;
