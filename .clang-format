@@ -55,13 +55,17 @@ BraceWrapping:
 
 IndentCaseLabels: false
 
-# Includes
+SortIncludes: CaseSensitive
 IncludeBlocks: Regroup
+IncludeIsMainRegex: ''
 IncludeCategories:
-  - Regex:           '^"([^/]+)\.h"$'
-    Priority:        -1
+  - Regex:           '^"easy_pc/.*"'
+    Priority:        10
   - Regex:           '^".*"'
-    Priority:        1
+    Priority:        20
+  - Regex:           '^<.*[/\.].*>'
+    Priority:        30
   - Regex:           '^<.*>'
-    Priority:        2
-...
+    Priority:        40
+
+
