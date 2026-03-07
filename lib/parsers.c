@@ -1,7 +1,8 @@
+#include "parsers.h"
+
 #include "child_list.h"
 #include "cpt_node.h"
 #include "easy_pc_private.h"
-#include "parsers.h"
 #include "result.h"
 
 #include <ctype.h> // For isdigit
