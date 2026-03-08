@@ -127,7 +127,7 @@ int main() {
         fprintf(stdout, "Matched: '%.*s'\n", (int)session.result.data.success->len, session.result.data.success->content);
         
         // Optionally, print the Concrete Parse Tree (CPT) for debugging
-        char* cpt_str = epc_cpt_to_string(session.internal_parse_ctx, session.result.data.success, 0);
+        char* cpt_str = epc_cpt_to_string(session.internal_parse_ctx, session.result.data.success);
         if (cpt_str != NULL)
         {
             fprintf(stdout, "--- CPT ---\n%s\n-----------\n", cpt_str);
@@ -164,27 +164,18 @@ int main() {
 
 The library uses a producer-consumer model: the main thread reads from the file descriptor and fills an internal buffer, while a dedicated parsing thread processes the data as it becomes available. "Greedy" parsers (like integers and doubles) are designed to block and wait for more data if the input stream ends prematurely, ensuring they only match complete tokens.
 
-**Example Usage:**
+### Reactive (Non-Blocking) Streaming
 
-```c
-#include "easy_pc/easy_pc.h"
-#include <unistd.h>
+For event-driven applications (e.g., using `poll`, `epoll`, or `libuv`), `easy_pc` provides a **Reactive Streaming** mode. This allows the parser to run in the background while your main thread remains non-blocking.
 
-// ... setup grammar p_top ...
+1.  **Initiate:** Use `epc_parse_fd_reactive()` to start a session. It returns immediately and automatically sets the file descriptor to `O_NONBLOCK`.
+2.  **Notify:** Call `epc_streaming_notify_readable()` when your event loop detects the FD is ready for reading.
+3.  **Callback:** Provide an `on_complete` callback that the library will invoke when a parse finishes. 
+    *   **Note:** This callback is executed in the **background consumer thread**. Use it to signal your main thread (e.g., by writing to a pipe) that a result is ready.
+4.  **Sync Result:** Call `epc_parse_session_sync_result()` in your main thread to move the parse result from internal storage into your session. This call transfers ownership of the result details to the session for processing.
+5.  **Advance:** Use `epc_parse_session_advance()` to parse a sequence of objects from the same stream without destroying the context.
 
-int pipe_fds[2];
-pipe(pipe_fds); // Or use a socket
-
-// The call below blocks until parsing completes or an error occurs.
-// Data is read from pipe_fds[0] in the background.
-epc_parse_session_t session = epc_parse_fd(p_top, pipe_fds[0]);
-
-if (!session.result.is_error) {
-    // Success!
-}
-
-epc_parse_session_destroy(&session);
-```
+See the [Reactive Streaming Example](examples/reactive_streaming/) for a complete implementation using `poll()`.
 
 ## Using Parser List Helper Functions (the `_l` functions)
 
@@ -251,3 +242,6 @@ The `easy_pc` library comes with several example applications demonstrating its 
 
 *   **C Parser:** Located in [examples/c_parser/](examples/c_parser/)
     A more advanced example that implements a substantial subset of the C programming language (C89/C99). It demonstrates handling complex recursive declarators, function pointers, designated initializers, and uses the GDL compiler for its grammar definition. It also includes support for typedefs using transactional callbacks.
+
+*   **Reactive Streaming Parser:** Located in [examples/reactive_streaming/](examples/reactive_streaming/)
+    Demonstrates the non-blocking reactive streaming API. It shows how to integrate the parser with a `poll()` loop and use a completion callback to process a sequence of packets from a single stream.
