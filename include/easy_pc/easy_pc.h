@@ -53,7 +53,8 @@ typedef struct epc_parser_t epc_parser_t;
 typedef struct epc_cpt_node_t epc_cpt_node_t;
 typedef struct epc_parser_ctx_t epc_parser_ctx_t;
 typedef struct epc_parser_list epc_parser_list;
-
+typedef struct epc_parse_session_t epc_parse_session_t;
+typedef struct epc_parse_result_t epc_parse_result_t;
 // line and column information.
 typedef struct epc_line_col_t
 {
@@ -70,8 +71,17 @@ typedef enum epc_parse_type_t
     EPC_PARSE_TYPE_FILE,
     EPC_PARSE_TYPE_FILENAME,
     EPC_PARSE_TYPE_FD,
+    EPC_PARSE_TYPE_FD_REACTIVE,
     EPC_PARSE_TYPE_BUFFER,
 } epc_parse_type_t;
+
+#ifdef WITH_INPUT_STREAM_SUPPORT
+/**
+ * @brief Callback function type invoked when a reactive streaming parse completes.
+ * @param user_data User-defined data passed to the initiation call.
+ */
+typedef void (*epc_streaming_complete_cb)(void * user_data);
+#endif
 
 /**
  * @brief A union type that encapsulates the different forms of input that can be parsed.
@@ -90,6 +100,14 @@ typedef struct epc_parse_input_t
         FILE * fp;
         char const * filename;
         int fd;
+#ifdef WITH_INPUT_STREAM_SUPPORT
+        struct
+        {
+            int fd;
+            epc_streaming_complete_cb on_complete;
+            void * cb_user_data;
+        } reactive;
+#endif
         struct
         {
             char const * buf;
@@ -100,22 +118,15 @@ typedef struct epc_parse_input_t
 
 // Error Handling struct
 /**
- * @brief Represents a detailed parsing error.
- *
- * This structure captures information about where and why a parsing operation failed,
- * including the specific input position, an error message, and what was expected
- * versus what was actually found.
+ * @brief Detailed error information from a parsing attempt.
  */
-typedef struct epc_parser_error_t
+typedef struct
 {
-    char const *
-        input_position; /**< @brief Pointer to the exact position in the input string where the error occurred. */
-    epc_line_col_t
-        position; /**< @brief Line and column if the input where the error occurred (0-indexed, calculated later). */
-
-    /**< @brief A descriptive error message. */
+    char const * input_position; /**< @brief Pointer to the exact position in the input where the error occurred. */
+    epc_line_col_t position;     /**< @brief Line and column coordinates of the error position. */
+    /**< @brief A descriptive message explaining the nature of the error. */
     char message[EPC_ERROR_MESSAGE_MAX_LEN + 1];
-    /**< @brief A string describing what the parser expected at the error position. */
+    /**< @brief A string describing what the parser was expecting at the error position. */
     char expected[EPC_ERROR_EXPECTED_MAX_LEN + 1];
     /**< @brief A string describing what the parser actually found at the error position. */
     char found[EPC_ERROR_FOUND_MAX_LEN + 1];
@@ -140,7 +151,7 @@ typedef struct
 } epc_ast_semantic_action_t;
 
 // The Result of a Parse Attempt
-typedef struct
+struct epc_parse_result_t
 {
     bool is_error; /**< @brief A flag: false for success, true for error. */
     union
@@ -148,7 +159,7 @@ typedef struct
         epc_cpt_node_t * success;   /**< @brief Pointer to the root of the generated CPT on successful parsing. */
         epc_parser_error_t * error; /**< @brief Pointer to detailed error information on parsing failure. */
     } data;                         /**< @brief Union holding either the success node or error details. */
-} epc_parse_result_t;
+};
 
 // --- Parse Session Result ---
 // Contains the parse result and the transient context for cleanup
@@ -158,14 +169,13 @@ typedef struct
  * This structure holds the final outcome of a top-level parsing operation
  * (either a successful CPT or an error) along with the internal parser context
  * necessary for proper memory cleanup. Users should always destroy a session
- * using `easy_pc_parse_session_destroy` to prevent memory leaks.
+ * with `epc_parse_session_destroy` to release all associated resources.
  */
-typedef struct epc_parse_session_t
+struct epc_parse_session_t
 {
-    epc_parse_result_t result; /**< @brief The actual parse success/failure and CPT/error information. */
-    epc_parser_ctx_t *
-        internal_parse_ctx; /**< @brief Internal context for the parsing operation, managing CPT/error memory. */
-} epc_parse_session_t;
+    epc_parse_result_t result;             /**< @brief The final result of the parse (CPT root or error details). */
+    epc_parser_ctx_t * internal_parse_ctx; /**< @brief Pointer to the internal context for memory management. */
+};
 
 // Visitor struct for CPT traversal
 /**
@@ -1563,6 +1573,76 @@ EASY_PC_API epc_parse_session_t epc_parse_file(epc_parser_t * top_parser, char c
  * @return An `easy_pc_parse_session_t` structure.
  */
 EASY_PC_API epc_parse_session_t epc_parse_fd(epc_parser_t * top_parser, int fd, void * user_ctx);
+
+#ifdef WITH_INPUT_STREAM_SUPPORT
+
+/**
+ * @brief Initiates a reactive (non-blocking) streaming parse from a file descriptor.
+ *
+ * This function returns immediately. The parsing happens in a background thread.
+ * The main thread must notify the library when data is available using `epc_streaming_notify_readable`.
+ *
+ * @param top_parser The starting parser for the grammar.
+ * @param fd The file descriptor to read from.
+ * @param on_complete Callback invoked when the parse finishes (successfully or with error).
+ * @param cb_user_data User-defined data passed to the callback.
+ * @param user_ctx User-defined context pointer for the parse session.
+ * @return An `easy_pc_parse_session_t` structure.
+ */
+EASY_PC_API epc_parse_session_t epc_parse_fd_reactive(
+    epc_parser_t * top_parser, int fd, epc_streaming_complete_cb on_complete, void * cb_user_data, void * user_ctx
+);
+
+/**
+ * @brief Notifies the library that the file descriptor is ready for reading.
+ * @param session Pointer to the active reactive session.
+ */
+EASY_PC_API void epc_streaming_notify_readable(epc_parse_session_t * session);
+
+/**
+ * @brief Notifies the library that the end of the stream has been reached.
+ * @param session Pointer to the active reactive session.
+ */
+EASY_PC_API void epc_streaming_notify_eof(epc_parse_session_t * session);
+
+/**
+ * @brief Notifies the library of a fatal error on the stream.
+ * @param session Pointer to the active reactive session.
+ * @param error_code The errno or custom error code.
+ */
+EASY_PC_API void epc_streaming_notify_error(epc_parse_session_t * session, int error_code);
+
+/**
+ * @brief Prepares a session for the next parse operation in a sequence.
+ *
+ * This can only be called after the previous parse operation has completed.
+ * It compacts the input buffer (moving leftover data to the start) and resets
+ * the internal state for the new parser.
+ *
+ * @param session Pointer to the session to advance.
+ * @param next_parser The parser to use for the next object in the stream.
+ */
+EASY_PC_API void epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_parser);
+
+/**
+ * @brief Checks if the background parsing thread is currently active.
+ * @param session Pointer to the active reactive session.
+ * @return True if the thread is active, false otherwise.
+ */
+EASY_PC_API bool epc_parse_session_is_active(epc_parse_session_t const * session);
+
+/**
+ * @brief Synchronizes the result from the background parsing thread to the session.
+ *
+ * This function moves the parse result from the internal context into the
+ * `session->result` field. Once synchronized, the session takes ownership
+ * of the result, and it will be cleaned up by `epc_parse_session_destroy()`.
+ *
+ * @param session Pointer to the session to synchronize.
+ * @return True if a result was available and synchronized, false otherwise.
+ */
+EASY_PC_API bool epc_parse_session_sync_result(epc_parse_session_t * session);
+#endif
 
 /**
  * @brief Destroys an `easy_pc_parse_session_t` and frees all associated resources.

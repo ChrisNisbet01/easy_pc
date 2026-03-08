@@ -8,6 +8,30 @@
 #include <stddef.h>
 #ifdef WITH_INPUT_STREAM_SUPPORT
 #include <pthread.h>
+
+typedef struct
+{
+    epc_parser_t * top_parser;
+    struct epc_parser_ctx_t * ctx;
+    epc_parse_result_t result;
+} epc_parsing_thread_args_t;
+
+typedef struct
+{
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    bool is_streaming;
+    bool is_eof;
+    int input_error;
+    pthread_t parsing_thread;
+    bool parsing_thread_active;
+    bool parsing_thread_joined;
+    epc_parsing_thread_args_t thread_args;
+    epc_streaming_complete_cb on_complete;
+    void * cb_user_data;
+    int fd;
+    epc_parse_result_t pending_result;
+} epc_streaming_state_t;
 #endif
 
 #define MAX_MMAP_INPUT_SIZE (100 * 1024 * 1024) /* 100 MB */
@@ -53,11 +77,7 @@ struct epc_parser_ctx_t
     epc_error_pool_t error_pool;
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-    bool is_streaming;
-    bool is_eof;
-    int input_error;
+    epc_streaming_state_t streaming;
 #endif
 };
 

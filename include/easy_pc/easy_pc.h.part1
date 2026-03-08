@@ -1,0 +1,156 @@
+#pragma once
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+
+// For symbol visibility control
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef BUILDING_EASY_PC
+#ifdef __GNUC__
+#define EASY_PC_API __attribute__((dllexport))
+#else
+#define EASY_PC_API __declspec(dllexport)
+#endif
+#else
+#ifdef __GNUC__
+#define EASY_PC_API __attribute__((dllimport))
+#else
+#define EASY_PC_API __declspec(dllimport)
+#endif
+#endif
+#define EASY_PC_HIDDEN
+#else
+#if __GNUC__ >= 4
+#define EASY_PC_API __attribute__((visibility("default")))
+#define EASY_PC_HIDDEN __attribute__((visibility("hidden")))
+#else
+#define EASY_PC_API
+#define EASY_PC_HIDDEN
+#endif
+#endif
+
+#ifdef __GNUC__
+#define ATTR_NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))
+#else
+#define ATTR_NONNULL(...)
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum
+{
+    EPC_ERROR_MESSAGE_MAX_LEN = 60,
+    EPC_ERROR_FOUND_MAX_LEN = 40,
+    EPC_ERROR_EXPECTED_MAX_LEN = 40,
+} EPC_ERROR_MAX_MESSAGE_LENGTHS;
+
+// Forward declarations of structs
+typedef struct epc_parser_t epc_parser_t;
+typedef struct epc_cpt_node_t epc_cpt_node_t;
+typedef struct epc_parser_ctx_t epc_parser_ctx_t;
+typedef struct epc_parser_list epc_parser_list;
+
+// line and column information.
+typedef struct epc_line_col_t
+{
+    size_t line;
+    size_t col;
+} epc_line_col_t;
+
+/**
+ * @brief Represents the input to be parsed, which can be either a string or a file stream.
+ */
+typedef enum epc_parse_type_t
+{
+    EPC_PARSE_TYPE_STRING,
+    EPC_PARSE_TYPE_FILE,
+    EPC_PARSE_TYPE_FILENAME,
+    EPC_PARSE_TYPE_FD,
+    EPC_PARSE_TYPE_FD_REACTIVE,
+    EPC_PARSE_TYPE_BUFFER,
+} epc_parse_type_t;
+
+/**
+ * @brief Detailed error information from a parsing attempt.
+ */
+typedef struct
+{
+    char const * input_position; /**< @brief Pointer to the exact position in the input where the error occurred. */
+    epc_line_col_t position;     /**< @brief Line and column coordinates of the error position. */
+    /**< @brief A descriptive message explaining the nature of the error. */
+    char message[EPC_ERROR_MESSAGE_MAX_LEN + 1];
+    /**< @brief A string describing what the parser was expecting at the error position. */
+    char expected[EPC_ERROR_EXPECTED_MAX_LEN + 1];
+    /**< @brief A string describing what the parser actually found at the error position. */
+    char found[EPC_ERROR_FOUND_MAX_LEN + 1];
+    epc_parser_ctx_t *
+        internal_parse_ctx; /**< @brief Internal context for the parsing operation, managing CPT/error memory. */
+} epc_parser_error_t;
+
+// The Result of a Parse Attempt
+typedef struct
+{
+    bool is_error; /**< @brief A flag: false for success, true for error. */
+    union
+    {
+        epc_cpt_node_t * success;   /**< @brief Pointer to the root of the generated CPT on successful parsing. */
+        epc_parser_error_t * error; /**< @brief Pointer to detailed error information on parsing failure. */
+    } data;                         /**< @brief Union holding either the success node or error details. */
+} epc_parse_result_t;
+
+// --- Parse Session Result ---
+// Contains the parse result and the transient context for cleanup
+/**
+ * @brief Represents the complete result and context of a parsing session.
+ *
+ * This structure holds the final outcome of a top-level parsing operation
+ * (either a successful CPT or an error) along with the internal parser context
+ * necessary for proper memory cleanup. Users should always destroy a session
+ * with `epc_parse_session_destroy` to release all associated resources.
+ */
+typedef struct epc_parse_session_t
+{
+    epc_parse_result_t result;        /**< @brief The final result of the parse (CPT root or error details). */
+    epc_parser_ctx_t * internal_parse_ctx; /**< @brief Pointer to the internal context for memory management. */
+} epc_parse_session_t;
+
+#ifdef WITH_INPUT_STREAM_SUPPORT
+/**
+ * @brief Callback function type invoked when a reactive streaming parse completes.
+ * @param session Pointer to the session that completed.
+ * @param user_data User-defined data passed to the initiation call.
+ */
+typedef void (*epc_streaming_complete_cb)(epc_parse_session_t * session, void * user_data);
+#endif
+
+/**
+ * @brief A union type that encapsulates the different forms of input that can be parsed.
+ */
+typedef struct epc_parse_input_t
+{
+    epc_parse_type_t type;
+    union
+    {
+        char const * input_string;
+        FILE * fp;
+        char const * filename;
+        int fd;
+#ifdef WITH_INPUT_STREAM_SUPPORT
+        struct
+        {
+            int fd;
+            epc_streaming_complete_cb on_complete;
+            void * cb_user_data;
+        } reactive;
+#endif
+        struct
+        {
+            char const * buf;
+            size_t len;
+        } buffer;
+    };
+} epc_parse_input_t;

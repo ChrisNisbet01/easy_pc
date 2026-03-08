@@ -2,10 +2,11 @@
 #include "easy_pc_private.h"
 
 #include <CppUTest/TestHarness.h>
-#include <iostream>
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <iostream>
 
 #define MAX_FRAGMENTS 10
 

@@ -1,9 +1,9 @@
+#include "easy_pc/easy_pc_version.h"
+
 #include "cpt_node.h"
 #include "easy_pc_private.h"
 #include "parsers.h"
 #include "result.h"
-
-#include "easy_pc/easy_pc_version.h"
 
 char const *
 epc_get_version(void)
@@ -13,6 +13,8 @@ epc_get_version(void)
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
 #include <ctype.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <pthread.h>
 #endif
 #include <errno.h>
@@ -23,21 +25,79 @@ epc_get_version(void)
 #include <unistd.h>
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-typedef struct
-{
-    epc_parser_t * top_parser;
-    epc_parser_ctx_t * ctx;
-    epc_parse_result_t result;
-} ParsingThreadArgs;
-
 static void *
 epc_parsing_thread_worker(void * arg)
 {
-    ParsingThreadArgs * args = (ParsingThreadArgs *)arg;
+    epc_parsing_thread_args_t * args = (epc_parsing_thread_args_t *)arg;
+    epc_parser_ctx_t * ctx = args->ctx;
 
-    args->result = args->top_parser->parse_fn(args->top_parser, args->ctx, 0);
+    args->result = args->top_parser->parse_fn(args->top_parser, ctx, 0);
+
+    pthread_mutex_lock(&ctx->streaming.mutex);
+
+    ctx->streaming.parsing_thread_active = false;
+    ctx->streaming.pending_result = args->result;
+    epc_streaming_complete_cb on_complete = ctx->streaming.on_complete;
+    void * cb_user_data = ctx->streaming.cb_user_data;
+
+    pthread_mutex_unlock(&ctx->streaming.mutex);
+
+    if (on_complete != NULL)
+    {
+        on_complete(cb_user_data);
+    }
 
     return NULL;
+}
+
+static bool
+internal_streaming_init_thread(
+    epc_parser_ctx_t * ctx,
+    epc_parser_t * top_parser,
+    int fd,
+    epc_streaming_complete_cb on_complete,
+    void * cb_user_data
+)
+{
+    ctx->streaming.fd = fd;
+    ctx->streaming.on_complete = on_complete;
+    ctx->streaming.cb_user_data = cb_user_data;
+
+    ctx->streaming.thread_args.top_parser = top_parser;
+    ctx->streaming.thread_args.ctx = ctx;
+    ctx->streaming.thread_args.result = (epc_parse_result_t){0};
+
+    ctx->streaming.parsing_thread_active = true;
+    ctx->streaming.parsing_thread_joined = false;
+
+    if (pthread_create(&ctx->streaming.parsing_thread, NULL, epc_parsing_thread_worker, &ctx->streaming.thread_args)
+        != 0)
+    {
+        ctx->streaming.parsing_thread_active = false;
+        return false;
+    }
+    return true;
+}
+
+static void
+internal_streaming_join_thread(epc_parser_ctx_t * ctx)
+{
+    pthread_t thread = 0;
+    bool should_join = false;
+
+    pthread_mutex_lock(&ctx->streaming.mutex);
+    if (ctx->streaming.is_streaming && !ctx->streaming.parsing_thread_joined)
+    {
+        thread = ctx->streaming.parsing_thread;
+        should_join = true;
+        ctx->streaming.parsing_thread_joined = true;
+    }
+    pthread_mutex_unlock(&ctx->streaming.mutex);
+
+    if (should_join)
+    {
+        pthread_join(thread, NULL);
+    }
 }
 #endif
 
@@ -227,8 +287,8 @@ internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
     }
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    pthread_mutex_init(&ctx->mutex, NULL);
-    pthread_cond_init(&ctx->cond, NULL);
+    pthread_mutex_init(&ctx->streaming.mutex, NULL);
+    pthread_cond_init(&ctx->streaming.cond, NULL);
 #endif
 
     memcpy(buffer.buffer, buf, len);
@@ -312,8 +372,8 @@ internal_create_parse_ctx_from_fp(FILE * fp)
     }
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    pthread_mutex_init(&ctx->mutex, NULL);
-    pthread_cond_init(&ctx->cond, NULL);
+    pthread_mutex_init(&ctx->streaming.mutex, NULL);
+    pthread_cond_init(&ctx->streaming.cond, NULL);
 #endif
 
     ctx->mmap_buffer = buffer;
@@ -347,13 +407,13 @@ internal_create_parse_ctx_streaming(void)
         return NULL;
     }
 
-    pthread_mutex_init(&ctx->mutex, NULL);
-    pthread_cond_init(&ctx->cond, NULL);
+    pthread_mutex_init(&ctx->streaming.mutex, NULL);
+    pthread_cond_init(&ctx->streaming.cond, NULL);
 
     ctx->mmap_buffer = buffer;
     ctx->input_start = buffer.buffer;
     ctx->input_len = 0;
-    ctx->is_streaming = true;
+    ctx->streaming.is_streaming = true;
 
     return ctx;
 }
@@ -394,8 +454,9 @@ internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
     epc_memo_table_cleanup(ctx);
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    pthread_mutex_destroy(&ctx->mutex);
-    pthread_cond_destroy(&ctx->cond);
+    pthread_mutex_destroy(&ctx->streaming.mutex);
+    pthread_cond_destroy(&ctx->streaming.cond);
+    epc_parser_result_cleanup(&ctx->streaming.pending_result);
 #endif
 
     if (ctx->mmap_buffer.buffer != NULL)
@@ -519,18 +580,18 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
     }
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    if (ctx->is_streaming)
+    if (ctx->streaming.is_streaming)
     {
-        pthread_mutex_lock(&ctx->mutex);
-        while (input_offset + count > ctx->input_len && !ctx->is_eof && ctx->input_error == 0)
+        pthread_mutex_lock(&ctx->streaming.mutex);
+        while (input_offset + count > ctx->input_len && !ctx->streaming.is_eof && ctx->streaming.input_error == 0)
         {
-            pthread_cond_wait(&ctx->cond, &ctx->mutex);
+            pthread_cond_wait(&ctx->streaming.cond, &ctx->streaming.mutex);
         }
 
         if (input_offset + count > ctx->input_len)
         {
             // We've reached EOF or an error occurred before enough data was available
-            pthread_mutex_unlock(&ctx->mutex);
+            pthread_mutex_unlock(&ctx->streaming.mutex);
             return (parse_get_input_result_t){
                 .next_input = &ctx->input_start[input_offset],
                 .available = ctx->input_len - input_offset,
@@ -544,7 +605,7 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
             .available = ctx->input_len - input_offset,
             .is_eof = false,
         };
-        pthread_mutex_unlock(&ctx->mutex);
+        pthread_mutex_unlock(&ctx->streaming.mutex);
         return result;
     }
 #endif
@@ -569,7 +630,7 @@ bool
 parse_ctx_is_streaming(epc_parser_ctx_t const * ctx)
 {
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    return ctx ? ctx->is_streaming : false;
+    return ctx ? ctx->streaming.is_streaming : false;
 #else
     (void)ctx;
     return false;
@@ -585,11 +646,11 @@ parse_ctx_is_eof(epc_parser_ctx_t * ctx)
         return true;
     }
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    if (ctx->is_streaming)
+    if (ctx->streaming.is_streaming)
     {
-        pthread_mutex_lock(&ctx->mutex);
-        bool const is_eof = ctx->is_eof;
-        pthread_mutex_unlock(&ctx->mutex);
+        pthread_mutex_lock(&ctx->streaming.mutex);
+        bool const is_eof = ctx->streaming.is_eof;
+        pthread_mutex_unlock(&ctx->streaming.mutex);
         return is_eof;
     }
 #endif
@@ -639,61 +700,211 @@ parser_ctx_set_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t ** repl
 }
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-static epc_parse_result_t
-parse_in_thread(epc_parser_t * top_parser, epc_parser_ctx_t * ctx, epc_parse_input_t input)
+typedef enum
 {
-    ParsingThreadArgs args = {
-        .top_parser = top_parser,
-        .ctx = ctx,
-        .result = {0},
+    STREAM_CONSUME_OK,
+    STREAM_CONSUME_EOF,
+    STREAM_CONSUME_ERROR,
+    STREAM_CONSUME_AGAIN
+} stream_consume_status_t;
+
+static stream_consume_status_t
+internal_streaming_consume_available(epc_parse_session_t * session, bool once)
+{
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+    int fd = ctx->streaming.fd;
+    char read_buf[4096];
+    ssize_t bytes_read;
+
+    do
+    {
+        bytes_read = read(fd, read_buf, sizeof(read_buf));
+        if (bytes_read > 0)
+        {
+            pthread_mutex_lock(&ctx->streaming.mutex);
+            if (ctx->input_len + (size_t)bytes_read > MAX_MMAP_INPUT_SIZE)
+            {
+                ctx->streaming.input_error = EFBIG;
+                pthread_cond_broadcast(&ctx->streaming.cond);
+                pthread_mutex_unlock(&ctx->streaming.mutex);
+                return STREAM_CONSUME_ERROR;
+            }
+            memcpy((void *)(ctx->input_start + ctx->input_len), read_buf, (size_t)bytes_read);
+            ctx->input_len += (size_t)bytes_read;
+            pthread_cond_broadcast(&ctx->streaming.cond);
+            pthread_mutex_unlock(&ctx->streaming.mutex);
+        }
+        else if (bytes_read == 0)
+        {
+            epc_streaming_notify_eof(session);
+            return STREAM_CONSUME_EOF;
+        }
+        else if (errno == EINTR)
+        {
+            /* Interrupted by signal, retry immediately. */
+            continue;
+        }
+        else if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            return STREAM_CONSUME_AGAIN;
+        }
+        else
+        {
+            epc_streaming_notify_error(session, errno);
+            return STREAM_CONSUME_ERROR;
+        }
+    } while (!once && bytes_read > 0);
+
+    return STREAM_CONSUME_OK;
+}
+
+EASY_PC_API epc_parse_session_t
+epc_parse_fd_reactive(
+    epc_parser_t * top_parser, int fd, epc_streaming_complete_cb on_complete, void * cb_user_data, void * user_ctx
+)
+{
+    epc_parse_input_t input = {
+        .type = EPC_PARSE_TYPE_FD_REACTIVE,
+        .reactive = {
+            .fd = fd,
+            .on_complete = on_complete,
+            .cb_user_data = cb_user_data,
+        },
     };
 
-    pthread_t thread;
-    if (pthread_create(&thread, NULL, epc_parsing_thread_worker, &args) != 0)
+    return epc_parse_input(top_parser, input, user_ctx);
+}
+
+EASY_PC_API void
+epc_streaming_notify_readable(epc_parse_session_t * session)
+{
+    if (session == NULL || session->internal_parse_ctx == NULL)
     {
-        return epc_unparsed_error_result(
-            0, "Failed to create parsing thread", "parsing thread created", "pthread_create failed"
+        return;
+    }
+
+    internal_streaming_consume_available(session, true);
+}
+
+EASY_PC_API void
+epc_streaming_notify_eof(epc_parse_session_t * session)
+{
+    if (session == NULL || session->internal_parse_ctx == NULL)
+    {
+        return;
+    }
+
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+    pthread_mutex_lock(&ctx->streaming.mutex);
+    ctx->streaming.is_eof = true;
+    pthread_cond_broadcast(&ctx->streaming.cond);
+    pthread_mutex_unlock(&ctx->streaming.mutex);
+}
+
+EASY_PC_API void
+epc_streaming_notify_error(epc_parse_session_t * session, int error_code)
+{
+    if (session == NULL || session->internal_parse_ctx == NULL)
+    {
+        return;
+    }
+
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+    pthread_mutex_lock(&ctx->streaming.mutex);
+    ctx->streaming.input_error = error_code;
+    pthread_cond_broadcast(&ctx->streaming.cond);
+    pthread_mutex_unlock(&ctx->streaming.mutex);
+}
+
+EASY_PC_API void
+epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_parser)
+{
+    if (session == NULL || session->internal_parse_ctx == NULL || next_parser == NULL)
+    {
+        return;
+    }
+
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+
+    /* 1. Ensure the previous thread is joined. */
+    internal_streaming_join_thread(ctx);
+
+    /* 2. Determine how much was consumed. */
+    size_t consumed = 0;
+    if (!session->result.is_error && session->result.data.success)
+    {
+        consumed = epc_cpt_node_get_len(session->result.data.success);
+    }
+
+    pthread_mutex_lock(&ctx->streaming.mutex);
+
+    /* 3. Compact the buffer. */
+    if (consumed > 0 && consumed <= ctx->input_len)
+    {
+        size_t leftover = ctx->input_len - consumed;
+        if (leftover > 0)
+        {
+            memmove((void *)ctx->input_start, ctx->input_start + consumed, leftover);
+        }
+        ctx->input_len = leftover;
+    }
+
+    /* 4. Reset internal state. */
+    epc_parser_result_cleanup(&session->result);
+    epc_parser_result_cleanup(&ctx->streaming.pending_result);
+    epc_parser_error_free(ctx->furthest_error);
+    ctx->furthest_error = NULL;
+
+    epc_memo_table_reset(ctx);
+
+    /* 5. Prepare and restart the consumer thread. */
+    if (!internal_streaming_init_thread(
+            ctx, next_parser, ctx->streaming.fd, ctx->streaming.on_complete, ctx->streaming.cb_user_data
+        ))
+    {
+        session->result = epc_unparsed_error_result(
+            0, "Failed to restart parsing thread", "parsing thread restarted", "pthread_create failed"
         );
     }
 
-    // Producer Loop (Main Thread)
-    char read_buf[4096];
-    ssize_t bytes_read;
-    while ((bytes_read = read(input.fd, read_buf, sizeof(read_buf))) > 0)
+    pthread_mutex_unlock(&ctx->streaming.mutex);
+}
+
+EASY_PC_API bool
+epc_parse_session_is_active(epc_parse_session_t const * session)
+{
+    if (session == NULL || session->internal_parse_ctx == NULL)
     {
-        pthread_mutex_lock(&ctx->mutex);
-
-        // Check if we have space in mmap buffer (100MB limit currently)
-        if (ctx->input_len + (size_t)bytes_read > MAX_MMAP_INPUT_SIZE)
-        {
-            ctx->input_error = EFBIG;
-            pthread_cond_broadcast(&ctx->cond);
-            pthread_mutex_unlock(&ctx->mutex);
-            break;
-        }
-
-        memcpy((void *)(ctx->input_start + ctx->input_len), read_buf, (size_t)bytes_read);
-        ctx->input_len += (size_t)bytes_read;
-
-        pthread_cond_broadcast(&ctx->cond);
-        pthread_mutex_unlock(&ctx->mutex);
+        return false;
     }
 
-    pthread_mutex_lock(&ctx->mutex);
-    if (bytes_read == 0)
-    {
-        ctx->is_eof = true;
-    }
-    else if (bytes_read < 0)
-    {
-        ctx->input_error = errno;
-    }
-    pthread_cond_broadcast(&ctx->cond);
-    pthread_mutex_unlock(&ctx->mutex);
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+    pthread_mutex_lock(&ctx->streaming.mutex);
+    bool const active = ctx->streaming.parsing_thread_active;
+    pthread_mutex_unlock(&ctx->streaming.mutex);
+    return active;
+}
 
-    pthread_join(thread, NULL);
+EASY_PC_API bool
+epc_parse_session_sync_result(epc_parse_session_t * session)
+{
+    if (session == NULL || session->internal_parse_ctx == NULL)
+    {
+        return false;
+    }
 
-    return args.result;
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+
+    pthread_mutex_lock(&ctx->streaming.mutex);
+
+    /* Move result from internal storage to session. */
+    epc_parser_result_cleanup(&session->result);
+    session->result = ctx->streaming.pending_result;
+    memset(&ctx->streaming.pending_result, 0, sizeof(ctx->streaming.pending_result));
+
+    pthread_mutex_unlock(&ctx->streaming.mutex);
+
+    return true;
 }
 #endif
 
@@ -763,6 +974,7 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
         break;
 
     case EPC_PARSE_TYPE_FD:
+    case EPC_PARSE_TYPE_FD_REACTIVE:
     {
 #ifdef WITH_INPUT_STREAM_SUPPORT
         ctx = internal_create_parse_ctx_streaming();
@@ -792,9 +1004,75 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
     ctx->user_ctx = user_ctx;
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    if (ctx->is_streaming)
+    if (ctx->streaming.is_streaming)
     {
-        session.result = parse_in_thread(top_parser, ctx, input);
+        int fd;
+        epc_streaming_complete_cb on_complete = NULL;
+        void * cb_user_data = NULL;
+
+        if (input.type == EPC_PARSE_TYPE_FD)
+        {
+            fd = input.fd;
+        }
+        else
+        {
+            fd = input.reactive.fd;
+            on_complete = input.reactive.on_complete;
+            cb_user_data = input.reactive.cb_user_data;
+        }
+
+        /* Ensure the FD is in non-blocking mode. */
+        int flags = fcntl(fd, F_GETFL, 0);
+        if (flags != -1)
+        {
+            fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+        }
+
+        if (!internal_streaming_init_thread(ctx, top_parser, fd, on_complete, cb_user_data))
+        {
+            session.result = epc_unparsed_error_result(
+                0, "Failed to create parsing thread", "parsing thread created", "pthread_create failed"
+            );
+            return session;
+        }
+
+        if (input.type == EPC_PARSE_TYPE_FD)
+        {
+            /* Blocking producer loop. */
+            bool done_producing = false;
+            while (!done_producing)
+            {
+                stream_consume_status_t status = internal_streaming_consume_available(&session, false);
+
+                pthread_mutex_lock(&ctx->streaming.mutex);
+                if (ctx->streaming.is_eof || ctx->streaming.input_error != 0 || !ctx->streaming.parsing_thread_active)
+                {
+                    done_producing = true;
+                }
+                pthread_mutex_unlock(&ctx->streaming.mutex);
+
+                if (!done_producing && status == STREAM_CONSUME_AGAIN)
+                {
+                    struct pollfd pfd = {.fd = fd, .events = POLLIN};
+                    poll(&pfd, 1, 100);
+                }
+                else if (status == STREAM_CONSUME_ERROR)
+                {
+                    done_producing = true;
+                }
+            }
+
+            /* Wait for the consumer thread to finish. */
+            internal_streaming_join_thread(ctx);
+
+            /* Move result from internal storage to session. */
+            epc_parse_session_sync_result(&session);
+        }
+        else
+        {
+            /* Reactive mode - return session immediately. */
+            return session;
+        }
     }
     else
 #endif
@@ -875,11 +1153,15 @@ epc_parse_session_destroy(epc_parse_session_t * session)
         return;
     }
 
-    epc_parser_result_cleanup(&session->result);
-
     if (session->internal_parse_ctx)
     {
-        internal_destroy_parse_ctx(session->internal_parse_ctx);
+        epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+
+#ifdef WITH_INPUT_STREAM_SUPPORT
+        internal_streaming_join_thread(ctx);
+#endif
+        epc_parser_result_cleanup(&session->result);
+        internal_destroy_parse_ctx(ctx);
         session->internal_parse_ctx = NULL;
     }
 }

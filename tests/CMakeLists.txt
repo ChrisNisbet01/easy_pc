@@ -313,6 +313,31 @@ if(WITH_INPUT_STREAM_SUPPORT)
         NAME StreamingTest
         COMMAND StreamingTest
     )
+
+    add_executable(SequentialStreamingTest
+        AllTests.cpp
+        SequentialStreamingTest.cpp
+    )
+
+    add_dependencies(all_unit_tests SequentialStreamingTest)
+
+    target_include_directories(SequentialStreamingTest PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+    )
+
+    target_link_libraries(SequentialStreamingTest PRIVATE
+        easy_pc_shared
+        CppUTest
+        CppUTestExt
+    )
+
+    target_compile_definitions(SequentialStreamingTest PRIVATE WITH_INPUT_STREAM_SUPPORT)
+
+    add_test(
+        NAME SequentialStreamingTest
+        COMMAND SequentialStreamingTest
+    )
 endif()
 
 add_executable(SatisfyTest

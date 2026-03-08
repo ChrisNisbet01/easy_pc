@@ -153,7 +153,7 @@ resize_table(epc_memo_table_t * table)
 
 EASY_PC_HIDDEN
 void
-epc_memo_table_cleanup(epc_parser_ctx_t * ctx)
+epc_memo_table_reset(epc_parser_ctx_t * ctx)
 {
     epc_memo_table_t * table = epc_parser_ctx_get_memo_table(ctx);
     if (table == NULL || table->buckets == NULL)
@@ -171,7 +171,23 @@ epc_memo_table_cleanup(epc_parser_ctx_t * ctx)
             free(current);
             current = next;
         }
+        table->buckets[i] = NULL;
     }
+    table->entry_count = 0;
+}
+
+EASY_PC_HIDDEN
+void
+epc_memo_table_cleanup(epc_parser_ctx_t * ctx)
+{
+    epc_memo_table_t * table = epc_parser_ctx_get_memo_table(ctx);
+    if (table == NULL || table->buckets == NULL)
+    {
+        return;
+    }
+
+    epc_memo_table_reset(ctx);
+
     free(table->buckets);
     table->buckets = NULL;
     table->bucket_count = 0;
