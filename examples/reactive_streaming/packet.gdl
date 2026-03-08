@@ -1,0 +1,11 @@
+// Simple Packet Grammar: [Type:Data]
+// Example: [INFO:Hello World]
+
+Open = '[';
+Close = ']';
+Separator = ':';
+
+Type = alpha+;
+Data = noneof("]")*;
+
+Packet = Open Type Separator Data Close;
