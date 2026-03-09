@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include <iostream>
+
 extern "C" {
 #include "cpt_node.h"
 #include "easy_pc_private.h"
@@ -51,8 +53,11 @@ TEST_GROUP(GdlParserTest)
 
     void teardown()
     {
+        std::cout << "teardown" << std::endl;
         epc_parse_session_destroy(&session);
+        std::cout << "destroyed" << std::endl;
         epc_parser_list_free(parser_list);
+        std::cout << "freed" << std::endl;
     }
 };
 
@@ -72,8 +77,8 @@ TEST(GdlParserTest, SimpleFailTerminalWithoutStringShouldntParse)
     char const * gdl_input = "MyRule = fail;";
     session = parse(gdl_parser_root, gdl_input);
 
-    CHECK(session.result.is_error);
     STRCMP_CONTAINS("Unexpected character", session.result.data.error->message);
+    CHECK(session.result.is_error);
 }
 
 // Test parsing a simple identifier rule.

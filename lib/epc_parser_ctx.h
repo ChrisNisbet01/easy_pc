@@ -13,7 +13,6 @@ typedef struct
 {
     epc_parser_t * top_parser;
     struct epc_parser_ctx_t * ctx;
-    epc_parse_result_t result;
 } epc_parsing_thread_args_t;
 
 typedef struct
@@ -86,6 +85,7 @@ typedef struct parse_get_input_result_t
     char const * next_input;
     size_t available;
     bool is_eof;
+    bool had_error;
 } parse_get_input_result_t;
 
 EASY_PC_HIDDEN
@@ -102,12 +102,6 @@ void parse_ctx_free_error(epc_parser_ctx_t * ctx, epc_parser_error_t * error);
 
 EASY_PC_HIDDEN
 parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t input_offset, size_t count);
-
-EASY_PC_HIDDEN
-bool parse_ctx_is_streaming(epc_parser_ctx_t const * ctx);
-
-EASY_PC_HIDDEN
-bool parse_ctx_is_eof(epc_parser_ctx_t * ctx);
 
 static inline char const *
 parse_ctx_get_input_start(epc_parser_ctx_t * ctx)

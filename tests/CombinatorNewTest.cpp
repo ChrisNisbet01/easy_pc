@@ -1,7 +1,6 @@
+#include "CppUTest/TestHarness.h"
 #include "cpt_node.h"
 #include "easy_pc_private.h"
-
-#include "CppUTest/TestHarness.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -193,7 +192,7 @@ TEST(CombinatorParsersNew, Between_FailsNullChildParser)
     epc_parser_t * p_close = epc_char(NULL, ')');
     epc_parser_t * p_between_null_wrapped = epc_between(NULL, p_open, NULL, p_close);
     session = parse(p_between_null_wrapped, "(a)");
-    check_failure("p_between received NULL child parser(s)");
+    check_failure("between received NULL child parser(s)");
 }
 
 // --- p_delimited tests ---

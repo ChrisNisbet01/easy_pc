@@ -30,15 +30,14 @@ epc_parsing_thread_worker(void * arg)
 {
     epc_parsing_thread_args_t * args = (epc_parsing_thread_args_t *)arg;
     epc_parser_ctx_t * ctx = args->ctx;
-
-    args->result = args->top_parser->parse_fn(args->top_parser, ctx, 0);
+    epc_streaming_complete_cb on_complete = ctx->streaming.on_complete;
+    void * cb_user_data = ctx->streaming.cb_user_data;
+    epc_parse_result_t parse_result = args->top_parser->parse_fn(args->top_parser, ctx, 0);
 
     pthread_mutex_lock(&ctx->streaming.mutex);
 
     ctx->streaming.parsing_thread_active = false;
-    ctx->streaming.pending_result = args->result;
-    epc_streaming_complete_cb on_complete = ctx->streaming.on_complete;
-    void * cb_user_data = ctx->streaming.cb_user_data;
+    ctx->streaming.pending_result = parse_result;
 
     pthread_mutex_unlock(&ctx->streaming.mutex);
 
@@ -65,7 +64,6 @@ internal_streaming_init_thread(
 
     ctx->streaming.thread_args.top_parser = top_parser;
     ctx->streaming.thread_args.ctx = ctx;
-    ctx->streaming.thread_args.result = (epc_parse_result_t){0};
 
     ctx->streaming.parsing_thread_active = true;
     ctx->streaming.parsing_thread_joined = false;
@@ -265,7 +263,7 @@ internal_init_parse_ctx(epc_parser_ctx_t * ctx)
 static epc_parser_ctx_t *
 internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
 {
-    mmap_input_buffer_t buffer = create_mmap_input_buffer(len);
+    mmap_input_buffer_t buffer = create_mmap_input_buffer(len + 1);
 
     if (buffer.buffer == NULL)
     {
@@ -292,6 +290,7 @@ internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
 #endif
 
     memcpy(buffer.buffer, buf, len);
+    buffer.buffer[len] = '\0'; // Nul-terminate the buffer
 
     ctx->mmap_buffer = buffer;
     ctx->input_start = ctx->mmap_buffer.buffer;
@@ -410,6 +409,7 @@ internal_create_parse_ctx_streaming(void)
     pthread_mutex_init(&ctx->streaming.mutex, NULL);
     pthread_cond_init(&ctx->streaming.cond, NULL);
 
+    buffer.buffer[0] = '\0'; /* NUL-terminate the buffer. */
     ctx->mmap_buffer = buffer;
     ctx->input_start = buffer.buffer;
     ctx->input_len = 0;
@@ -576,85 +576,47 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
     {
         return (parse_get_input_result_t){
             .is_eof = true,
+            .had_error = true,
         };
     }
 
+    bool const is_streaming = ctx->streaming.is_streaming;
+    bool had_error = false;
+
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    if (ctx->streaming.is_streaming)
+    if (is_streaming)
     {
+        /* Wait for the input to arrive from the main thread. */
         pthread_mutex_lock(&ctx->streaming.mutex);
         while (input_offset + count > ctx->input_len && !ctx->streaming.is_eof && ctx->streaming.input_error == 0)
         {
             pthread_cond_wait(&ctx->streaming.cond, &ctx->streaming.mutex);
         }
-
-        if (input_offset + count > ctx->input_len)
+        if (ctx->streaming.input_error != 0)
         {
-            // We've reached EOF or an error occurred before enough data was available
-            pthread_mutex_unlock(&ctx->streaming.mutex);
-            return (parse_get_input_result_t){
-                .next_input = &ctx->input_start[input_offset],
-                .available = ctx->input_len - input_offset,
-                .is_eof = true,
-                /* We might want to pass back the error code somehow in the future */
-            };
+            had_error = true;
         }
-
-        parse_get_input_result_t result = {
-            .next_input = &ctx->input_start[input_offset],
-            .available = ctx->input_len - input_offset,
-            .is_eof = false,
-        };
-        pthread_mutex_unlock(&ctx->streaming.mutex);
-        return result;
     }
 #endif
 
-    if (input_offset + count > ctx->input_len)
-    {
-        return (parse_get_input_result_t){
-            .next_input = &ctx->input_start[input_offset],
-            .available = ctx->input_len - input_offset,
-            .is_eof = true,
-        };
-    }
+    /* Note that the streaming mutex is still held at this point. */
+    bool const is_eof = input_offset + count > ctx->input_len;
 
-    return (parse_get_input_result_t){
+    parse_get_input_result_t result = {
         .next_input = &ctx->input_start[input_offset],
         .available = ctx->input_len - input_offset,
+        .is_eof = is_eof,
+        .had_error = had_error,
     };
-}
 
-EASY_PC_HIDDEN
-bool
-parse_ctx_is_streaming(epc_parser_ctx_t const * ctx)
-{
 #ifdef WITH_INPUT_STREAM_SUPPORT
-    return ctx ? ctx->streaming.is_streaming : false;
-#else
-    (void)ctx;
-    return false;
-#endif
-}
-
-EASY_PC_HIDDEN
-bool
-parse_ctx_is_eof(epc_parser_ctx_t * ctx)
-{
-    if (!ctx)
+    if (is_streaming)
     {
-        return true;
-    }
-#ifdef WITH_INPUT_STREAM_SUPPORT
-    if (ctx->streaming.is_streaming)
-    {
-        pthread_mutex_lock(&ctx->streaming.mutex);
-        bool const is_eof = ctx->streaming.is_eof;
         pthread_mutex_unlock(&ctx->streaming.mutex);
-        return is_eof;
     }
 #endif
-    return true; // For non-streaming, data is always loaded up to "EOF"
+
+    return result;
 }
 
 EASY_PC_HIDDEN
@@ -699,6 +661,34 @@ parser_ctx_set_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t ** repl
     *replacement = NULL;
 }
 
+static void
+choose_best_error(epc_parse_session_t * session)
+{
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+
+    // After parsing, if an error occurred, check if the tracked "furthest_error"
+    // is more informative than the one that caused the final failure.
+    if (session->result.is_error)
+    {
+        epc_parser_error_t * furthest_error = parser_furthest_error_copy(ctx);
+
+        // A `furthest_error` is more informative if it parsed further into the input string.
+        if (furthest_error != NULL
+            && (session->result.data.error == NULL
+                || furthest_error->input_position > session->result.data.error->input_position))
+        {
+            // If it is, replace the result's error with the furthest one.
+            epc_parser_error_free(session->result.data.error);
+            session->result.data.error = furthest_error;
+        }
+        else
+        {
+            // Otherwise, the original error is fine, so just free the copy of furthest_error.
+            epc_parser_error_free(furthest_error);
+        }
+    }
+}
+
 #ifdef WITH_INPUT_STREAM_SUPPORT
 typedef enum
 {
@@ -722,7 +712,7 @@ internal_streaming_consume_available(epc_parse_session_t * session, bool once)
         if (bytes_read > 0)
         {
             pthread_mutex_lock(&ctx->streaming.mutex);
-            if (ctx->input_len + (size_t)bytes_read > MAX_MMAP_INPUT_SIZE)
+            if (ctx->input_len + (size_t)bytes_read + 1 > MAX_MMAP_INPUT_SIZE)
             {
                 ctx->streaming.input_error = EFBIG;
                 pthread_cond_broadcast(&ctx->streaming.cond);
@@ -730,6 +720,8 @@ internal_streaming_consume_available(epc_parse_session_t * session, bool once)
                 return STREAM_CONSUME_ERROR;
             }
             memcpy((void *)(ctx->input_start + ctx->input_len), read_buf, (size_t)bytes_read);
+            /* NUL terminate to help prevent buffer overruns within the parsers. */
+            *(uint8_t *)&ctx->input_start[ctx->input_len + bytes_read] = '\0';
             ctx->input_len += (size_t)bytes_read;
             pthread_cond_broadcast(&ctx->streaming.cond);
             pthread_mutex_unlock(&ctx->streaming.mutex);
@@ -756,23 +748,6 @@ internal_streaming_consume_available(epc_parse_session_t * session, bool once)
     } while (!once && bytes_read > 0);
 
     return STREAM_CONSUME_OK;
-}
-
-EASY_PC_API epc_parse_session_t
-epc_parse_fd_reactive(
-    epc_parser_t * top_parser, int fd, epc_streaming_complete_cb on_complete, void * cb_user_data, void * user_ctx
-)
-{
-    epc_parse_input_t input = {
-        .type = EPC_PARSE_TYPE_FD_REACTIVE,
-        .reactive = {
-            .fd = fd,
-            .on_complete = on_complete,
-            .cb_user_data = cb_user_data,
-        },
-    };
-
-    return epc_parse_input(top_parser, input, user_ctx);
 }
 
 EASY_PC_API void
@@ -831,9 +806,17 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
 
     /* 2. Determine how much was consumed. */
     size_t consumed = 0;
-    if (!session->result.is_error && session->result.data.success)
+
+    if (!session->result.is_error)
     {
-        consumed = epc_cpt_node_get_len(session->result.data.success);
+        if (session->result.data.success != NULL)
+        {
+            consumed = epc_cpt_node_get_len(session->result.data.success);
+        }
+    }
+    else
+    {
+        consumed = 1; /* Consume at least one byte, else the parser will likely loop forever, consuming no input. */
     }
 
     pthread_mutex_lock(&ctx->streaming.mutex);
@@ -895,12 +878,15 @@ epc_parse_session_sync_result(epc_parse_session_t * session)
 
     epc_parser_ctx_t * ctx = session->internal_parse_ctx;
 
+    epc_parser_result_cleanup(&session->result);
+
     pthread_mutex_lock(&ctx->streaming.mutex);
 
     /* Move result from internal storage to session. */
-    epc_parser_result_cleanup(&session->result);
     session->result = ctx->streaming.pending_result;
     memset(&ctx->streaming.pending_result, 0, sizeof(ctx->streaming.pending_result));
+
+    choose_best_error(session);
 
     pthread_mutex_unlock(&ctx->streaming.mutex);
 
@@ -1080,28 +1066,7 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
         session.result = top_parser->parse_fn(top_parser, ctx, 0);
     }
 
-    // After parsing, if an error occurred, check if the tracked "furthest_error"
-    // is more informative than the one that caused the final failure.
-    if (session.result.is_error)
-    {
-        epc_parser_error_t * furthest_error = parser_furthest_error_copy(ctx);
-
-        // A `furthest_error` is more informative if it parsed further into the input string.
-        if (furthest_error != NULL
-            && (session.result.data.error == NULL
-                || furthest_error->input_position > session.result.data.error->input_position))
-        {
-            // If it is, replace the result's error with the furthest one.
-            epc_parser_result_cleanup(&session.result);
-            session.result.is_error = true;
-            session.result.data.error = furthest_error;
-        }
-        else
-        {
-            // Otherwise, the original error is fine, so just free the copy of furthest_error.
-            epc_parser_error_free(furthest_error);
-        }
-    }
+    choose_best_error(&session);
 
     return session;
 }
@@ -1142,6 +1107,23 @@ EASY_PC_API epc_parse_session_t
 epc_parse_bytes(epc_parser_t * top_parser, char const * buf, size_t len, void * user_ctx)
 {
     epc_parse_input_t input = {.type = EPC_PARSE_TYPE_BUFFER, .buffer = {.buf = buf, .len = len}};
+    return epc_parse_input(top_parser, input, user_ctx);
+}
+
+EASY_PC_API epc_parse_session_t
+epc_parse_fd_reactive(
+    epc_parser_t * top_parser, int fd, epc_streaming_complete_cb on_complete, void * cb_user_data, void * user_ctx
+)
+{
+    epc_parse_input_t input = {
+        .type = EPC_PARSE_TYPE_FD_REACTIVE,
+        .reactive = {
+            .fd = fd,
+            .on_complete = on_complete,
+            .cb_user_data = cb_user_data,
+        },
+    };
+
     return epc_parse_input(top_parser, input, user_ctx);
 }
 

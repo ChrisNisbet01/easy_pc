@@ -680,7 +680,7 @@ epc_count_l(epc_parser_list * list, char const * name, int num, epc_parser_t * p
  * @brief Creates a parser that matches `open`, then `p` (wrapped content), then `close` and adds it to the list.
  *
  * The resulting CPT node will represent the entire `open` + `p` + `close` sequence,
- * but its direct children will only include the result of the `p` (wrapped) parser.
+ * but its direct child will only include the result of the wrapped parser..
  * @param name The name of the parser for debugging/CPT.
  * @param open The parser for the opening delimiter.
  * @param p The parser for the content wrapped by the delimiters.
@@ -695,7 +695,7 @@ EASY_PC_API epc_parser_t * epc_between(char const * name, epc_parser_t * open, e
  *        parser to the provided `epc_parser_list`.
  *
  * The resulting CPT node will represent the entire `open` + `p` + `close` sequence,
- * but its direct children will only include the result of the `p` (wrapped) parser.
+ * but its direct children will only include the result of the wrapped parser.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.
  * @param open The parser for the opening delimiter.

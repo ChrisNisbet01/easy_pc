@@ -1,10 +1,11 @@
+#include "CppUTest/TestHarness.h"
 #include "cpt_node.h"
 #include "easy_pc_private.h"
 
-#include "CppUTest/TestHarness.h"
-
 #include <stdio.h>
 #include <string.h>
+
+#include <iostream>
 
 TEST_GROUP(TerminalParsersNew)
 {
@@ -34,6 +35,12 @@ TEST_GROUP(TerminalParsersNew)
 
     void check_failure(char const * expected_message_substring)
     {
+        if (session.result.is_error)
+        {
+            std::cout << session.result.data.error->message << std::endl;
+            std::cout << session.result.data.error->expected << std::endl;
+            std::cout << session.result.data.error->found << std::endl;
+        }
         CHECK_TRUE(session.result.is_error);
         CHECK_TRUE(session.result.data.error != NULL);
         STRCMP_CONTAINS(expected_message_substring, session.result.data.error->message);
@@ -412,7 +419,7 @@ TEST(TerminalParsersNew, CppComment_MatchesEmptyComment)
     check_success("cpp_comment", "//\n", 3);
 }
 
-TEST(TerminalParsersNew, CppComment_FailsOnNoDoubleSlash)
+TEST(TerminalParsersNew, CppComment_NotTreatedAsACommentOnNoDoubleSlash)
 {
     epc_parser_t * p = epc_cpp_comment_l(list, NULL);
     session = parse(p, "A regular line\n");
