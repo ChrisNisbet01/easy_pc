@@ -3652,3 +3652,282 @@ epc_parser_get_name(epc_parser_t const * p)
         return "Unnamed parser";
     }
 }
+
+EASY_PC_API epc_parser_t *
+epc_char_l(epc_parser_list * list, char const * name, char c)
+{
+    return epc_parser_list_add(list, epc_char(name, c));
+}
+
+EASY_PC_API epc_parser_t *
+epc_string_l(epc_parser_list * list, char const * name, char const * s)
+{
+    return epc_parser_list_add(list, epc_string(name, s));
+}
+
+EASY_PC_API epc_parser_t *
+epc_digit_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_digit(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_alpha_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_alpha(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_alphanum_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_alphanum(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_int_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_int(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_double_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_double(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_space_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_space(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_any_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_any(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_identifier_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_identifier(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_octal_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_octal(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_hex_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_hex(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_succeed_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_succeed(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_hex_digit_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_hex_digit(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_char_range_l(epc_parser_list * list, char const * name, char char_start, char char_end)
+{
+    return epc_parser_list_add(list, epc_char_range(name, char_start, char_end));
+}
+
+EASY_PC_API epc_parser_t *
+epc_none_of_l(epc_parser_list * list, char const * name, char const * chars_to_avoid)
+{
+    return epc_parser_list_add(list, epc_none_of(name, chars_to_avoid));
+}
+
+EASY_PC_API epc_parser_t *
+epc_many_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_many(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_count_l(epc_parser_list * list, char const * name, int num, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_count(name, num, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_between_l(epc_parser_list * list, char const * name, epc_parser_t * open, epc_parser_t * p, epc_parser_t * close)
+{
+    return epc_parser_list_add(list, epc_between(name, open, p, close));
+}
+
+EASY_PC_API epc_parser_t *
+epc_delimited(char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser);
+
+EASY_PC_API epc_parser_t *
+epc_delimited_flex(char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser);
+
+EASY_PC_API epc_parser_t *
+epc_delimited_l(epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
+{
+    return epc_parser_list_add(list, epc_delimited(name, item_parser, delimiter_parser));
+}
+
+EASY_PC_API epc_parser_t *
+epc_delimited_flex_l(
+    epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser
+)
+{
+    return epc_parser_list_add(list, epc_delimited_flex(name, item_parser, delimiter_parser));
+}
+
+EASY_PC_API epc_parser_t *
+epc_optional_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_optional(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_lookahead_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_lookahead(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_not_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_not(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_fail_l(epc_parser_list * list, char const * name, char const * message)
+{
+    return epc_parser_list_add(list, epc_fail(name, message));
+}
+
+EASY_PC_API epc_parser_t *
+epc_one_of_l(epc_parser_list * list, char const * name, char const * chars_to_match)
+{
+    return epc_parser_list_add(list, epc_one_of(name, chars_to_match));
+}
+
+EASY_PC_API epc_parser_t *
+epc_lexeme_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_lexeme(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_strip_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_strip(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_stripl_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_stripl(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_stripr_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_stripr(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_chainl1_l(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
+{
+    return epc_parser_list_add(list, epc_chainl1(name, item, op));
+}
+
+EASY_PC_API epc_parser_t *
+epc_chainr1_l(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
+{
+    return epc_parser_list_add(list, epc_chainr1(name, item, op));
+}
+
+EASY_PC_API epc_parser_t *
+epc_skip_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_skip)
+{
+    return epc_parser_list_add(list, epc_skip(name, parser_to_skip));
+}
+
+EASY_PC_API epc_parser_t *
+epc_plus_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_repeat)
+{
+    return epc_parser_list_add(list, epc_plus(name, parser_to_repeat));
+}
+
+EASY_PC_API epc_parser_t *
+epc_soi_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_soi(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_eoi_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_eoi(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_cpp_comment_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_cpp_comment(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_bash_comment_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_bash_comment(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_c_comment_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_c_comment(name));
+}
+
+EASY_PC_API epc_parser_t *
+epc_satisfy_l(
+    epc_parser_list * list,
+    char const * name,
+    epc_parser_t * token_parser,
+    char const * message,
+    epc_satisfy_parser_predicate_fn predicate,
+    void * parser_data
+)
+{
+    return epc_parser_list_add(list, epc_satisfy(name, token_parser, message, predicate, parser_data));
+}
+
+EASY_PC_API epc_parser_t *
+epc_wrap_l(
+    epc_parser_list * list,
+    char const * name,
+    epc_parser_t * wrapped_parser,
+    epc_wrap_callbacks_t callbacks,
+    void * parser_data
+)
+{
+    return epc_parser_list_add(list, epc_wrap(name, wrapped_parser, callbacks, parser_data));
+}
+
+EASY_PC_API epc_parser_t *
+epc_memoize_l(epc_parser_list * list, char const * name, epc_parser_t * p_to_memoize)
+{
+    return epc_parser_list_add(list, epc_memoize(name, p_to_memoize));
+}
+
+EASY_PC_API epc_parser_t *
+epc_parser_fwd_decl_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_parser_fwd_decl(name));
+}

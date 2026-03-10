@@ -6,3 +6,14 @@
  * @brief Initiates a parsing operation with a given grammar and input.
  */
 EASY_PC_HIDDEN epc_parse_session_t epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_ctx);
+
+/**
+ * @brief Adds a parser to the parser list.
+ *
+ * If the parser passed is NULL, nothing is added to the list and NULL is returned.
+ *
+ * @param list The parser list to add to.
+ * @param parser The parser to add.
+ * @return The parser that was added, or NULL if the input parser was NULL or an error occurred.
+ */
+EASY_PC_HIDDEN epc_parser_t * epc_parser_list_add(epc_parser_list * list, epc_parser_t * parser);

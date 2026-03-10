@@ -1206,7 +1206,7 @@ epc_parser_list_create(void)
     return list;
 }
 
-EASY_PC_API epc_parser_t *
+EASY_PC_HIDDEN epc_parser_t *
 epc_parser_list_add(epc_parser_list * list, epc_parser_t * parser)
 {
     if (!list || !parser)
