@@ -791,18 +791,24 @@ epc_streaming_notify_error(epc_parse_session_t * session, int error_code)
     pthread_mutex_unlock(&ctx->streaming.mutex);
 }
 
-EASY_PC_API void
+EASY_PC_API bool
 epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_parser)
 {
     if (session == NULL || session->internal_parse_ctx == NULL || next_parser == NULL)
     {
-        return;
+        return false;
     }
 
     epc_parser_ctx_t * ctx = session->internal_parse_ctx;
 
     /* 1. Ensure the previous thread is joined. */
     internal_streaming_join_thread(ctx);
+
+    /* Can't advance if the input file is closed or experienced and error. */
+    if (!ctx->streaming.is_streaming || ctx->streaming.is_eof || ctx->streaming.input_error != 0)
+    {
+        return false;
+    }
 
     /* 2. Determine how much was consumed. */
     size_t consumed = 0;
@@ -851,6 +857,8 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
     }
 
     pthread_mutex_unlock(&ctx->streaming.mutex);
+
+    return true;
 }
 
 EASY_PC_API bool

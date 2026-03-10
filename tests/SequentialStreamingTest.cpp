@@ -137,7 +137,7 @@ TEST(SequentialStreamingTest, ParseTwoStringsSequentially)
 
     // 5. Advance to next object
     g_complete_fired = false;
-    epc_parse_session_advance(&session, p);
+    CHECK_TRUE(epc_parse_session_advance(&session, p));
 
     // 6. Write second object
     if (write(pipe_fds[1], "hello", 5) != 5)
@@ -166,7 +166,7 @@ TEST(SequentialStreamingTest, ParseWithLeftoverData)
 
     // Advance. It should compact "a" to the beginning.
     g_complete_fired = false;
-    epc_parse_session_advance(&session, p);
+    CHECK_TRUE(epc_parse_session_advance(&session, p));
 
     // Write the rest of "abc" (which is "bc")
     if (write(pipe_fds[1], "bc", 2) != 2)

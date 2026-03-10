@@ -264,6 +264,7 @@ epc_ast_builder_pop_until_placeholder(epc_ast_builder_ctx_t * ctx, int * out_cou
     }
 
     *out_count = child_count;
+
     return children;
 }
 
@@ -311,15 +312,11 @@ epc_ast_builder_exit_node_cb(epc_cpt_node_t * node, void * user_data)
 
     bool has_action_assigned = node->ast_config.assigned && node->ast_config.action >= 0
                                && node->ast_config.action < ctx->registry->action_count;
+    epc_ast_action_cb action_cb = has_action_assigned ? ctx->registry->callbacks[node->ast_config.action] : NULL;
 
-    if (has_action_assigned)
+    if (has_action_assigned && action_cb)
     {
-        epc_ast_action_cb action_cb = ctx->registry->callbacks[node->ast_config.action];
-
-        if (action_cb != NULL)
-        {
-            action_cb(ctx, node, children, children_count, ctx->user_data);
-        }
+        action_cb(ctx, node, children, children_count, ctx->user_data);
     }
     else // Default behavior: if no action, push children back (flatten)
     {

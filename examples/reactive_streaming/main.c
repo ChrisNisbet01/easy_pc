@@ -146,7 +146,10 @@ main(int argc, char ** argv)
                         free(cpt_str);
                     }
                     printf("Advancing to next packet...\n");
-                    epc_parse_session_advance(&session, packet_parser);
+                    if (!epc_parse_session_advance(&session, packet_parser))
+                    {
+                        running = false;
+                    }
                 }
             }
         }

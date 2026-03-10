@@ -1621,8 +1621,9 @@ EASY_PC_API void epc_streaming_notify_error(epc_parse_session_t * session, int e
  *
  * @param session Pointer to the session to advance.
  * @param next_parser The parser to use for the next object in the stream.
+ * @return false if the session can't be advanced (e.g. input closed or error), else true.
  */
-EASY_PC_API void epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_parser);
+EASY_PC_API bool epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_parser);
 
 /**
  * @brief Checks if the background parsing thread is currently active.
