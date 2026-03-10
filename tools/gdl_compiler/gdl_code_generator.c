@@ -425,7 +425,9 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN:
     {
         traverse_expression_for_references(expression_node->data.between_call.open_expr, current_rule_info, all_rules);
-        traverse_expression_for_references(expression_node->data.between_call.content_expr, current_rule_info, all_rules);
+        traverse_expression_for_references(
+            expression_node->data.between_call.content_expr, current_rule_info, all_rules
+        );
         traverse_expression_for_references(expression_node->data.between_call.close_expr, current_rule_info, all_rules);
         break;
     }
@@ -439,7 +441,9 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
     case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
     {
-        traverse_expression_for_references(expression_node->data.unary_combinator_call.expr, current_rule_info, all_rules);
+        traverse_expression_for_references(
+            expression_node->data.unary_combinator_call.expr, current_rule_info, all_rules
+        );
         break;
     }
 
@@ -858,76 +862,7 @@ generate_expression_code(
     {
         char const * keyword_name = expression_node->data.keyword.name;
         // These are the keywords that map directly to epc_xxx_l functions
-        if (strcmp(keyword_name, "eoi") == 0)
-        {
-            fprintf(source_file, "epc_eoi_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "digit") == 0)
-        {
-            fprintf(source_file, "epc_digit_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "alpha") == 0)
-        {
-            fprintf(source_file, "epc_alpha_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "alphanum") == 0)
-        {
-            fprintf(source_file, "epc_alphanum_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "identifier") == 0)
-        {
-            fprintf(source_file, "epc_identifier_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "space") == 0)
-        {
-            fprintf(source_file, "epc_space_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "any") == 0)
-        {
-            fprintf(source_file, "epc_any_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "succeed") == 0)
-        {
-            fprintf(source_file, "epc_succeed_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "hex_digit") == 0)
-        {
-            fprintf(source_file, "epc_hex_digit_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "int") == 0)
-        {
-            fprintf(source_file, "epc_int_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "octal") == 0)
-        {
-            fprintf(source_file, "epc_octal_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "hex") == 0)
-        {
-            fprintf(source_file, "epc_hex_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "double") == 0)
-        {
-            fprintf(source_file, "epc_double_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "cpp_comment") == 0)
-        {
-            fprintf(source_file, "epc_cpp_comment_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "c_comment") == 0)
-        {
-            fprintf(source_file, "epc_c_comment_l(list, \"%s\")", keyword_name);
-        }
-        else if (strcmp(keyword_name, "bash_comment") == 0)
-        {
-            fprintf(source_file, "epc_bash_comment_l(list, \"%s\")", keyword_name);
-        }
-        // TODO: Add more keyword mappings as needed
-        else
-        {
-            fprintf(stderr, "Error: Unsupported GDL keyword '%s' for code generation.\n", keyword_name);
-            return false;
-        }
+        fprintf(source_file, "epc_%s_l(list, \"%s\")", keyword_name, keyword_name);
         break;
     }
 

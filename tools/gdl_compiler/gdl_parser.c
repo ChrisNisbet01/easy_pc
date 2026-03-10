@@ -121,6 +121,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_any_raw = epc_string_l(l, "any", "any");
     epc_parser_t * p_succeed_raw = epc_string_l(l, "succeed", "succeed");
     epc_parser_t * p_hex_digit_raw = epc_string_l(l, "hex_digit", "hex_digit");
+    epc_parser_t * p_soi_raw = epc_string_l(l, "soi", "soi");
     epc_parser_t * p_eoi_raw = epc_string_l(l, "eoi", "eoi");
     epc_parser_t * p_fail_raw = epc_string_l(l, "fail", "fail");
     epc_parser_t * p_fail = epc_lexeme_l(l, "fail", p_fail_raw);
@@ -173,7 +174,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * terminal_no_arg_parser = epc_or_l(
         l,
         "TerminalNoArgKeyword",
-        17,
+        18,
         p_char_raw,
         p_digit_raw,
         p_alphanum_raw,
@@ -190,7 +191,8 @@ create_gdl_parser(epc_parser_list * l)
         p_cpp_comment_raw,
         p_c_comment_raw,
         p_bash_comment_raw,
-        p_eoi_raw
+        p_eoi_raw,
+        p_soi_raw
     );
     epc_parser_set_ast_action(terminal_no_arg_parser, GDL_AST_ACTION_CREATE_KEYWORD);
 
