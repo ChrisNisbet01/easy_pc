@@ -477,6 +477,38 @@ epc_string(char const * name, char const * s)
 }
 
 static epc_parse_result_t
+psoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    if (input_offset != 0)
+    {
+        return epc_parser_error_result(
+            ctx, input_offset, "Start of input not found", "<start of input>", "<post input>"
+        );
+    }
+
+    epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 0);
+
+    node->content = input_result.next_input;
+    node->len = 0;
+
+    return epc_parser_success_result(node);
+}
+
+epc_parser_t *
+epc_soi(char const * name)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "soi", psoi_parse_fn);
+
+    return p;
+}
+
+static epc_parse_result_t
 peoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
@@ -508,10 +540,7 @@ epc_parser_t *
 epc_eoi(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "eoi", peoi_parse_fn);
-    if (p == NULL)
-    {
-        return NULL;
-    }
+
     return p;
 }
 

@@ -257,7 +257,7 @@ EASY_PC_API void epc_parser_list_free(epc_parser_list * list);
 // --- Parser List Helpers (Auto-generated) ---
 
 /**
- * @brief Creates a parser that matches a single specific character and adds it to the list.
+ * @brief Creates a parser that matches a single specific character.
  * @param name The name of the parser for debugging/CPT.
  * @param c The character to match.
  * @return A new `parser_t` instance, or NULL on error.
@@ -280,7 +280,7 @@ epc_char_l(epc_parser_list * list, char const * name, char c)
 }
 
 /**
- * @brief Creates a parser that matches a specific string literal and adds it to the list.
+ * @brief Creates a parser that matches a specific string literal.
  * @param name The name of the parser for debugging/CPT.
  * @param s The string literal to match. The lifetime of `s` must exceed the parser's.
  * @return A new `parser_t` instance, or NULL on error.
@@ -303,7 +303,7 @@ epc_string_l(epc_parser_list * list, char const * name, char const * s)
 }
 
 /**
- * @brief Creates a parser that matches a single digit character (0-9) and adds it to the list.
+ * @brief Creates a parser that matches a single digit character (0-9).
  * @param name The name of the parser for debugging/CPT.
  * @return A new `parser_t` instance, or NULL on error.
  */
@@ -324,7 +324,7 @@ epc_digit_l(epc_parser_list * list, char const * name)
 }
 
 /**
- * @brief Creates a parser that matches a single alphabetic character (a-z, A-Z) and adds it to the list.
+ * @brief Creates a parser that matches a single alphabetic character (a-z, A-Z).
  * @param name The name of the parser for debugging/CPT.
  * @return A new `parser_t` instance, or NULL on error.
  */
@@ -345,7 +345,7 @@ epc_alpha_l(epc_parser_list * list, char const * name)
 }
 
 /**
- * @brief Creates a parser that matches a single alphanumeric character (a-z, A-Z, 0-9) and adds it to the list.
+ * @brief Creates a parser that matches a single alphanumeric character (a-z, A-Z, 0-9).
  * @param name The name of the parser for debugging/CPT.
  * @return A new `parser_t` instance, or NULL on error.
  */
@@ -366,7 +366,7 @@ epc_alphanum_l(epc_parser_list * list, char const * name)
 }
 
 /**
- * @brief Creates a parser that matches an integer number (e.g., "123", "-45") and adds it to the list.
+ * @brief Creates a parser that matches an integer number (e.g., "123", "-45").
  * @param name The name of the parser for debugging/CPT.
  * @return A new `parser_t` instance, or NULL on error.
  */
@@ -387,7 +387,7 @@ epc_int_l(epc_parser_list * list, char const * name)
 }
 
 /**
- * @brief Creates a parser that matches a floating-point number (e.g., "3.14", "-.5", "1e-3") and adds it to the list.
+ * @brief Creates a parser that matches a floating-point number (e.g., "3.14", "-.5", "1e-3").
  * @param name The name of the parser for debugging/CPT.
  * @return A new `parser_t` instance, or NULL on error.
  */
@@ -408,7 +408,7 @@ epc_double_l(epc_parser_list * list, char const * name)
 }
 
 /**
- * @brief Creates a parser that matches a single whitespace character and adds it to the list.
+ * @brief Creates a parser that matches a single whitespace character.
  * @param name The name of the parser for debugging/CPT.
  * @return A new `parser_t` instance, or NULL on error.
  */
@@ -436,7 +436,7 @@ epc_space_l(epc_parser_list * list, char const * name)
 EASY_PC_API epc_parser_t * epc_any(char const * name);
 
 /**
- * @brief Creates a parser that matches any character and adds it to the list.
+ * @brief Creates a parser that matches any character.
 
  *        This is a convenience wrapper for `epc_any()` that automatically adds the created
  *        parser to the provided `epc_parser_list`.
@@ -520,7 +520,7 @@ epc_hex_l(epc_parser_list * list, char const * name)
 }
 
 /**
- * @brief Creates a parser that always succeeds and produces a node with specified content and adds it to the list.
+ * @brief Creates a parser that always succeeds and produces a node with specified content.
  *
  * This parser consumes no input and always returns a successful result
  * containing a CPT node with the given `content` and its length.
@@ -547,7 +547,7 @@ epc_succeed_l(epc_parser_list * list, char const * name)
 }
 
 /**
- * @brief Creates a parser that matches a single hexadecimal digit (0-9, a-f, A-F) and adds it to the list.
+ * @brief Creates a parser that matches a single hexadecimal digit (0-9, a-f, A-F).
  * @param name The name of the parser for debugging/CPT.
  * @return A new `parser_t` instance, or NULL on error.
  */
@@ -569,7 +569,7 @@ epc_hex_digit_l(epc_parser_list * list, char const * name)
 
 /* Combinators, or parsers that take more than one argument. */
 /**
- * @brief Creates a parser that matches a single character within a specified range and adds it to the list.
+ * @brief Creates a parser that matches a single character within a specified range.
  * @param name The name of the parser for debugging/CPT.
  * @param char_start The beginning character of the range (inclusive).
  * @param char_end The ending character of the range (inclusive).
@@ -594,7 +594,7 @@ epc_char_range_l(epc_parser_list * list, char const * name, char char_start, cha
 }
 
 /**
- * @brief Creates a parser that matches any single character NOT in the provided set and adds it to the list.
+ * @brief Creates a parser that matches any single character NOT in the provided set.
  * @param name The name of the parser for debugging/CPT.
  * @param chars_to_avoid A null-terminated string of characters that should NOT be matched.
  *                       The lifetime of this string must exceed the parser's.
@@ -619,7 +619,7 @@ epc_none_of_l(epc_parser_list * list, char const * name, char const * chars_to_a
 }
 
 /**
- * @brief Creates a parser that matches the given parser zero or more times and adds it to the list.
+ * @brief Creates a parser that matches the given parser zero or more times.
  *
  * This parser always succeeds. If the child parser matches zero times, it
  * consumes no input and returns a success result with an empty list of children.
@@ -648,7 +648,7 @@ epc_many_l(epc_parser_list * list, char const * name, epc_parser_t * p)
 }
 
 /**
- * @brief Creates a parser that matches the given parser exactly `num` times and adds it to the list.
+ * @brief Creates a parser that matches the given parser exactly `num` times.
  *
  * @param name The name of the parser for debugging/CPT.
  * @param num The exact number of times the child parser must match.
@@ -677,7 +677,7 @@ epc_count_l(epc_parser_list * list, char const * name, int num, epc_parser_t * p
 }
 
 /**
- * @brief Creates a parser that matches `open`, then `p` (wrapped content), then `close` and adds it to the list.
+ * @brief Creates a parser that matches `open`, then `p` (wrapped content), then `close`.
  *
  * The resulting CPT node will represent the entire `open` + `p` + `close` sequence,
  * but its direct child will only include the result of the wrapped parser..
@@ -781,7 +781,7 @@ epc_delimited_flex_l(
 }
 
 /**
- * @brief Creates a parser that attempts to match `p`, but always succeeds and adds it to the list.
+ * @brief Creates a parser that attempts to match `p`, but always succeeds.
  *
  * If `p` matches, its result is included. If `p` fails, `p_optional` succeeds
  * without consuming any input and produces an empty (zero-length) node.
@@ -810,7 +810,7 @@ epc_optional_l(epc_parser_list * list, char const * name, epc_parser_t * p)
 }
 
 /**
- * @brief Creates a parser that attempts to match `p` but consumes no input and adds it to the list.
+ * @brief Creates a parser that attempts to match `p` but consumes no input.
  *
  * `p_lookahead` succeeds if `p` succeeds, and fails if `p` fails.
  * However, regardless of success or failure, it never consumes any input.
@@ -841,7 +841,7 @@ epc_lookahead_l(epc_parser_list * list, char const * name, epc_parser_t * p)
 }
 
 /**
- * @brief Creates a parser that succeeds if `p` FAILS, and fails if `p` SUCCEEDS and adds it to the list.
+ * @brief Creates a parser that succeeds if `p` FAILS, and fails if `p` SUCCEEDS.
  *
  * `p_not` never consumes any input. It acts as a negative lookahead.
  * @param name The name of the parser for debugging/CPT.
@@ -868,7 +868,7 @@ epc_not_l(epc_parser_list * list, char const * name, epc_parser_t * p)
 }
 
 /**
- * @brief Creates a parser that always fails with a specified error message and adds it to the list.
+ * @brief Creates a parser that always fails with a specified error message.
  *
  * Useful for explicitly indicating invalid states in a grammar.
  * @param name The name of the parser for debugging/CPT.
@@ -895,7 +895,7 @@ epc_fail_l(epc_parser_list * list, char const * name, char const * message)
 }
 
 /**
- * @brief Creates a parser that matches any single character from a specified set and adds it to the list.
+ * @brief Creates a parser that matches any single character from a specified set.
  * @param name The name of the parser for debugging/CPT.
  * @param chars_to_match A null-terminated string of characters that are allowed to match.
  * @return A new `parser_t` instance, or NULL on error.
@@ -918,7 +918,7 @@ epc_one_of_l(epc_parser_list * list, char const * name, char const * chars_to_ma
 }
 
 /**
- * @brief Creates a parser that matches its child parser, optionally surrounded by whitespace and adds it to the list.
+ * @brief Creates a parser that matches its child parser, optionally surrounded by whitespace.
  * The whitespace itself is skipped and not included in the CPT node for the lexeme.
  * @param name The name of the parser for debugging/CPT.
  * @param p The child parser to wrap.
@@ -995,7 +995,7 @@ epc_stripr_l(epc_parser_list * list, char const * name, epc_parser_t * p)
 
 /**
  * @brief Creates a parser that matches one or more `item` parsers,
- *        separated by an `op` parser, applying `op` left-associatively and adds it to the list.
+ *        separated by an `op` parser, applying `op` left-associatively.
  *        Useful for arithmetic expressions like 1 + 2 - 3.
  * @param name The name of the parser for debugging/CPT.
  * @param item The parser for the individual items.
@@ -1024,7 +1024,7 @@ epc_chainl1_l(epc_parser_list * list, char const * name, epc_parser_t * item, ep
 
 /**
  * @brief Creates a parser that matches one or more `item` parsers,
- *        separated by an `op` parser, applying `op` right-associatively and adds it to the list.
+ *        separated by an `op` parser, applying `op` right-associatively.
  *        Useful for expressions like 1 ^ 2 ^ 3.
  * @param name The name of the parser for debugging/CPT.
  * @param item The parser for the individual items.
@@ -1144,7 +1144,7 @@ epc_skip_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_s
 }
 
 /**
- * @brief Creates a parser that matches `parser_to_repeat` one or more times and adds it to the list.
+ * @brief Creates a parser that matches `parser_to_repeat` one or more times.
  *
  * This parser requires at least one successful match of the child parser.
  * @param name The name of the parser for debugging/CPT.
@@ -1154,7 +1154,7 @@ epc_skip_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_s
 EASY_PC_API epc_parser_t * epc_plus(char const * name, epc_parser_t * parser_to_repeat);
 
 /**
- * @brief Creates a parser that matches `parser_to_repeat` one or more times and adds it to the list.
+ * @brief Creates a parser that matches `parser_to_repeat` one or more times.
  *        This is a convenience wrapper for `epc_plus()` that automatically adds the created
  *        parser to the provided `epc_parser_list`.
  *
@@ -1171,7 +1171,33 @@ epc_plus_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_r
 }
 
 /**
+ * @brief Creates a parser that matches the start of the input stream.
+ *
+ * This parser succeeds only if the stream is at the start of input.
+ * It consumes no data.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_soi(char const * name);
+
+/**
  * @brief Creates a parser that matches the end of the input stream and adds it to the list.
+ *        This is a convenience wrapper for `epc_soi()` that automatically adds the created
+ *        parser to the provided `epc_parser_list`.
+ *
+ * This parser succeeds only if the stream is at the start of input.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+static inline epc_parser_t *
+epc_soi_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_soi(name));
+}
+
+/**
+ * @brief Creates a parser that matches the end of the input.
  *
  * This parser succeeds only if there are no more characters to consume in the input.
  * @param name The name of the parser for debugging/CPT.
@@ -1659,7 +1685,7 @@ EASY_PC_API void epc_parse_session_destroy(epc_parse_session_t * session);
 EASY_PC_API void epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session);
 
 /**
- * @brief Creates a parser that matches a single specific byte and adds it to the list.
+ * @brief Creates a parser that matches a single specific byte.
  * @param name The name of the parser for debugging/CPT.
  * @param b The byte to match.
  * @return A new `parser_t` instance, or NULL on error.

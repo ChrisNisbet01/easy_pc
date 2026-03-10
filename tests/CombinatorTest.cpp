@@ -14,10 +14,12 @@ TEST_GROUP(CombinatorTest)
 {
     epc_parse_session_t session = {0};
     epc_parse_result_t result;
+    epc_parser_list * list;
 
     void setup() override
     {
         session = (epc_parse_session_t){0}; // Reset session before each test
+        list = epc_parser_list_create();
     }
 
     epc_parse_result_t parse(epc_parser_t * parser, char const * input)
@@ -30,8 +32,38 @@ TEST_GROUP(CombinatorTest)
     void teardown() override
     {
         epc_parse_session_destroy(&session);
+        epc_parser_list_free(list);
     }
 };
+
+TEST(CombinatorTest, SOIMatchesStartOfInput)
+{
+    epc_parser_t * p_soi = epc_soi_l(list, "SOI");
+
+    result = parse(p_soi, "abc");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    STRCMP_EQUAL("soi", result.data.success->tag);
+    STRNCMP_EQUAL("", result.data.success->content, 0);
+    LONGS_EQUAL(0, result.data.success->len);
+    LONGS_EQUAL(0, result.data.success->children_count);
+}
+
+TEST(CombinatorTest, SOIfailsAfterStartOfInput)
+{
+    epc_parser_t * p_soi = epc_soi_l(list, "SOI");
+    epc_parser_t * p_char_a = epc_char_l(list, "A", 'a');
+    epc_parser_t * p_or = epc_and_l(list, "AND", 2, p_char_a, p_soi);
+    result = parse(p_or, "abc");
+
+    CHECK_TRUE(result.is_error);
+    CHECK_TRUE(result.data.error != NULL);
+    STRCMP_EQUAL("Start of input not found", result.data.error->message);
+    STRCMP_EQUAL("bc", result.data.error->input_position);
+    STRCMP_EQUAL("<start of input>", result.data.error->expected);
+    STRCMP_EQUAL("<post input>", result.data.error->found);
+}
 
 TEST(CombinatorTest, PStarMatchesZero)
 {
