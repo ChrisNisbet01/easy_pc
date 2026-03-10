@@ -1247,6 +1247,13 @@ EASY_PC_API void epc_parse_session_destroy(epc_parse_session_t * session);
 
 EASY_PC_API void epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session);
 
+/**
+ * @brief Creates a parser that matches a single specific byte.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param b The character to match.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
 static inline epc_parser_t *
 epc_byte_l(epc_parser_list * list, char const * name, char b)
 {

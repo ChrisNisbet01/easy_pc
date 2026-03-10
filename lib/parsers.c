@@ -208,10 +208,16 @@ epc_parser_allocate(char const * name, char const * tag, parse_fn_t parse_fn)
     return p;
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_parser_fwd_decl(char const * name)
 {
     return epc_parser_allocate(name, "forward_decl", NULL);
+}
+
+EASY_PC_API epc_parser_t *
+epc_parser_fwd_decl_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_parser_fwd_decl(name));
 }
 
 static char const *
@@ -312,7 +318,7 @@ pchar_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     return epc_parser_error_result(ctx, input_offset, "Unexpected character", expected_str, found_str);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_char(char const * name, char c)
 {
     epc_parser_t * p = epc_parser_allocate(name, "char", pchar_parse_fn);
@@ -333,6 +339,12 @@ epc_char(char const * name, char c)
     p->expected_value = p->data.string;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_char_l(epc_parser_list * list, char const * name, char c)
+{
+    return epc_parser_list_add(list, epc_char(name, c));
 }
 
 static epc_parse_result_t
@@ -371,7 +383,7 @@ pbyte_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     return epc_parser_error_result(ctx, input_offset, "Unexpected byte", expected_str, found_str);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_byte(char const * name, char b)
 {
     epc_parser_t * p = epc_parser_allocate(name, "byte", pbyte_parse_fn);
@@ -393,6 +405,12 @@ epc_byte(char const * name, char b)
     p->expected_value = p->data.byte.str;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_byte_l(epc_parser_list * list, char const * name, char b)
+{
+    return epc_parser_list_add(list, epc_byte(name, b));
 }
 
 static epc_parse_result_t
@@ -455,7 +473,7 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     return epc_parser_success_result(node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_string(char const * name, char const * s)
 {
     epc_parser_t * p = epc_parser_allocate(name, "string", pstring_parse_fn);
@@ -474,6 +492,12 @@ epc_string(char const * name, char const * s)
     p->expected_value = p->data.string;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_string_l(epc_parser_list * list, char const * name, char const * s)
+{
+    return epc_parser_list_add(list, epc_string(name, s));
 }
 
 static epc_parse_result_t
@@ -500,12 +524,18 @@ psoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
     return epc_parser_success_result(node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_soi(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "soi", psoi_parse_fn);
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_soi_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_soi(name));
 }
 
 static epc_parse_result_t
@@ -536,12 +566,18 @@ peoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
     return epc_parser_success_result(node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_eoi(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "eoi", peoi_parse_fn);
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_eoi_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_eoi(name));
 }
 
 static epc_parse_result_t
@@ -577,7 +613,7 @@ pdigit_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     return epc_parser_error_result(ctx, input_offset, "Unexpected character", "digit", found_str);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_digit(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "digit", pdigit_parse_fn);
@@ -587,6 +623,12 @@ epc_digit(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_digit_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_digit(name));
 }
 
 static bool
@@ -689,7 +731,7 @@ pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
     return epc_parser_error_result(ctx, input_offset, "Expected an integer", "integer", found_buffer);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_int(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "integer", pint_parse_fn);
@@ -699,6 +741,12 @@ epc_int(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_int_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_int(name));
 }
 
 static epc_parse_result_t
@@ -737,7 +785,7 @@ pspace_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     return epc_parser_error_result(ctx, input_offset, "Unexpected character", "whitespace", found_str);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_space(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "space", pspace_parse_fn);
@@ -747,6 +795,12 @@ epc_space(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_space_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_space(name));
 }
 
 static epc_parse_result_t
@@ -783,7 +837,7 @@ palpha_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     return epc_parser_error_result(ctx, input_offset, "Unexpected character", "alpha", found_str);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_alpha(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "alpha", palpha_parse_fn);
@@ -793,6 +847,12 @@ epc_alpha(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_alpha_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_alpha(name));
 }
 
 static epc_parse_result_t
@@ -829,7 +889,7 @@ palphanum_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t in
     return epc_parser_error_result(ctx, input_offset, "Unexpected character", "alphanum", found_str);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_alphanum(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "alphanum", palphanum_parse_fn);
@@ -839,6 +899,12 @@ epc_alphanum(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_alphanum_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_alphanum(name));
 }
 
 static epc_parse_result_t
@@ -928,7 +994,7 @@ pdouble_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     return epc_parser_success_result(node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_double(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "double", pdouble_parse_fn);
@@ -938,6 +1004,12 @@ epc_double(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_double_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_double(name));
 }
 
 static epc_parse_result_t
@@ -1023,7 +1095,7 @@ phex_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_hex(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "hex", phex_parse_fn);
@@ -1034,6 +1106,12 @@ epc_hex(char const * name)
     p->expected_value = "hex literal";
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_hex_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_hex(name));
 }
 
 static epc_parse_result_t
@@ -1086,7 +1164,7 @@ poctal_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_octal(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "octal", poctal_parse_fn);
@@ -1097,6 +1175,12 @@ epc_octal(char const * name)
     p->expected_value = "octal literal";
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_octal_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_octal(name));
 }
 
 static epc_parse_result_t
@@ -1149,7 +1233,7 @@ pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_identifier(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "identifier", pidentifier_parse_fn);
@@ -1159,6 +1243,12 @@ epc_identifier(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_identifier_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_identifier(name));
 }
 
 static epc_parse_result_t
@@ -1305,19 +1395,7 @@ vepc_or(char const * name, int count, va_list args)
     return p;
 }
 
-epc_parser_t *
-epc_or(char const * name, int count, ...)
-{
-    va_list args;
-
-    va_start(args, count);
-    epc_parser_t * p = vepc_or(name, count, args);
-    va_end(args);
-
-    return p;
-}
-
-epc_parser_t *
+EASY_PC_API epc_parser_t *
 epc_or_l(epc_parser_list * list, char const * name, int count, ...)
 {
     va_list args;
@@ -1466,7 +1544,7 @@ pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t
     return epc_parser_success_result(node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_cpp_comment(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "cpp_comment", pcpp_comment_parse_fn);
@@ -1477,6 +1555,12 @@ epc_cpp_comment(char const * name)
     p->expected_value = "// C++ style comment";
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_cpp_comment_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_cpp_comment(name));
 }
 
 // --- C-style Comment Parser Implementation ---
@@ -1538,7 +1622,7 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_c_comment(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "c_comment", pc_comment_parse_fn);
@@ -1549,6 +1633,12 @@ epc_c_comment(char const * name)
     p->expected_value = "/* C-style comment */";
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_c_comment_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_c_comment(name));
 }
 
 // --- Bash Comment Parser Implementation ---
@@ -1587,7 +1677,7 @@ pbash_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_
     return epc_parser_success_result(node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_bash_comment(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "bash_comment", pbash_comment_parse_fn);
@@ -1600,6 +1690,12 @@ epc_bash_comment(char const * name)
     return p;
 }
 
+EASY_PC_API epc_parser_t *
+epc_bash_comment_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_bash_comment(name));
+}
+
 static epc_parser_t *
 vepc_and(char const * name, int count, va_list args)
 {
@@ -1610,18 +1706,6 @@ vepc_and(char const * name, int count, va_list args)
     }
     p->data.parser_list = parser_list_create_v(count, args);
     p->data.type = PARSER_DATA_TYPE_PARSER_LIST;
-
-    return p;
-}
-
-epc_parser_t *
-epc_and(char const * name, int count, ...)
-{
-    va_list args;
-
-    va_start(args, count);
-    epc_parser_t * p = vepc_and(name, count, args);
-    va_end(args);
 
     return p;
 }
@@ -1702,7 +1786,7 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     return epc_parser_success_result(dummy_node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_skip(char const * name, epc_parser_t * parser_to_skip)
 {
     epc_parser_t * p = epc_parser_allocate(name, "skip", pskip_parse_fn);
@@ -1714,6 +1798,12 @@ epc_skip(char const * name, epc_parser_t * parser_to_skip)
     p->data.type = PARSER_DATA_TYPE_PARSER;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_skip_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_skip)
+{
+    return epc_parser_list_add(list, epc_skip(name, parser_to_skip));
 }
 
 static epc_parse_result_t
@@ -1808,7 +1898,7 @@ pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     return epc_parser_success_result(parent_node);
 }
 
-epc_parser_t *
+static epc_parser_t *
 epc_plus(char const * name, epc_parser_t * parser_to_repeat)
 {
     epc_parser_t * p = epc_parser_allocate(name, "plus", pplus_parse_fn);
@@ -1820,6 +1910,12 @@ epc_plus(char const * name, epc_parser_t * parser_to_repeat)
     p->data.type = PARSER_DATA_TYPE_PARSER;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_plus_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_repeat)
+{
+    return epc_parser_list_add(list, epc_plus(name, parser_to_repeat));
 }
 
 static epc_parse_result_t
@@ -1859,7 +1955,7 @@ pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
     return epc_parser_error_result(ctx, input_offset, "Unexpected character", expected_str, found_str);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_char_range(char const * name, char char_start, char char_end)
 {
     epc_parser_t * p = epc_parser_allocate(name, "char_range", pchar_range_parse_fn);
@@ -1872,6 +1968,12 @@ epc_char_range(char const * name, char char_start, char char_end)
     p->data.range.end = char_end;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_char_range_l(epc_parser_list * list, char const * name, char char_start, char char_end)
+{
+    return epc_parser_list_add(list, epc_char_range(name, char_start, char_end));
 }
 
 static epc_parse_result_t
@@ -1897,7 +1999,7 @@ pany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_any(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "any", pany_parse_fn);
@@ -1907,6 +2009,12 @@ epc_any(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_any_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_any(name));
 }
 
 static epc_parse_result_t
@@ -1945,7 +2053,7 @@ pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
     return epc_parser_error_result(ctx, input_offset, "Character found in forbidden set", expected_str, found_str);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_none_of(char const * name, char const * chars_to_avoid)
 {
     epc_parser_t * p = epc_parser_allocate(name, "none_of", pnone_of_parse_fn);
@@ -1965,6 +2073,12 @@ epc_none_of(char const * name, char const * chars_to_avoid)
     p->data.string = duplicated_chars;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_none_of_l(epc_parser_list * list, char const * name, char const * chars_to_avoid)
+{
+    return epc_parser_list_add(list, epc_none_of(name, chars_to_avoid));
 }
 
 static epc_parse_result_t
@@ -2042,7 +2156,7 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     return epc_parser_success_result(parent_node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_many(char const * name, epc_parser_t * p_to_repeat)
 {
     epc_parser_t * p = epc_parser_allocate(name, "many", pmany_parse_fn);
@@ -2054,6 +2168,12 @@ epc_many(char const * name, epc_parser_t * p_to_repeat)
     p->data.type = PARSER_DATA_TYPE_PARSER;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_many_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_many(name, p));
 }
 
 static epc_parse_result_t
@@ -2145,7 +2265,7 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     return epc_parser_success_result(parent_node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_count(char const * name, int num, epc_parser_t * p_to_repeat)
 {
     epc_parser_t * p = epc_parser_allocate(name, "count", pcount_parse_fn);
@@ -2157,6 +2277,12 @@ epc_count(char const * name, int num, epc_parser_t * p_to_repeat)
     p->data.count.count = num;
     p->data.count.parser = p_to_repeat;
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_count_l(epc_parser_list * list, char const * name, int num, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_count(name, num, p));
 }
 
 static epc_parse_result_t
@@ -2258,7 +2384,7 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
     return epc_parser_success_result(parent_node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_between(char const * name, epc_parser_t * p_open, epc_parser_t * p_wrapped, epc_parser_t * p_close)
 {
     epc_parser_t * p = epc_parser_allocate(name, "between", pbetween_parse_fn);
@@ -2272,6 +2398,12 @@ epc_between(char const * name, epc_parser_t * p_open, epc_parser_t * p_wrapped, 
     p->data.between.close = p_close;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_between_l(epc_parser_list * list, char const * name, epc_parser_t * open, epc_parser_t * p, epc_parser_t * close)
+{
+    return epc_parser_list_add(list, epc_between(name, open, p, close));
 }
 
 static epc_parse_result_t
@@ -2416,7 +2548,7 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     return epc_parser_success_result(parent_node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_delimited(char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
 {
     epc_parser_t * p = epc_parser_allocate(name, "delimited", pdelimited_parse_fn);
@@ -2432,6 +2564,12 @@ epc_delimited(char const * name, epc_parser_t * item_parser, epc_parser_t * deli
 }
 
 EASY_PC_API epc_parser_t *
+epc_delimited_l(epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
+{
+    return epc_parser_list_add(list, epc_delimited(name, item_parser, delimiter_parser));
+}
+
+static epc_parser_t *
 epc_delimited_flex(char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
 {
     epc_parser_t * p = epc_parser_allocate(name, "delimited_flex", pdelimited_parse_fn);
@@ -2445,6 +2583,14 @@ epc_delimited_flex(char const * name, epc_parser_t * item_parser, epc_parser_t *
     p->data.delimited.is_flexible = true;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_delimited_flex_l(
+    epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser
+)
+{
+    return epc_parser_list_add(list, epc_delimited_flex(name, item_parser, delimiter_parser));
 }
 
 static epc_parse_result_t
@@ -2520,7 +2666,7 @@ poptional_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t in
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_optional(char const * name, epc_parser_t * p_to_make_optional)
 {
     epc_parser_t * p = epc_parser_allocate(name, "optional", poptional_parse_fn);
@@ -2532,6 +2678,12 @@ epc_optional(char const * name, epc_parser_t * p_to_make_optional)
     p->data.type = PARSER_DATA_TYPE_PARSER;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_optional_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_optional(name, p));
 }
 
 static epc_parse_result_t
@@ -2582,7 +2734,7 @@ plookahead_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_lookahead(char const * name, epc_parser_t * p_to_lookahead)
 {
     epc_parser_t * p = epc_parser_allocate(name, "lookahead", plookahead_parse_fn);
@@ -2594,6 +2746,12 @@ epc_lookahead(char const * name, epc_parser_t * p_to_lookahead)
     p->data.type = PARSER_DATA_TYPE_PARSER;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_lookahead_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_lookahead(name, p));
 }
 
 static epc_parse_result_t
@@ -2655,7 +2813,7 @@ pnot_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
     return result;
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_not(char const * name, epc_parser_t * p_to_not_match)
 {
     epc_parser_t * p = epc_parser_allocate(name, "not", pnot_parse_fn);
@@ -2669,6 +2827,12 @@ epc_not(char const * name, epc_parser_t * p_to_not_match)
     return p;
 }
 
+EASY_PC_API epc_parser_t *
+epc_not_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_not(name, p));
+}
+
 static epc_parse_result_t
 pfail_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
@@ -2677,7 +2841,7 @@ pfail_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     return epc_parser_error_result(ctx, input_offset, failure_message, "Failure", "Failure");
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_fail(char const * name, char const * message)
 {
     epc_parser_t * p = epc_parser_allocate(name, "fail", pfail_parse_fn);
@@ -2694,6 +2858,12 @@ epc_fail(char const * name, char const * message)
     p->data.type = PARSER_DATA_TYPE_STRING;
     p->data.string = duplicated_message;
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_fail_l(epc_parser_list * list, char const * name, char const * message)
+{
+    return epc_parser_list_add(list, epc_fail(name, message));
 }
 
 static epc_parse_result_t
@@ -2721,7 +2891,7 @@ psucceed_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_succeed(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "succeed", psucceed_parse_fn);
@@ -2731,6 +2901,12 @@ epc_succeed(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_succeed_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_succeed(name));
 }
 
 static epc_parse_result_t
@@ -2767,7 +2943,7 @@ phex_digit_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     return epc_parser_error_result(ctx, input_offset, "Unexpected character", "hex_digit", found_str);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_hex_digit(char const * name)
 {
     epc_parser_t * p = epc_parser_allocate(name, "hex_digit", phex_digit_parse_fn);
@@ -2777,6 +2953,12 @@ epc_hex_digit(char const * name)
     }
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_hex_digit_l(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, epc_hex_digit(name));
 }
 
 static epc_parse_result_t
@@ -2815,7 +2997,7 @@ pone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     return epc_parser_error_result(ctx, input_offset, "Character not found in set", expected_str, found_str);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_one_of(char const * name, char const * chars_to_match)
 {
     epc_parser_t * p = epc_parser_allocate(name, "one_of", pone_of_parse_fn);
@@ -2833,6 +3015,12 @@ epc_one_of(char const * name, char const * chars_to_match)
     p->data.string = duplicated_chars;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_one_of_l(epc_parser_list * list, char const * name, char const * chars_to_match)
+{
+    return epc_parser_list_add(list, epc_one_of(name, chars_to_match));
 }
 
 static consume_ws_result_t
@@ -2970,7 +3158,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     return epc_parser_success_result(parent_node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_lexeme(char const * name, epc_parser_t * p)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "lexeme", plexeme_parse_fn);
@@ -2988,6 +3176,12 @@ epc_lexeme(char const * name, epc_parser_t * p)
 }
 
 EASY_PC_API epc_parser_t *
+epc_lexeme_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_lexeme(name, p));
+}
+
+static epc_parser_t *
 epc_strip(char const * name, epc_parser_t * p)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "strip", plexeme_parse_fn);
@@ -3005,6 +3199,12 @@ epc_strip(char const * name, epc_parser_t * p)
 }
 
 EASY_PC_API epc_parser_t *
+epc_strip_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_strip(name, p));
+}
+
+static epc_parser_t *
 epc_stripl(char const * name, epc_parser_t * p)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "stripl", plexeme_parse_fn);
@@ -3022,6 +3222,12 @@ epc_stripl(char const * name, epc_parser_t * p)
 }
 
 EASY_PC_API epc_parser_t *
+epc_stripl_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_stripl(name, p));
+}
+
+static epc_parser_t *
 epc_stripr(char const * name, epc_parser_t * p)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "stripr", plexeme_parse_fn);
@@ -3036,6 +3242,12 @@ epc_stripr(char const * name, epc_parser_t * p)
     lex->data.lexeme.strip_trailing = true;
 
     return lex;
+}
+
+EASY_PC_API epc_parser_t *
+epc_stripr_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, epc_stripr(name, p));
 }
 
 static epc_parse_result_t
@@ -3143,7 +3355,7 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
     return left_result;
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_chainl1(char const * name, epc_parser_t * item_parser, epc_parser_t * op_parser)
 {
     epc_parser_t * p = epc_parser_allocate(name, "chainl1", pchainl1_parse_fn);
@@ -3156,6 +3368,12 @@ epc_chainl1(char const * name, epc_parser_t * item_parser, epc_parser_t * op_par
     p->data.delimited.delimiter = op_parser;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_chainl1_l(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
+{
+    return epc_parser_list_add(list, epc_chainl1(name, item, op));
 }
 
 typedef struct
@@ -3357,7 +3575,7 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
     return epc_parser_success_result(final_cpt_node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_chainr1(char const * name, epc_parser_t * item_parser, epc_parser_t * op_parser)
 {
     epc_parser_t * p = epc_parser_allocate(name, "chainr1", pchainr1_parse_fn);
@@ -3370,6 +3588,12 @@ epc_chainr1(char const * name, epc_parser_t * item_parser, epc_parser_t * op_par
     p->data.delimited.delimiter = op_parser;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_chainr1_l(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
+{
+    return epc_parser_list_add(list, epc_chainr1(name, item, op));
 }
 
 static parser_list_t *
@@ -3510,7 +3734,7 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     return epc_parser_success_result(node);
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_satisfy(
     char const * name,
     epc_parser_t * token_parser,
@@ -3531,6 +3755,19 @@ epc_satisfy(
     p->expected_value = message_on_failure;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_satisfy_l(
+    epc_parser_list * list,
+    char const * name,
+    epc_parser_t * token_parser,
+    char const * message,
+    epc_satisfy_parser_predicate_fn predicate,
+    void * parser_data
+)
+{
+    return epc_parser_list_add(list, epc_satisfy(name, token_parser, message, predicate, parser_data));
 }
 
 static epc_parse_result_t
@@ -3569,7 +3806,7 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
     return result;
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_wrap(char const * name, epc_parser_t * wrapped_parser, epc_wrap_callbacks_t callbacks, void * parser_data)
 {
     epc_parser_t * p = epc_parser_allocate(name, "wrap", pwrap_parse_fn);
@@ -3583,6 +3820,18 @@ epc_wrap(char const * name, epc_parser_t * wrapped_parser, epc_wrap_callbacks_t 
     p->data.wrap.parser_data = parser_data;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_wrap_l(
+    epc_parser_list * list,
+    char const * name,
+    epc_parser_t * wrapped_parser,
+    epc_wrap_callbacks_t callbacks,
+    void * parser_data
+)
+{
+    return epc_parser_list_add(list, epc_wrap(name, wrapped_parser, callbacks, parser_data));
 }
 
 static epc_parse_result_t
@@ -3606,7 +3855,7 @@ pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     return result;
 }
 
-EASY_PC_API epc_parser_t *
+static epc_parser_t *
 epc_memoize(char const * name, epc_parser_t * p_to_memoize)
 {
     epc_parser_t * p = epc_parser_allocate(name, "memoize", pmemoize_parse_fn);
@@ -3618,6 +3867,12 @@ epc_memoize(char const * name, epc_parser_t * p_to_memoize)
     p->data.parser = p_to_memoize;
 
     return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_memoize_l(epc_parser_list * list, char const * name, epc_parser_t * p_to_memoize)
+{
+    return epc_parser_list_add(list, epc_memoize(name, p_to_memoize));
 }
 
 void
