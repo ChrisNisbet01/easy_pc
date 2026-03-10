@@ -67,8 +67,8 @@ TEST(CombinatorTest, SOIfailsAfterStartOfInput)
 
 TEST(CombinatorTest, PStarMatchesZero)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_star_a = epc_many(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_star_a = epc_many_l(list, NULL, p_char_a);
 
     result = parse(p_star_a, "");
 
@@ -83,8 +83,8 @@ TEST(CombinatorTest, PStarMatchesZero)
 
 TEST(CombinatorTest, PStarMatchesOne)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_star_a = epc_many(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_star_a = epc_many_l(list, NULL, p_char_a);
 
     result = parse(p_star_a, "abc");
 
@@ -100,8 +100,8 @@ TEST(CombinatorTest, PStarMatchesOne)
 
 TEST(CombinatorTest, PStarMatchesMultiple)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_star_a = epc_many(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_star_a = epc_many_l(list, NULL, p_char_a);
 
     result = parse(p_star_a, "aaabc");
 
@@ -119,8 +119,8 @@ TEST(CombinatorTest, PStarMatchesMultiple)
 
 TEST(CombinatorTest, PStarMatchesMultipleThenFails)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_star_a = epc_many(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_star_a = epc_many_l(list, NULL, p_char_a);
 
     result = parse(p_star_a, "aaabbc");
 
@@ -138,8 +138,8 @@ TEST(CombinatorTest, PStarMatchesMultipleThenFails)
 
 TEST(CombinatorTest, PPlusMatchesOne)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_plus_a = epc_plus(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_plus_a = epc_plus_l(list, NULL, p_char_a);
 
     result = parse(p_plus_a, "abc");
 
@@ -155,8 +155,8 @@ TEST(CombinatorTest, PPlusMatchesOne)
 
 TEST(CombinatorTest, PPlusMatchesMultiple)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_plus_a = epc_plus(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_plus_a = epc_plus_l(list, NULL, p_char_a);
 
     result = parse(p_plus_a, "aaabc");
 
@@ -174,8 +174,8 @@ TEST(CombinatorTest, PPlusMatchesMultiple)
 
 TEST(CombinatorTest, PPlusFailsOnZeroMatches)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_plus_a = epc_plus(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_plus_a = epc_plus_l(list, NULL, p_char_a);
 
     result = parse(p_plus_a, "bbc");
 
@@ -189,8 +189,8 @@ TEST(CombinatorTest, PPlusFailsOnZeroMatches)
 
 TEST(CombinatorTest, PPlusMatchesMultipleThenFails)
 {
-    epc_parser_t * p_char_a = epc_char(NULL, 'a');
-    epc_parser_t * p_plus_a = epc_plus(NULL, p_char_a);
+    epc_parser_t * p_char_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_plus_a = epc_plus_l(list, NULL, p_char_a);
 
     result = parse(p_plus_a, "aaabbc");
 

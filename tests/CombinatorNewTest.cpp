@@ -67,39 +67,39 @@ TEST_GROUP(CombinatorParsersNew)
 // --- p_many tests ---
 TEST(CombinatorParsersNew, Many_MatchesZeroOccurrences)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_many_a = epc_many(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_many_a = epc_many_l(list, NULL, p_a);
     session = parse(p_many_a, "b");
     check_success("many", "", 0, 0); // Should succeed with 0 length and 0 children
 }
 
 TEST(CombinatorParsersNew, Many_MatchesOneOccurrence)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_many_a = epc_many(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_many_a = epc_many_l(list, NULL, p_a);
     session = parse(p_many_a, "a");
     check_success("many", "a", 1, 1);
 }
 
 TEST(CombinatorParsersNew, Many_MatchesMultipleOccurrences)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_many_a = epc_many(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_many_a = epc_many_l(list, NULL, p_a);
     session = parse(p_many_a, "aaaaa");
     check_success("many", "aaaaa", 5, 5);
 }
 
 TEST(CombinatorParsersNew, Many_MatchesMultipleThenFails)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_many_a = epc_many(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_many_a = epc_many_l(list, NULL, p_a);
     session = parse(p_many_a, "aaab");
     check_success("many", "aaa", 3, 3);
 }
 
 TEST(CombinatorParsersNew, Many_FailsNullChildParser)
 {
-    epc_parser_t * p_many_null = epc_many(NULL, NULL);
+    epc_parser_t * p_many_null = epc_many_l(list, NULL, NULL);
     session = parse(p_many_null, "a");
     check_failure("p_many received NULL child parser");
 }
@@ -107,24 +107,24 @@ TEST(CombinatorParsersNew, Many_FailsNullChildParser)
 // --- p_count tests ---
 TEST(CombinatorParsersNew, Count_MatchesExactNumber)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_count_3_a = epc_count(NULL, 3, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_l(list, NULL, 3, p_a);
     session = parse(p_count_3_a, "aaa");
     check_success("count", "aaa", 3, 3);
 }
 
 TEST(CombinatorParsersNew, Count_FailsIfLessThanExpected)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_count_3_a = epc_count(NULL, 3, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_l(list, NULL, 3, p_a);
     session = parse(p_count_3_a, "aa");
     check_failure("Count failed to match child at count 3"); // from p_char
 }
 
 TEST(CombinatorParsersNew, Count_FailsIfMoreThanExpected)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_count_3_a = epc_count(NULL, 3, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_l(list, NULL, 3, p_a);
     session = parse(p_count_3_a, "aaaa"); // Will match 3 'a's, but next char is 'a'
     check_success("count", "aaa", 3, 3);
     // The remaining 'a' is not consumed, but the p_count itself is successful for the first 3
@@ -132,15 +132,15 @@ TEST(CombinatorParsersNew, Count_FailsIfMoreThanExpected)
 
 TEST(CombinatorParsersNew, Count_ZeroCountSucceedsWithZeroLength)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_count_0_a = epc_count(NULL, 0, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_count_0_a = epc_count_l(list, NULL, 0, p_a);
     session = parse(p_count_0_a, "abc");
     check_success("count", "", 0, 0);
 }
 
 TEST(CombinatorParsersNew, Count_FailsNullChildParser)
 {
-    epc_parser_t * p_count_3_null = epc_count(NULL, 3, NULL);
+    epc_parser_t * p_count_3_null = epc_count_l(list, NULL, 3, NULL);
     session = parse(p_count_3_null, "abc");
     check_failure("p_count received NULL child parser");
 }
@@ -148,49 +148,49 @@ TEST(CombinatorParsersNew, Count_FailsNullChildParser)
 // --- p_between tests ---
 TEST(CombinatorParsersNew, Between_MatchesCorrectly)
 {
-    epc_parser_t * p_open = epc_char(NULL, '(');
-    epc_parser_t * p_close = epc_char(NULL, ')');
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_between_paren_a = epc_between(NULL, p_open, p_a, p_close);
+    epc_parser_t * p_open = epc_char_l(list, NULL, '(');
+    epc_parser_t * p_close = epc_char_l(list, NULL, ')');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_between_paren_a = epc_between_l(list, NULL, p_open, p_a, p_close);
     session = parse(p_between_paren_a, "(a)");
     check_success("between", "(a)", 3, 1);
 }
 
 TEST(CombinatorParsersNew, Between_FailsIfOpenMissing)
 {
-    epc_parser_t * p_open = epc_char(NULL, '(');
-    epc_parser_t * p_close = epc_char(NULL, ')');
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_between_paren_a = epc_between(NULL, p_open, p_a, p_close);
+    epc_parser_t * p_open = epc_char_l(list, NULL, '(');
+    epc_parser_t * p_close = epc_char_l(list, NULL, ')');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_between_paren_a = epc_between_l(list, NULL, p_open, p_a, p_close);
     session = parse(p_between_paren_a, "a)");
     check_failure("Unexpected character"); // expecting '('
 }
 
 TEST(CombinatorParsersNew, Between_FailsIfWrappedMissing)
 {
-    epc_parser_t * p_open = epc_char(NULL, '(');
-    epc_parser_t * p_close = epc_char(NULL, ')');
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_between_paren_a = epc_between(NULL, p_open, p_a, p_close);
+    epc_parser_t * p_open = epc_char_l(list, NULL, '(');
+    epc_parser_t * p_close = epc_char_l(list, NULL, ')');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_between_paren_a = epc_between_l(list, NULL, p_open, p_a, p_close);
     session = parse(p_between_paren_a, "()");
     check_failure("Unexpected character"); // expecting 'a'
 }
 
 TEST(CombinatorParsersNew, Between_FailsIfCloseMissing)
 {
-    epc_parser_t * p_open = epc_char(NULL, '(');
-    epc_parser_t * p_close = epc_char(NULL, ')');
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_between_paren_a = epc_between(NULL, p_open, p_a, p_close);
+    epc_parser_t * p_open = epc_char_l(list, NULL, '(');
+    epc_parser_t * p_close = epc_char_l(list, NULL, ')');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_between_paren_a = epc_between_l(list, NULL, p_open, p_a, p_close);
     session = parse(p_between_paren_a, "(a");
     check_failure("Unexpected end of input"); // expecting ')'
 }
 
 TEST(CombinatorParsersNew, Between_FailsNullChildParser)
 {
-    epc_parser_t * p_open = epc_char(NULL, '(');
-    epc_parser_t * p_close = epc_char(NULL, ')');
-    epc_parser_t * p_between_null_wrapped = epc_between(NULL, p_open, NULL, p_close);
+    epc_parser_t * p_open = epc_char_l(list, NULL, '(');
+    epc_parser_t * p_close = epc_char_l(list, NULL, ')');
+    epc_parser_t * p_between_null_wrapped = epc_between_l(list, NULL, p_open, NULL, p_close);
     session = parse(p_between_null_wrapped, "(a)");
     check_failure("between received NULL child parser(s)");
 }
@@ -198,52 +198,52 @@ TEST(CombinatorParsersNew, Between_FailsNullChildParser)
 // --- p_delimited tests ---
 TEST(CombinatorParsersNew, Delimited_MatchesSingleItemNoDelimiter)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_delimited_a = epc_delimited(NULL, p_a, NULL);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_delimited_a = epc_delimited_l(list, NULL, p_a, NULL);
     session = parse(p_delimited_a, "a");
     check_success("delimited", "a", 1, 1);
 }
 
 TEST(CombinatorParsersNew, Delimited_MatchesMultipleItemsWithDelimiter)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_a_comma = epc_delimited(NULL, p_a, p_comma);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_a_comma = epc_delimited_l(list, NULL, p_a, p_comma);
     session = parse(p_delimited_a_comma, "a,a,a");
     check_success("delimited", "a,a,a", 5, 3);
 }
 
 TEST(CombinatorParsersNew, Delimited_MatchesMultipleItemsWithoutLastDelimiter)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_a_comma = epc_delimited(NULL, p_a, p_comma);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_a_comma = epc_delimited_l(list, NULL, p_a, p_comma);
     session = parse(p_delimited_a_comma, "a,a");
     check_success("delimited", "a,a", 3, 2);
 }
 
 TEST(CombinatorParsersNew, Delimited_FailsIfFirstItemMissing)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_a_comma = epc_delimited(NULL, p_a, p_comma);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_a_comma = epc_delimited_l(list, NULL, p_a, p_comma);
     session = parse(p_delimited_a_comma, ",a");
     check_failure("Unexpected character"); // expecting 'a'
 }
 
 TEST(CombinatorParsersNew, Delimited_MatchesFirstItemEvenIfSubsequentFails)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_a_comma = epc_delimited(NULL, p_a, p_comma);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_a_comma = epc_delimited_l(list, NULL, p_a, p_comma);
     session = parse(p_delimited_a_comma, "a,");
     check_failure("Unexpected trailing delimiter");
 }
 
 TEST(CombinatorParsersNew, Delimited_FailsNullItemParser)
 {
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_null_item = epc_delimited(NULL, NULL, p_comma);
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_null_item = epc_delimited_l(list, NULL, NULL, p_comma);
     session = parse(p_delimited_null_item, "a,a");
     check_failure("p_delimited received NULL item parser");
 }
@@ -251,27 +251,27 @@ TEST(CombinatorParsersNew, Delimited_FailsNullItemParser)
 // --- epc_delimited_flex tests ---
 TEST(CombinatorParsersNew, DelimitedFlex_MatchesMultipleItemsWithoutTrailing)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_flex = epc_delimited_flex(NULL, p_a, p_comma);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_flex = epc_delimited_flex_l(list, NULL, p_a, p_comma);
     session = parse(p_delimited_flex, "a,a,a");
     check_success("delimited_flex", "a,a,a", 5, 3);
 }
 
 TEST(CombinatorParsersNew, DelimitedFlex_MatchesMultipleItemsWithTrailingAndBacktracks)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_flex = epc_delimited_flex(NULL, p_a, p_comma);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_flex = epc_delimited_flex_l(list, NULL, p_a, p_comma);
     session = parse(p_delimited_flex, "a,a,");
     check_success("delimited_flex", "a,a", 3, 2); // Should backtrack over the last comma
 }
 
 TEST(CombinatorParsersNew, DelimitedFlex_FailsIfFirstItemMissing)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_comma = epc_char(NULL, ',');
-    epc_parser_t * p_delimited_flex = epc_delimited_flex(NULL, p_a, p_comma);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_comma = epc_char_l(list, NULL, ',');
+    epc_parser_t * p_delimited_flex = epc_delimited_flex_l(list, NULL, p_a, p_comma);
     session = parse(p_delimited_flex, ",a");
     check_failure("Unexpected character"); // expecting 'a'
 }
@@ -279,23 +279,23 @@ TEST(CombinatorParsersNew, DelimitedFlex_FailsIfFirstItemMissing)
 // --- p_optional tests ---
 TEST(CombinatorParsersNew, Optional_MatchesChild)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_opt_a = epc_optional(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_opt_a = epc_optional_l(list, NULL, p_a);
     session = parse(p_opt_a, "a");
     check_success("optional", "a", 1, 1);
 }
 
 TEST(CombinatorParsersNew, Optional_DoesNotMatchChild_SucceedsWithZeroLength)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_opt_a = epc_optional(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_opt_a = epc_optional_l(list, NULL, p_a);
     session = parse(p_opt_a, "b");
     check_success("optional", "", 0, 0); // Should succeed, consume nothing, 0 children
 }
 
 TEST(CombinatorParsersNew, Optional_FailsNullChildParser)
 {
-    epc_parser_t * p_opt_null = epc_optional(NULL, NULL);
+    epc_parser_t * p_opt_null = epc_optional_l(list, NULL, NULL);
     session = parse(p_opt_null, "a");
     check_failure("p_optional received NULL child parser");
 }
@@ -303,23 +303,23 @@ TEST(CombinatorParsersNew, Optional_FailsNullChildParser)
 // --- p_lookahead tests ---
 TEST(CombinatorParsersNew, Lookahead_SucceedsIfChildMatchesConsumesNothing)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_look_a = epc_lookahead(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_look_a = epc_lookahead_l(list, NULL, p_a);
     session = parse(p_look_a, "abc");
     check_success("lookahead", "", 0, 0); // Should succeed, len 0, content is ""
 }
 
 TEST(CombinatorParsersNew, Lookahead_FailsIfChildFails)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_look_a = epc_lookahead(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_look_a = epc_lookahead_l(list, NULL, p_a);
     session = parse(p_look_a, "bbc");
     check_failure("Unexpected character"); // from p_char, expecting 'a'
 }
 
 TEST(CombinatorParsersNew, Lookahead_FailsNullChildParser)
 {
-    epc_parser_t * p_look_null = epc_lookahead(NULL, NULL);
+    epc_parser_t * p_look_null = epc_lookahead_l(list, NULL, NULL);
     session = parse(p_look_null, "a");
     check_failure("p_lookahead received NULL child parser");
 }
@@ -327,23 +327,23 @@ TEST(CombinatorParsersNew, Lookahead_FailsNullChildParser)
 // --- p_not tests ---
 TEST(CombinatorParsersNew, Not_SucceedsIfChildFailsConsumesNothing)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_not_a = epc_not(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_not_a = epc_not_l(list, NULL, p_a);
     session = parse(p_not_a, "b");
     check_success("not", "", 0, 0); // Should succeed, len 0, content is ""
 }
 
 TEST(CombinatorParsersNew, Not_FailsIfChildMatches)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_not_a = epc_not(NULL, p_a);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_not_a = epc_not_l(list, NULL, p_a);
     session = parse(p_not_a, "a");
     check_failure("Parser unexpectedly matched"); // p_a matched
 }
 
 TEST(CombinatorParsersNew, Not_FailsNullChildParser)
 {
-    epc_parser_t * p_not_null = epc_not(NULL, NULL);
+    epc_parser_t * p_not_null = epc_not_l(list, NULL, NULL);
     session = parse(p_not_null, "a");
     check_failure("p_not received NULL child parser");
 }
@@ -351,7 +351,7 @@ TEST(CombinatorParsersNew, Not_FailsNullChildParser)
 // --- p_fail tests ---
 TEST(CombinatorParsersNew, Fail_AlwaysFailsWithCustomMessage)
 {
-    epc_parser_t * p_fail_msg = epc_fail(NULL, "This parser always fails!");
+    epc_parser_t * p_fail_msg = epc_fail_l(list, NULL, "This parser always fails!");
     session = parse(p_fail_msg, "anything");
     check_failure("This parser always fails!");
 }

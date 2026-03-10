@@ -112,7 +112,8 @@ main(int argc, char ** argv)
     size_t ppp_frame_len = sizeof(ppp_frame_buf);
 
     // --- Grammar Definition ---
-    epc_parser_t * stuffed_payload_and_fcs_parser = epc_count_l(list, "stuffed_data_and_fcs", 6, epc_any("byte"));
+    epc_parser_t * stuffed_payload_and_fcs_parser
+        = epc_count_l(list, "stuffed_data_and_fcs", 6, epc_any_l(list, "byte"));
 
     // Assign semantic action to the parser that matches the stuffed data
     epc_parser_set_ast_action(stuffed_payload_and_fcs_parser, PPP_AST_ACTION_UNSTUFF_PAYLOAD);
@@ -156,12 +157,16 @@ main(int argc, char ** argv)
 
         ppp_payload_ast_t * payload_ast = (ppp_payload_ast_t *)compile_result.ast;
         assert(payload_ast != NULL);
-        
+
         // --- Validation of Unstuffed Payload ---
         assert(payload_ast->len == 2);
         assert(payload_ast->payload[0] == 0x7E);
         assert(payload_ast->payload[1] == 0x7D);
-        printf("Payload successfully validated: 0x%02X 0x%02X\n", (unsigned char)payload_ast->payload[0], (unsigned char)payload_ast->payload[1]);
+        printf(
+            "Payload successfully validated: 0x%02X 0x%02X\n",
+            (unsigned char)payload_ast->payload[0],
+            (unsigned char)payload_ast->payload[1]
+        );
 
         epc_compile_result_cleanup(&compile_result, ppp_free_ast_node, NULL);
         epc_parser_list_free(list);

@@ -13,10 +13,12 @@ TEST_GROUP(ErrorHandling)
 {
     epc_parse_session_t session = {0};
     epc_parse_result_t result;
+    epc_parser_list * list;
 
     void setup() override
     {
         session = (epc_parse_session_t){0}; // Reset session before each test
+        list = epc_parser_list_create();
     }
 
     epc_parse_result_t parse(epc_parser_t * parser, char const * input)
@@ -30,12 +32,13 @@ TEST_GROUP(ErrorHandling)
     void teardown() override
     {
         epc_parse_session_destroy(&session);
+        epc_parser_list_free(list);
     }
 };
 
 TEST(ErrorHandling, PCharReportsNullInputError)
 {
-    epc_parser_t * p = epc_char(NULL, 'a');
+    epc_parser_t * p = epc_char_l(list, NULL, 'a');
     result = parse(p, NULL);
 
     CHECK_TRUE(result.is_error);
@@ -47,7 +50,7 @@ TEST(ErrorHandling, PCharReportsNullInputError)
 
 TEST(ErrorHandling, PCharReportsEmptyInputError)
 {
-    epc_parser_t * p = epc_char(NULL, 'a');
+    epc_parser_t * p = epc_char_l(list, NULL, 'a');
     result = parse(p, "");
 
     CHECK_TRUE(result.is_error);
@@ -61,7 +64,7 @@ TEST(ErrorHandling, PCharReportsEmptyInputError)
 TEST(ErrorHandling, PCharReportsMismatchError)
 {
     char const * input_str = "b";
-    epc_parser_t * p = epc_char(NULL, 'a');
+    epc_parser_t * p = epc_char_l(list, NULL, 'a');
     result = parse(p, input_str);
 
     CHECK_TRUE(result.is_error);
@@ -74,7 +77,7 @@ TEST(ErrorHandling, PCharReportsMismatchError)
 
 TEST(ErrorHandling, PStringReportsNullInputError)
 {
-    epc_parser_t * p = epc_string(NULL, "abc");
+    epc_parser_t * p = epc_string_l(list, NULL, "abc");
     result = parse(p, NULL);
 
     CHECK_TRUE(result.is_error);
@@ -88,7 +91,7 @@ TEST(ErrorHandling, PStringReportsNullInputError)
 TEST(ErrorHandling, PStringReportsTooShortInputError)
 {
     char const * input_str = "ab";
-    epc_parser_t * p = epc_string(NULL, "abc");
+    epc_parser_t * p = epc_string_l(list, NULL, "abc");
     result = parse(p, input_str);
 
     CHECK_TRUE(result.is_error);
@@ -102,7 +105,7 @@ TEST(ErrorHandling, PStringReportsTooShortInputError)
 TEST(ErrorHandling, PStringReportsMismatchError)
 {
     char const * input_str = "axc";
-    epc_parser_t * p = epc_string(NULL, "abc");
+    epc_parser_t * p = epc_string_l(list, NULL, "abc");
     result = parse(p, input_str);
 
     CHECK_TRUE(result.is_error);
@@ -115,7 +118,7 @@ TEST(ErrorHandling, PStringReportsMismatchError)
 
 TEST(ErrorHandling, PDigitReportsNullInputError)
 {
-    epc_parser_t * p = epc_digit(NULL);
+    epc_parser_t * p = epc_digit_l(list, NULL);
     result = parse(p, NULL);
 
     CHECK_TRUE(result.is_error);
@@ -128,7 +131,7 @@ TEST(ErrorHandling, PDigitReportsNullInputError)
 
 TEST(ErrorHandling, PDigitReportsEmptyInputError)
 {
-    epc_parser_t * p = epc_digit(NULL);
+    epc_parser_t * p = epc_digit_l(list, NULL);
     result = parse(p, "");
 
     CHECK_TRUE(result.is_error);
@@ -142,7 +145,7 @@ TEST(ErrorHandling, PDigitReportsEmptyInputError)
 TEST(ErrorHandling, PDigitReportsMismatchError)
 {
     char const * input_str = "a";
-    epc_parser_t * p = epc_digit(NULL);
+    epc_parser_t * p = epc_digit_l(list, NULL);
     result = parse(p, input_str);
 
     CHECK_TRUE(result.is_error);
@@ -156,7 +159,7 @@ TEST(ErrorHandling, PDigitReportsMismatchError)
 TEST(ErrorHandling, POrReportsErrorWhenNoAlternatives)
 {
     char const * input_str = "abc";
-    epc_parser_t * p_or_parser = epc_or(NULL, 0);
+    epc_parser_t * p_or_parser = epc_or_l(list, NULL, 0);
 
     result = parse(p_or_parser, input_str);
 
@@ -171,9 +174,9 @@ TEST(ErrorHandling, POrReportsErrorWhenNoAlternatives)
 TEST(ErrorHandling, POrReportsErrorWhenAllAlternativesFail)
 {
     char const * input_str = "abc";
-    epc_parser_t * p_x = epc_char(NULL, 'x');
-    epc_parser_t * p_y = epc_char(NULL, 'y');
-    epc_parser_t * p_or_parser = epc_or(NULL, 2, p_x, p_y);
+    epc_parser_t * p_x = epc_char_l(list, NULL, 'x');
+    epc_parser_t * p_y = epc_char_l(list, NULL, 'y');
+    epc_parser_t * p_or_parser = epc_or_l(list, NULL, 2, p_x, p_y);
 
     result = parse(p_or_parser, input_str);
 

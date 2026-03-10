@@ -12,10 +12,12 @@ extern "C" {
 TEST_GROUP(CptPrinter)
 {
     epc_parse_session_t session = {0};
+    epc_parser_list * list;
 
     void setup() override
     {
         session = (epc_parse_session_t){0}; // Reset session before each test
+        list = epc_parser_list_create();
     }
 
     epc_parse_result_t parse(epc_parser_t * parser, char const * input)
@@ -29,6 +31,7 @@ TEST_GROUP(CptPrinter)
     void teardown() override
     {
         epc_parse_session_destroy(&session);
+        epc_parser_list_free(list);
     }
 
     // Helper to parse and print
@@ -60,7 +63,7 @@ TEST_GROUP(CptPrinter)
 
 TEST(CptPrinter, PrintsSingleCharNode)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
     char * printed_cpt = parse_and_print(p_a, "abc");
     CHECK_TRUE(printed_cpt != NULL);
 
@@ -72,10 +75,10 @@ TEST(CptPrinter, PrintsSingleCharNode)
 
 TEST(CptPrinter, PrintsSimpleAndNode)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
-    epc_parser_t * p_b = epc_char(NULL, 'b');
-    epc_parser_t * p_c = epc_char(NULL, 'c');
-    epc_parser_t * p_and_parser = epc_and(NULL, 3, p_a, p_b, p_c);
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_b = epc_char_l(list, NULL, 'b');
+    epc_parser_t * p_c = epc_char_l(list, NULL, 'c');
+    epc_parser_t * p_and_parser = epc_and_l(list, NULL, 3, p_a, p_b, p_c);
 
     char * printed_cpt = parse_and_print(p_and_parser, "abcde");
     CHECK_TRUE(printed_cpt != NULL);
@@ -91,11 +94,11 @@ TEST(CptPrinter, PrintsSimpleAndNode)
 
 TEST(CptPrinter, PrintsAndNodeWithNestedOr)
 {
-    epc_parser_t * p_digit_p = epc_digit(NULL);
-    epc_parser_t * p_plus = epc_char(NULL, '+');
-    epc_parser_t * p_minus = epc_char(NULL, '-');
-    epc_parser_t * p_op = epc_or(NULL, 2, p_plus, p_minus);
-    epc_parser_t * p_expr = epc_and(NULL, 3, p_digit_p, p_op, p_digit_p);
+    epc_parser_t * p_digit_p = epc_digit_l(list, NULL);
+    epc_parser_t * p_plus = epc_char_l(list, NULL, '+');
+    epc_parser_t * p_minus = epc_char_l(list, NULL, '-');
+    epc_parser_t * p_op = epc_or_l(list, NULL, 2, p_plus, p_minus);
+    epc_parser_t * p_expr = epc_and_l(list, NULL, 3, p_digit_p, p_op, p_digit_p);
 
     char * printed_cpt = parse_and_print(p_expr, "1+2");
     CHECK_TRUE(printed_cpt != NULL);
@@ -112,8 +115,8 @@ TEST(CptPrinter, PrintsAndNodeWithNestedOr)
 
 TEST(CptPrinter, PrintsSingleSkipNodeWithTwoSpaces)
 {
-    epc_parser_t * p_s = epc_space(NULL);
-    epc_parser_t * p = epc_skip(NULL, p_s);
+    epc_parser_t * p_s = epc_space_l(list, NULL);
+    epc_parser_t * p = epc_skip_l(list, NULL, p_s);
     char * printed_cpt = parse_and_print(p, "  abc");
     CHECK_TRUE(printed_cpt != NULL);
 
@@ -125,8 +128,8 @@ TEST(CptPrinter, PrintsSingleSkipNodeWithTwoSpaces)
 
 TEST(CptPrinter, PrintsSingleSkipNodeWithSingleSpace)
 {
-    epc_parser_t * p_s = epc_space(NULL);
-    epc_parser_t * p = epc_skip(NULL, p_s);
+    epc_parser_t * p_s = epc_space_l(list, NULL);
+    epc_parser_t * p = epc_skip_l(list, NULL, p_s);
     char * printed_cpt = parse_and_print(p, " abc");
     CHECK_TRUE(printed_cpt != NULL);
 

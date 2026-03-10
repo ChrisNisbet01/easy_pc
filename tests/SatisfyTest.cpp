@@ -54,7 +54,7 @@ TEST_GROUP(SatisfyTest)
 
 TEST(SatisfyTest, PSatisfyMatchesCorrectToken)
 {
-    epc_parser_t * p_any = epc_any(NULL);
+    epc_parser_t * p_any = epc_any_l(list, NULL);
     epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_a", p_any, "expected 'a'", is_char_a, NULL);
 
     result = parse(p_satisfy, "abc");
@@ -68,7 +68,7 @@ TEST(SatisfyTest, PSatisfyMatchesCorrectToken)
 
 TEST(SatisfyTest, PSatisfyFailsOnPredicateFalse)
 {
-    epc_parser_t * p_any = epc_any(NULL);
+    epc_parser_t * p_any = epc_any_l(list, NULL);
     epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_a", p_any, "expected 'a'", is_char_a, NULL);
 
     result = parse(p_satisfy, "bbc");
@@ -82,7 +82,7 @@ TEST(SatisfyTest, PSatisfyFailsOnPredicateFalse)
 
 TEST(SatisfyTest, PSatisfyFailsWhenTokenParserFails)
 {
-    epc_parser_t * p_char_b = epc_char(NULL, 'b');
+    epc_parser_t * p_char_b = epc_char_l(list, NULL, 'b');
     epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_a", p_char_b, "expected 'a'", is_char_a, NULL);
 
     result = parse(p_satisfy, "abc");
@@ -96,8 +96,8 @@ TEST(SatisfyTest, PSatisfyFailsWhenTokenParserFails)
 
 TEST(SatisfyTest, PSatisfyWithComplexToken)
 {
-    epc_parser_t * p_digit = epc_digit(NULL);
-    epc_parser_t * p_three_digits = epc_count(NULL, 3, p_digit);
+    epc_parser_t * p_digit = epc_digit_l(list, NULL);
+    epc_parser_t * p_three_digits = epc_count_l(list, NULL, 3, p_digit);
     epc_parser_t * p_satisfy
         = epc_satisfy_l(list, "three_digits", p_three_digits, "expected 3 digits", is_length_3, NULL);
 
@@ -115,8 +115,8 @@ TEST(SatisfyTest, PSatisfyWithComplexToken)
 
 TEST(SatisfyTest, PSatisfyPreservesSemanticOffsets)
 {
-    epc_parser_t * p_digit = epc_digit(NULL);
-    epc_parser_t * p_lexeme = epc_lexeme(NULL, p_digit);
+    epc_parser_t * p_digit = epc_digit_l(list, NULL);
+    epc_parser_t * p_lexeme = epc_lexeme_l(list, NULL, p_digit);
     epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_digit", p_lexeme, "expected digit", is_char_a, NULL);
 
     // We'll use a predicate that always returns true for this test

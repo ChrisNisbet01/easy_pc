@@ -1,11 +1,11 @@
+#include "CppUTest/TestHarness.h"
 #include "cpt_node.h"
 #include "easy_pc_private.h"
 
-#include "CppUTest/TestHarness.h"
-
-#include <iostream>
 #include <stdio.h>
 #include <string.h>
+
+#include <iostream>
 
 typedef struct
 {
@@ -79,7 +79,7 @@ TEST(MemoizeTest, Memoize_CallsWrappedParserOnlyOnce)
 
 TEST(MemoizeTest, Memoize_WorksAtDifferentPositions)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {on_entry_count, NULL};
     epc_parser_t * p_wrap = epc_wrap_l(list, "wrap", p_a, callbacks, &tctx);
     epc_parser_t * p_memo = epc_memoize_l(list, "memo", p_wrap);
@@ -95,7 +95,7 @@ TEST(MemoizeTest, Memoize_WorksAtDifferentPositions)
 
 TEST(MemoizeTest, Memoize_CachesFailures)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {on_entry_count, NULL};
     epc_parser_t * p_wrap = epc_wrap_l(list, "wrap", p_a, callbacks, &tctx);
     epc_parser_t * p_memo = epc_memoize_l(list, "memo", p_wrap);

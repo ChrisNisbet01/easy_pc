@@ -1,7 +1,6 @@
+#include "CppUTest/TestHarness.h"
 #include "cpt_node.h"
 #include "easy_pc_private.h"
-
-#include "CppUTest/TestHarness.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -77,7 +76,7 @@ TEST_GROUP(WrapTest)
 
 TEST(WrapTest, Wrap_CallsEntryAndExitOnSuccess)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {on_entry, on_exit};
     epc_parser_t * p_wrap = epc_wrap_l(list, "my_wrap", p_a, callbacks, &tctx);
 
@@ -92,7 +91,7 @@ TEST(WrapTest, Wrap_CallsEntryAndExitOnSuccess)
 
 TEST(WrapTest, Wrap_CallsEntryAndExitOnFailure)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {on_entry, on_exit};
     epc_parser_t * p_wrap = epc_wrap_l(list, "my_wrap", p_a, callbacks, &tctx);
 
@@ -105,7 +104,7 @@ TEST(WrapTest, Wrap_CallsEntryAndExitOnFailure)
 
 TEST(WrapTest, Wrap_ExitHandlerCanOverrideSuccessToFailure)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {on_entry, on_exit};
     epc_parser_t * p_wrap = epc_wrap_l(list, "my_wrap", p_a, callbacks, &tctx);
 
@@ -119,7 +118,7 @@ TEST(WrapTest, Wrap_ExitHandlerCanOverrideSuccessToFailure)
 
 TEST(WrapTest, Wrap_HandlesNullCallbacks)
 {
-    epc_parser_t * p_a = epc_char(NULL, 'a');
+    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {NULL, NULL};
     epc_parser_t * p_wrap = epc_wrap_l(list, "my_wrap", p_a, callbacks, NULL);
 
