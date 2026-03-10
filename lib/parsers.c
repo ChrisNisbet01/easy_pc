@@ -215,7 +215,7 @@ _epc_parser_fwd_decl(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_parser_fwd_decl_l(epc_parser_list * list, char const * name)
+epc_parser_fwd_decl(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_parser_fwd_decl(name));
 }
@@ -342,7 +342,7 @@ _epc_char(char const * name, char c)
 }
 
 EASY_PC_API epc_parser_t *
-epc_char_l(epc_parser_list * list, char const * name, char c)
+epc_char(epc_parser_list * list, char const * name, char c)
 {
     return epc_parser_list_add(list, _epc_char(name, c));
 }
@@ -408,7 +408,7 @@ _epc_byte(char const * name, char b)
 }
 
 EASY_PC_API epc_parser_t *
-epc_byte_l(epc_parser_list * list, char const * name, char b)
+epc_byte(epc_parser_list * list, char const * name, char b)
 {
     return epc_parser_list_add(list, _epc_byte(name, b));
 }
@@ -495,7 +495,7 @@ _epc_string(char const * name, char const * s)
 }
 
 EASY_PC_API epc_parser_t *
-epc_string_l(epc_parser_list * list, char const * name, char const * s)
+epc_string(epc_parser_list * list, char const * name, char const * s)
 {
     return epc_parser_list_add(list, _epc_string(name, s));
 }
@@ -533,7 +533,7 @@ _epc_soi(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_soi_l(epc_parser_list * list, char const * name)
+epc_soi(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_soi(name));
 }
@@ -575,7 +575,7 @@ _epc_eoi(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_eoi_l(epc_parser_list * list, char const * name)
+epc_eoi(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_eoi(name));
 }
@@ -626,7 +626,7 @@ _epc_digit(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_digit_l(epc_parser_list * list, char const * name)
+epc_digit(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_digit(name));
 }
@@ -744,7 +744,7 @@ _epc_int(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_int_l(epc_parser_list * list, char const * name)
+epc_int(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_int(name));
 }
@@ -798,7 +798,7 @@ _epc_space(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_space_l(epc_parser_list * list, char const * name)
+epc_space(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_space(name));
 }
@@ -850,7 +850,7 @@ _epc_alpha(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_alpha_l(epc_parser_list * list, char const * name)
+epc_alpha(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_alpha(name));
 }
@@ -902,7 +902,7 @@ _epc_alphanum(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_alphanum_l(epc_parser_list * list, char const * name)
+epc_alphanum(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_alphanum(name));
 }
@@ -1007,7 +1007,7 @@ _epc_double(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_double_l(epc_parser_list * list, char const * name)
+epc_double(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_double(name));
 }
@@ -1109,7 +1109,7 @@ _epc_hex(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_hex_l(epc_parser_list * list, char const * name)
+epc_hex(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_hex(name));
 }
@@ -1178,7 +1178,7 @@ _epc_octal(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_octal_l(epc_parser_list * list, char const * name)
+epc_octal(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_octal(name));
 }
@@ -1246,7 +1246,7 @@ _epc_identifier(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_identifier_l(epc_parser_list * list, char const * name)
+epc_identifier(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_identifier(name));
 }
@@ -1396,7 +1396,7 @@ vepc_or(char const * name, int count, va_list args)
 }
 
 EASY_PC_API epc_parser_t *
-epc_or_l(epc_parser_list * list, char const * name, int count, ...)
+epc_or(epc_parser_list * list, char const * name, int count, ...)
 {
     va_list args;
 
@@ -1558,7 +1558,7 @@ _epc_cpp_comment(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_cpp_comment_l(epc_parser_list * list, char const * name)
+epc_cpp_comment(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_cpp_comment(name));
 }
@@ -1636,7 +1636,7 @@ _epc_c_comment(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_c_comment_l(epc_parser_list * list, char const * name)
+epc_c_comment(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_c_comment(name));
 }
@@ -1691,7 +1691,7 @@ _epc_bash_comment(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_bash_comment_l(epc_parser_list * list, char const * name)
+epc_bash_comment(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_bash_comment(name));
 }
@@ -1711,7 +1711,7 @@ vepc_and(char const * name, int count, va_list args)
 }
 
 epc_parser_t *
-epc_and_l(epc_parser_list * list, char const * name, int count, ...)
+epc_and(epc_parser_list * list, char const * name, int count, ...)
 {
     va_list args;
 
@@ -1801,7 +1801,7 @@ _epc_skip(char const * name, epc_parser_t * parser_to_skip)
 }
 
 EASY_PC_API epc_parser_t *
-epc_skip_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_skip)
+epc_skip(epc_parser_list * list, char const * name, epc_parser_t * parser_to_skip)
 {
     return epc_parser_list_add(list, _epc_skip(name, parser_to_skip));
 }
@@ -1913,7 +1913,7 @@ _epc_plus(char const * name, epc_parser_t * parser_to_repeat)
 }
 
 EASY_PC_API epc_parser_t *
-epc_plus_l(epc_parser_list * list, char const * name, epc_parser_t * parser_to_repeat)
+epc_plus(epc_parser_list * list, char const * name, epc_parser_t * parser_to_repeat)
 {
     return epc_parser_list_add(list, _epc_plus(name, parser_to_repeat));
 }
@@ -1971,7 +1971,7 @@ _epc_char_range(char const * name, char char_start, char char_end)
 }
 
 EASY_PC_API epc_parser_t *
-epc_char_range_l(epc_parser_list * list, char const * name, char char_start, char char_end)
+epc_char_range(epc_parser_list * list, char const * name, char char_start, char char_end)
 {
     return epc_parser_list_add(list, _epc_char_range(name, char_start, char_end));
 }
@@ -2012,7 +2012,7 @@ _epc_any(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_any_l(epc_parser_list * list, char const * name)
+epc_any(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_any(name));
 }
@@ -2076,7 +2076,7 @@ _epc_none_of(char const * name, char const * chars_to_avoid)
 }
 
 EASY_PC_API epc_parser_t *
-epc_none_of_l(epc_parser_list * list, char const * name, char const * chars_to_avoid)
+epc_none_of(epc_parser_list * list, char const * name, char const * chars_to_avoid)
 {
     return epc_parser_list_add(list, _epc_none_of(name, chars_to_avoid));
 }
@@ -2171,7 +2171,7 @@ _epc_many(char const * name, epc_parser_t * p_to_repeat)
 }
 
 EASY_PC_API epc_parser_t *
-epc_many_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_many(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_many(name, p));
 }
@@ -2280,7 +2280,7 @@ _epc_count(char const * name, int num, epc_parser_t * p_to_repeat)
 }
 
 EASY_PC_API epc_parser_t *
-epc_count_l(epc_parser_list * list, char const * name, int num, epc_parser_t * p)
+epc_count(epc_parser_list * list, char const * name, int num, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_count(name, num, p));
 }
@@ -2401,7 +2401,7 @@ _epc_between(char const * name, epc_parser_t * p_open, epc_parser_t * p_wrapped,
 }
 
 EASY_PC_API epc_parser_t *
-epc_between_l(epc_parser_list * list, char const * name, epc_parser_t * open, epc_parser_t * p, epc_parser_t * close)
+epc_between(epc_parser_list * list, char const * name, epc_parser_t * open, epc_parser_t * p, epc_parser_t * close)
 {
     return epc_parser_list_add(list, _epc_between(name, open, p, close));
 }
@@ -2564,7 +2564,7 @@ _epc_delimited(char const * name, epc_parser_t * item_parser, epc_parser_t * del
 }
 
 EASY_PC_API epc_parser_t *
-epc_delimited_l(epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
+epc_delimited(epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser)
 {
     return epc_parser_list_add(list, _epc_delimited(name, item_parser, delimiter_parser));
 }
@@ -2586,7 +2586,7 @@ _epc_delimited_flex(char const * name, epc_parser_t * item_parser, epc_parser_t 
 }
 
 EASY_PC_API epc_parser_t *
-epc_delimited_flex_l(
+epc_delimited_flex(
     epc_parser_list * list, char const * name, epc_parser_t * item_parser, epc_parser_t * delimiter_parser
 )
 {
@@ -2681,7 +2681,7 @@ _epc_optional(char const * name, epc_parser_t * p_to_make_optional)
 }
 
 EASY_PC_API epc_parser_t *
-epc_optional_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_optional(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_optional(name, p));
 }
@@ -2749,7 +2749,7 @@ _epc_lookahead(char const * name, epc_parser_t * p_to_lookahead)
 }
 
 EASY_PC_API epc_parser_t *
-epc_lookahead_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_lookahead(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_lookahead(name, p));
 }
@@ -2828,7 +2828,7 @@ _epc_not(char const * name, epc_parser_t * p_to_not_match)
 }
 
 EASY_PC_API epc_parser_t *
-epc_not_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_not(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_not(name, p));
 }
@@ -2861,7 +2861,7 @@ _epc_fail(char const * name, char const * message)
 }
 
 EASY_PC_API epc_parser_t *
-epc_fail_l(epc_parser_list * list, char const * name, char const * message)
+epc_fail(epc_parser_list * list, char const * name, char const * message)
 {
     return epc_parser_list_add(list, _epc_fail(name, message));
 }
@@ -2904,7 +2904,7 @@ _epc_succeed(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_succeed_l(epc_parser_list * list, char const * name)
+epc_succeed(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_succeed(name));
 }
@@ -2956,7 +2956,7 @@ _epc_hex_digit(char const * name)
 }
 
 EASY_PC_API epc_parser_t *
-epc_hex_digit_l(epc_parser_list * list, char const * name)
+epc_hex_digit(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_hex_digit(name));
 }
@@ -3018,7 +3018,7 @@ _epc_one_of(char const * name, char const * chars_to_match)
 }
 
 EASY_PC_API epc_parser_t *
-epc_one_of_l(epc_parser_list * list, char const * name, char const * chars_to_match)
+epc_one_of(epc_parser_list * list, char const * name, char const * chars_to_match)
 {
     return epc_parser_list_add(list, _epc_one_of(name, chars_to_match));
 }
@@ -3176,7 +3176,7 @@ _epc_lexeme(char const * name, epc_parser_t * p)
 }
 
 EASY_PC_API epc_parser_t *
-epc_lexeme_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_lexeme(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_lexeme(name, p));
 }
@@ -3199,7 +3199,7 @@ _epc_strip(char const * name, epc_parser_t * p)
 }
 
 EASY_PC_API epc_parser_t *
-epc_strip_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_strip(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_strip(name, p));
 }
@@ -3222,7 +3222,7 @@ _epc_stripl(char const * name, epc_parser_t * p)
 }
 
 EASY_PC_API epc_parser_t *
-epc_stripl_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_stripl(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_stripl(name, p));
 }
@@ -3245,7 +3245,7 @@ _epc_stripr(char const * name, epc_parser_t * p)
 }
 
 EASY_PC_API epc_parser_t *
-epc_stripr_l(epc_parser_list * list, char const * name, epc_parser_t * p)
+epc_stripr(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_stripr(name, p));
 }
@@ -3371,7 +3371,7 @@ _epc_chainl1(char const * name, epc_parser_t * item_parser, epc_parser_t * op_pa
 }
 
 EASY_PC_API epc_parser_t *
-epc_chainl1_l(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
+epc_chainl1(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
 {
     return epc_parser_list_add(list, _epc_chainl1(name, item, op));
 }
@@ -3591,7 +3591,7 @@ _epc_chainr1(char const * name, epc_parser_t * item_parser, epc_parser_t * op_pa
 }
 
 EASY_PC_API epc_parser_t *
-epc_chainr1_l(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
+epc_chainr1(epc_parser_list * list, char const * name, epc_parser_t * item, epc_parser_t * op)
 {
     return epc_parser_list_add(list, _epc_chainr1(name, item, op));
 }
@@ -3758,7 +3758,7 @@ _epc_satisfy(
 }
 
 EASY_PC_API epc_parser_t *
-epc_satisfy_l(
+epc_satisfy(
     epc_parser_list * list,
     char const * name,
     epc_parser_t * token_parser,
@@ -3823,7 +3823,7 @@ _epc_wrap(char const * name, epc_parser_t * wrapped_parser, epc_wrap_callbacks_t
 }
 
 EASY_PC_API epc_parser_t *
-epc_wrap_l(
+epc_wrap(
     epc_parser_list * list,
     char const * name,
     epc_parser_t * wrapped_parser,
@@ -3870,7 +3870,7 @@ _epc_memoize(char const * name, epc_parser_t * p_to_memoize)
 }
 
 EASY_PC_API epc_parser_t *
-epc_memoize_l(epc_parser_list * list, char const * name, epc_parser_t * p_to_memoize)
+epc_memoize(epc_parser_list * list, char const * name, epc_parser_t * p_to_memoize)
 {
     return epc_parser_list_add(list, _epc_memoize(name, p_to_memoize));
 }

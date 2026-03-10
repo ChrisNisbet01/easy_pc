@@ -624,7 +624,7 @@ gdl_generate_c_code(
             char * pascal_rule_name = to_pascal_case(current_rule_info->name);
             fprintf(
                 source_file,
-                "    epc_parser_t * %s = epc_parser_fwd_decl_l(list, \"%s\");\n",
+                "    epc_parser_t * %s = epc_parser_fwd_decl(list, \"%s\");\n",
                 pascal_rule_name,
                 current_rule_info->name
             );
@@ -798,7 +798,7 @@ generate_expression_code(
     case GDL_AST_NODE_TYPE_COMBINATOR_COUNT:
         fprintf(
             source_file,
-            "epc_count_l(list, %s%s%s, %llu, ",
+            "epc_count(list, %s%s%s, %llu, ",
             q,
             expr_name,
             q,
@@ -816,12 +816,7 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_STRING_LITERAL:
         fprintf(
-            source_file,
-            "epc_string_l(list, %s%s%s, \"%s\")",
-            q,
-            expr_name,
-            q,
-            expression_node->data.string_literal.value
+            source_file, "epc_string(list, %s%s%s, \"%s\")", q, expr_name, q, expression_node->data.string_literal.value
         );
         break;
 
@@ -829,7 +824,7 @@ generate_expression_code(
     {
         char * ch = expression_node->data.char_literal.value; /* Acutally a string, to deal with escaping. */
 
-        fprintf(source_file, "epc_char_l(list, %s%s%s, '%s')", q, expr_name, q, ch);
+        fprintf(source_file, "epc_char(list, %s%s%s, '%s')", q, expr_name, q, ch);
         break;
     }
 
@@ -848,7 +843,7 @@ generate_expression_code(
             // case.
             // - perhaps by creating something like epc_parser_alias_l that simply references another parser without
             // copying.
-            fprintf(source_file, "epc_and_l(list, %s%s%s, 1, %s)", q, expr_name, q, pascal_ref_name);
+            fprintf(source_file, "epc_and(list, %s%s%s, 1, %s)", q, expr_name, q, pascal_ref_name);
         }
         else
         {
@@ -862,7 +857,7 @@ generate_expression_code(
     {
         char const * keyword_name = expression_node->data.keyword.name;
         // These are the keywords that map directly to epc_xxx_l functions
-        fprintf(source_file, "epc_%s_l(list, \"%s\")", keyword_name, keyword_name);
+        fprintf(source_file, "epc_%s(list, \"%s\")", keyword_name, keyword_name);
         break;
     }
 
@@ -870,7 +865,7 @@ generate_expression_code(
     {
         char const * fail_message = expression_node->data.string_literal.value;
 
-        fprintf(source_file, "epc_fail_l(list, \"%s\", \"%s\")", expr_name, fail_message);
+        fprintf(source_file, "epc_fail(list, \"%s\", \"%s\")", expr_name, fail_message);
 
         break;
     }
@@ -890,7 +885,7 @@ generate_expression_code(
         if (expression_node->data.sequence.elements.count == 0)
         {
             // Empty sequence means succeed
-            fprintf(source_file, "epc_succeed_l(list, \"empty_seq\")");
+            fprintf(source_file, "epc_succeed(list, \"empty_seq\")");
         }
         else if (expression_node->data.sequence.elements.count == 1)
         {
@@ -910,12 +905,7 @@ generate_expression_code(
         {
             // Generate epc_and_l for multiple elements
             fprintf(
-                source_file,
-                "epc_and_l(list, %s%s%s, %d",
-                q,
-                expr_name,
-                q,
-                expression_node->data.sequence.elements.count
+                source_file, "epc_and(list, %s%s%s, %d", q, expr_name, q, expression_node->data.sequence.elements.count
             );
             gdl_ast_list_node_t * current_element = expression_node->data.sequence.elements.head;
             while (current_element != NULL)
@@ -935,7 +925,7 @@ generate_expression_code(
         if (expression_node->data.alternative.alternatives.count == 0)
         {
             // Empty alternative means fail
-            fprintf(source_file, "epc_fail_l(list, \"empty_alt\")");
+            fprintf(source_file, "epc_fail(list, \"empty_alt\")");
         }
         else if (expression_node->data.alternative.alternatives.count == 1)
         {
@@ -956,7 +946,7 @@ generate_expression_code(
             // Generate epc_or_l for multiple alternatives
             fprintf(
                 source_file,
-                "epc_or_l(list, %s%s%s, %d",
+                "epc_or(list, %s%s%s, %d",
                 q,
                 expr_name,
                 q,
@@ -980,15 +970,15 @@ generate_expression_code(
         char operator_char = expression_node->data.repetition_expr.repetition->data.repetition_op.operator_char;
         if (operator_char == '*')
         {
-            fprintf(source_file, "epc_many_l(list, %s%s%s, ", q, expr_name, q);
+            fprintf(source_file, "epc_many(list, %s%s%s, ", q, expr_name, q);
         }
         else if (operator_char == '+')
         {
-            fprintf(source_file, "epc_plus_l(list, %s%s%s, ", q, expr_name, q);
+            fprintf(source_file, "epc_plus(list, %s%s%s, ", q, expr_name, q);
         }
         else if (operator_char == '?')
         {
-            fprintf(source_file, "epc_optional_l(list, %s%s%s, ", q, expr_name, q);
+            fprintf(source_file, "epc_optional(list, %s%s%s, ", q, expr_name, q);
         }
         else
         {
@@ -1007,7 +997,7 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_OPTIONAL_EXPRESSION:
         // This is for the 'optional()' combinator, not the '?' repetition operator
-        fprintf(source_file, "epc_optional_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_optional(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.optional.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1029,7 +1019,7 @@ generate_expression_code(
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN: // GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN
-        fprintf(source_file, "epc_between_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_between(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.between_call.open_expr, indent_level + 1, rule_list, NULL
             ))
@@ -1055,7 +1045,7 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
     {
-        fprintf(source_file, "epc_not_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_not(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1068,7 +1058,7 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
     {
-        fprintf(source_file, "epc_lookahead_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_lookahead(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1081,7 +1071,7 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
     {
-        fprintf(source_file, "epc_skip_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_skip(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1094,7 +1084,7 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
     {
-        fprintf(source_file, "epc_memoize_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_memoize(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1109,7 +1099,7 @@ generate_expression_code(
     case GDL_AST_NODE_TYPE_COMBINATOR_CHAINR1:
     {
         char lr = (expression_node->type == GDL_AST_NODE_TYPE_COMBINATOR_CHAINL1) ? 'l' : 'r';
-        fprintf(source_file, "epc_chain%c1_l(list, %s%s%s, ", lr, q, expr_name, q);
+        fprintf(source_file, "epc_chain%c1(list, %s%s%s, ", lr, q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.chain_combinator_call.item_expr, indent_level + 1, rule_list, NULL
             ))
@@ -1132,7 +1122,7 @@ generate_expression_code(
     {
         char const * fn_name
             = (expression_node->type == GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED) ? "delimited" : "delimited_flex";
-        fprintf(source_file, "epc_%s_l(list, %s%s%s, ", fn_name, q, expr_name, q);
+        fprintf(source_file, "epc_%s(list, %s%s%s, ", fn_name, q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.delimited_call.item_expr, indent_level + 1, rule_list, NULL
             ))
@@ -1153,7 +1143,7 @@ generate_expression_code(
     case GDL_AST_NODE_TYPE_CHAR_RANGE:
         fprintf(
             source_file,
-            "epc_char_range_l(list, %s%s%s, '%c', '%c')",
+            "epc_char_range(list, %s%s%s, '%c', '%c')",
             q,
             expr_name,
             q,
@@ -1163,7 +1153,7 @@ generate_expression_code(
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
-        fprintf(source_file, "epc_lexeme_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_lexeme(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1174,7 +1164,7 @@ generate_expression_code(
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
-        fprintf(source_file, "epc_strip_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_strip(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1185,7 +1175,7 @@ generate_expression_code(
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
-        fprintf(source_file, "epc_stripl_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_stripl(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1196,7 +1186,7 @@ generate_expression_code(
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
-        fprintf(source_file, "epc_stripr_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_stripr(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1219,14 +1209,14 @@ generate_expression_code(
 
         char const * parser_name
             = (expression_node->type == GDL_AST_NODE_TYPE_COMBINATOR_NONEOF) ? "none_of" : "one_of";
-        fprintf(source_file, "epc_%s_l(list, %s%s%s, \"%s\")", parser_name, q, expr_name, q, args_str);
+        fprintf(source_file, "epc_%s(list, %s%s%s, \"%s\")", parser_name, q, expr_name, q, args_str);
 
         break;
     }
 
     case GDL_AST_NODE_TYPE_SATISFY_CALL:
     {
-        fprintf(source_file, "epc_satisfy_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_satisfy(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.satisfy_call.expr, indent_level + 1, rule_list, NULL
             ))
@@ -1245,7 +1235,7 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_WRAP_CALL:
     {
-        fprintf(source_file, "epc_wrap_l(list, %s%s%s, ", q, expr_name, q);
+        fprintf(source_file, "epc_wrap(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.wrap_call.expr, indent_level + 1, rule_list, NULL
             ))

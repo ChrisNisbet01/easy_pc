@@ -29,7 +29,7 @@ TEST(ParserList, CreateParserList_Success)
 TEST(ParserList, AddParser_Success)
 {
     // Create a dummy parser (we don't need it to be functional, just a valid pointer)
-    epc_parser_t * parser1 = epc_parser_fwd_decl_l(list, "parser1");
+    epc_parser_t * parser1 = epc_parser_fwd_decl(list, "parser1");
     CHECK_TRUE(parser1 != NULL);
 
     CHECK_EQUAL(1, list->count);

@@ -56,42 +56,42 @@ TEST_GROUP(TerminalParsersNew)
 // --- p_char_range tests ---
 TEST(TerminalParsersNew, CharRange_MatchesSingleCharInRange)
 {
-    epc_parser_t * p = epc_char_range_l(list, NULL, 'a', 'z');
+    epc_parser_t * p = epc_char_range(list, NULL, 'a', 'z');
     session = parse(p, "c");
     check_success("char_range", "c", 1);
 }
 
 TEST(TerminalParsersNew, CharRange_MatchesStartOfRange)
 {
-    epc_parser_t * p = epc_char_range_l(list, NULL, 'a', 'z');
+    epc_parser_t * p = epc_char_range(list, NULL, 'a', 'z');
     session = parse(p, "a");
     check_success("char_range", "a", 1);
 }
 
 TEST(TerminalParsersNew, CharRange_MatchesEndOfRange)
 {
-    epc_parser_t * p = epc_char_range_l(list, NULL, 'a', 'z');
+    epc_parser_t * p = epc_char_range(list, NULL, 'a', 'z');
     session = parse(p, "z");
     check_success("char_range", "z", 1);
 }
 
 TEST(TerminalParsersNew, CharRange_FailsCharOutOfRange)
 {
-    epc_parser_t * p = epc_char_range_l(list, NULL, 'a', 'z');
+    epc_parser_t * p = epc_char_range(list, NULL, 'a', 'z');
     session = parse(p, "A");
     check_failure("Unexpected character");
 }
 
 TEST(TerminalParsersNew, CharRange_FailsEmptyInput)
 {
-    epc_parser_t * p = epc_char_range_l(list, NULL, 'a', 'z');
+    epc_parser_t * p = epc_char_range(list, NULL, 'a', 'z');
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, CharRange_FailsNullInput)
 {
-    epc_parser_t * p = epc_char_range_l(list, NULL, 'a', 'z');
+    epc_parser_t * p = epc_char_range(list, NULL, 'a', 'z');
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -99,35 +99,35 @@ TEST(TerminalParsersNew, CharRange_FailsNullInput)
 // --- p_any tests ---
 TEST(TerminalParsersNew, AnyChar_MatchesAnyChar)
 {
-    epc_parser_t * p = epc_any_l(list, NULL);
+    epc_parser_t * p = epc_any(list, NULL);
     session = parse(p, "X");
     check_success("any", "X", 1);
 }
 
 TEST(TerminalParsersNew, AnyChar_MatchesSpace)
 {
-    epc_parser_t * p = epc_any_l(list, NULL);
+    epc_parser_t * p = epc_any(list, NULL);
     session = parse(p, " ");
     check_success("any", " ", 1);
 }
 
 TEST(TerminalParsersNew, AnyChar_MatchesDigit)
 {
-    epc_parser_t * p = epc_any_l(list, NULL);
+    epc_parser_t * p = epc_any(list, NULL);
     session = parse(p, "5");
     check_success("any", "5", 1);
 }
 
 TEST(TerminalParsersNew, AnyChar_FailsEmptyInput)
 {
-    epc_parser_t * p = epc_any_l(list, NULL);
+    epc_parser_t * p = epc_any(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, AnyChar_FailsNullInput)
 {
-    epc_parser_t * p = epc_any_l(list, NULL);
+    epc_parser_t * p = epc_any(list, NULL);
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -135,35 +135,35 @@ TEST(TerminalParsersNew, AnyChar_FailsNullInput)
 // --- p_none_of tests ---
 TEST(TerminalParsersNew, NoneOfChars_MatchesCharNotInSet)
 {
-    epc_parser_t * p = epc_none_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_none_of(list, NULL, "abc");
     session = parse(p, "X");
     check_success("none_of", "X", 1);
 }
 
 TEST(TerminalParsersNew, NoneOfChars_MatchesCharNotInSetLongerInput)
 {
-    epc_parser_t * p = epc_none_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_none_of(list, NULL, "abc");
     session = parse(p, "def");
     check_success("none_of", "d", 1);
 }
 
 TEST(TerminalParsersNew, NoneOfChars_FailsCharInSet)
 {
-    epc_parser_t * p = epc_none_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_none_of(list, NULL, "abc");
     session = parse(p, "b");
     check_failure("Character found in forbidden set");
 }
 
 TEST(TerminalParsersNew, NoneOfChars_FailsEmptyInput)
 {
-    epc_parser_t * p = epc_none_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_none_of(list, NULL, "abc");
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, NoneOfChars_FailsNullInput)
 {
-    epc_parser_t * p = epc_none_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_none_of(list, NULL, "abc");
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -171,49 +171,49 @@ TEST(TerminalParsersNew, NoneOfChars_FailsNullInput)
 // --- p_int tests ---
 TEST(TerminalParsersNew, Int_MatchesPositiveInteger)
 {
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse(p, "12345abc");
     check_success("integer", "12345", 5);
 }
 
 TEST(TerminalParsersNew, Int_MatchesNegativeInteger)
 {
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse(p, "-6789xyz");
     check_success("integer", "-6789", 5);
 }
 
 TEST(TerminalParsersNew, Int_MatchesZero)
 {
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse(p, "0def");
     check_success("integer", "0", 1);
 }
 
 TEST(TerminalParsersNew, Int_FailsOnNonDigitStart)
 {
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse(p, "abc");
     check_failure("Expected an integer");
 }
 
 TEST(TerminalParsersNew, Int_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, Int_FailsOnNullInput)
 {
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
 
 TEST(TerminalParsersNew, Int_FailsOnJustNegativeSign)
 {
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse(p, "-");
     check_failure("Expected an integer");
 }
@@ -221,42 +221,42 @@ TEST(TerminalParsersNew, Int_FailsOnJustNegativeSign)
 // --- p_alpha tests ---
 TEST(TerminalParsersNew, Alpha_MatchesLowercase)
 {
-    epc_parser_t * p = epc_alpha_l(list, NULL);
+    epc_parser_t * p = epc_alpha(list, NULL);
     session = parse(p, "abc");
     check_success("alpha", "a", 1);
 }
 
 TEST(TerminalParsersNew, Alpha_MatchesUppercase)
 {
-    epc_parser_t * p = epc_alpha_l(list, NULL);
+    epc_parser_t * p = epc_alpha(list, NULL);
     session = parse(p, "Xyz");
     check_success("alpha", "X", 1);
 }
 
 TEST(TerminalParsersNew, Alpha_FailsOnDigit)
 {
-    epc_parser_t * p = epc_alpha_l(list, NULL);
+    epc_parser_t * p = epc_alpha(list, NULL);
     session = parse(p, "123");
     check_failure("Unexpected character");
 }
 
 TEST(TerminalParsersNew, Alpha_FailsOnSymbol)
 {
-    epc_parser_t * p = epc_alpha_l(list, NULL);
+    epc_parser_t * p = epc_alpha(list, NULL);
     session = parse(p, "$$$");
     check_failure("Unexpected character");
 }
 
 TEST(TerminalParsersNew, Alpha_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_alpha_l(list, NULL);
+    epc_parser_t * p = epc_alpha(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, Alpha_FailsOnNullInput)
 {
-    epc_parser_t * p = epc_alpha_l(list, NULL);
+    epc_parser_t * p = epc_alpha(list, NULL);
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -264,42 +264,42 @@ TEST(TerminalParsersNew, Alpha_FailsOnNullInput)
 // --- p_alphanum tests ---
 TEST(TerminalParsersNew, Alphanum_MatchesLowercase)
 {
-    epc_parser_t * p = epc_alphanum_l(list, NULL);
+    epc_parser_t * p = epc_alphanum(list, NULL);
     session = parse(p, "abc");
     check_success("alphanum", "a", 1);
 }
 
 TEST(TerminalParsersNew, Alphanum_MatchesUppercase)
 {
-    epc_parser_t * p = epc_alphanum_l(list, NULL);
+    epc_parser_t * p = epc_alphanum(list, NULL);
     session = parse(p, "Xyz");
     check_success("alphanum", "X", 1);
 }
 
 TEST(TerminalParsersNew, Alphanum_MatchesDigit)
 {
-    epc_parser_t * p = epc_alphanum_l(list, NULL);
+    epc_parser_t * p = epc_alphanum(list, NULL);
     session = parse(p, "123");
     check_success("alphanum", "1", 1);
 }
 
 TEST(TerminalParsersNew, Alphanum_FailsOnSymbol)
 {
-    epc_parser_t * p = epc_alphanum_l(list, NULL);
+    epc_parser_t * p = epc_alphanum(list, NULL);
     session = parse(p, "$$$");
     check_failure("Unexpected character");
 }
 
 TEST(TerminalParsersNew, Alphanum_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_alphanum_l(list, NULL);
+    epc_parser_t * p = epc_alphanum(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, Alphanum_FailsOnNullInput)
 {
-    epc_parser_t * p = epc_alphanum_l(list, NULL);
+    epc_parser_t * p = epc_alphanum(list, NULL);
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -307,42 +307,42 @@ TEST(TerminalParsersNew, Alphanum_FailsOnNullInput)
 // --- epc_hex_digit tests ---
 TEST(TerminalParsersNew, HexDigit_MatchesDigit)
 {
-    epc_parser_t * p = epc_hex_digit_l(list, NULL);
+    epc_parser_t * p = epc_hex_digit(list, NULL);
     session = parse(p, "5abc");
     check_success("hex_digit", "5", 1);
 }
 
 TEST(TerminalParsersNew, HexDigit_MatchesLowercaseAlpha)
 {
-    epc_parser_t * p = epc_hex_digit_l(list, NULL);
+    epc_parser_t * p = epc_hex_digit(list, NULL);
     session = parse(p, "cdef");
     check_success("hex_digit", "c", 1);
 }
 
 TEST(TerminalParsersNew, HexDigit_MatchesUppercaseAlpha)
 {
-    epc_parser_t * p = epc_hex_digit_l(list, NULL);
+    epc_parser_t * p = epc_hex_digit(list, NULL);
     session = parse(p, "ABCE");
     check_success("hex_digit", "A", 1);
 }
 
 TEST(TerminalParsersNew, HexDigit_FailsOnNonHexChar)
 {
-    epc_parser_t * p = epc_hex_digit_l(list, NULL);
+    epc_parser_t * p = epc_hex_digit(list, NULL);
     session = parse(p, "GHI");
     check_failure("Unexpected character");
 }
 
 TEST(TerminalParsersNew, HexDigit_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_hex_digit_l(list, NULL);
+    epc_parser_t * p = epc_hex_digit(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, HexDigit_FailsOnNullInput)
 {
-    epc_parser_t * p = epc_hex_digit_l(list, NULL);
+    epc_parser_t * p = epc_hex_digit(list, NULL);
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -350,49 +350,49 @@ TEST(TerminalParsersNew, HexDigit_FailsOnNullInput)
 // --- epc_one_of tests ---
 TEST(TerminalParsersNew, OneOf_MatchesCharInSet)
 {
-    epc_parser_t * p = epc_one_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_one_of(list, NULL, "abc");
     session = parse(p, "bdef");
     check_success("one_of", "b", 1);
 }
 
 TEST(TerminalParsersNew, OneOf_MatchesFirstCharInSet)
 {
-    epc_parser_t * p = epc_one_of_l(list, NULL, "123");
+    epc_parser_t * p = epc_one_of(list, NULL, "123");
     session = parse(p, "1xyz");
     check_success("one_of", "1", 1);
 }
 
 TEST(TerminalParsersNew, OneOf_MatchesLastCharInSet)
 {
-    epc_parser_t * p = epc_one_of_l(list, NULL, "xyz");
+    epc_parser_t * p = epc_one_of(list, NULL, "xyz");
     session = parse(p, "zabc");
     check_success("one_of", "z", 1);
 }
 
 TEST(TerminalParsersNew, OneOf_FailsCharNotInSet)
 {
-    epc_parser_t * p = epc_one_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_one_of(list, NULL, "abc");
     session = parse(p, "dxyz");
     check_failure("Character not found in set");
 }
 
 TEST(TerminalParsersNew, OneOf_FailsEmptyInput)
 {
-    epc_parser_t * p = epc_one_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_one_of(list, NULL, "abc");
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, OneOf_FailsNullInput)
 {
-    epc_parser_t * p = epc_one_of_l(list, NULL, "abc");
+    epc_parser_t * p = epc_one_of(list, NULL, "abc");
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
 
 TEST(TerminalParsersNew, OneOf_FailsWithEmptySet)
 {
-    epc_parser_t * p = epc_one_of_l(list, NULL, "");
+    epc_parser_t * p = epc_one_of(list, NULL, "");
     session = parse(p, "a");
     check_failure("Character not found in set");
 }
@@ -400,49 +400,49 @@ TEST(TerminalParsersNew, OneOf_FailsWithEmptySet)
 // --- epc_cpp_comment tests ---
 TEST(TerminalParsersNew, CppComment_MatchesSimpleComment)
 {
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse(p, "// A simple comment\nNext line");
     check_success("cpp_comment", "// A simple comment\n", 20);
 }
 
 TEST(TerminalParsersNew, CppComment_MatchesCommentAtEOF)
 {
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse(p, "// Comment at EOF");
     check_success("cpp_comment", "// Comment at EOF", 17);
 }
 
 TEST(TerminalParsersNew, CppComment_MatchesEmptyComment)
 {
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse(p, "//\nNext line");
     check_success("cpp_comment", "//\n", 3);
 }
 
 TEST(TerminalParsersNew, CppComment_NotTreatedAsACommentOnNoDoubleSlash)
 {
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse(p, "A regular line\n");
     check_failure("Expected '//'");
 }
 
 TEST(TerminalParsersNew, CppComment_FailsOnSingleSlash)
 {
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse(p, "/ A single slash comment\n");
     check_failure("Expected '//'");
 }
 
 TEST(TerminalParsersNew, CppComment_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, CppComment_FailsOnNullInput)
 {
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -450,63 +450,63 @@ TEST(TerminalParsersNew, CppComment_FailsOnNullInput)
 // --- epc_c_comment tests ---
 TEST(TerminalParsersNew, CComment_MatchesSimpleComment)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "/* This is a C comment */ Next code");
     check_success("c_comment", "/* This is a C comment */", 25);
 }
 
 TEST(TerminalParsersNew, CComment_MatchesMultiLineComment)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "/* Multi\nline\ncomment */ After");
     check_success("c_comment", "/* Multi\nline\ncomment */", 24);
 }
 
 TEST(TerminalParsersNew, CComment_MatchesCommentWithStarsInside)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "/* Comment * with * stars */ End");
     check_success("c_comment", "/* Comment * with * stars */", 28);
 }
 
 TEST(TerminalParsersNew, CComment_MatchesCommentAtEOF)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "/* Comment at EOF */");
     check_success("c_comment", "/* Comment at EOF */", 20);
 }
 
 TEST(TerminalParsersNew, CComment_MatchesEmptyComment)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "/**/Something else");
     check_success("c_comment", "/**/", 4);
 }
 
 TEST(TerminalParsersNew, CComment_FailsOnUnterminatedComment)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "/* Unterminated comment");
     check_failure("Unterminated C-style comment");
 }
 
 TEST(TerminalParsersNew, CComment_FailsOnNoStartDelimiter)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "Not a comment */");
     check_failure("Expected '/*'");
 }
 
 TEST(TerminalParsersNew, CComment_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
 
 TEST(TerminalParsersNew, CComment_FailsOnNullInput)
 {
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse(p, NULL);
     check_failure("Input string is NULL");
 }
@@ -514,49 +514,49 @@ TEST(TerminalParsersNew, CComment_FailsOnNullInput)
 // --- epc_identifier tests ---
 TEST(TerminalParsersNew, Identifier_MatchesSimpleLetter)
 {
-    epc_parser_t * p = epc_identifier_l(list, NULL);
+    epc_parser_t * p = epc_identifier(list, NULL);
     session = parse(p, "a");
     check_success("identifier", "a", 1);
 }
 
 TEST(TerminalParsersNew, Identifier_MatchesUnderscore)
 {
-    epc_parser_t * p = epc_identifier_l(list, NULL);
+    epc_parser_t * p = epc_identifier(list, NULL);
     session = parse(p, "_");
     check_success("identifier", "_", 1);
 }
 
 TEST(TerminalParsersNew, Identifier_MatchesAlphaNumeric)
 {
-    epc_parser_t * p = epc_identifier_l(list, NULL);
+    epc_parser_t * p = epc_identifier(list, NULL);
     session = parse(p, "var123_test");
     check_success("identifier", "var123_test", 11);
 }
 
 TEST(TerminalParsersNew, Identifier_MatchesLeadingUnderscore)
 {
-    epc_parser_t * p = epc_identifier_l(list, NULL);
+    epc_parser_t * p = epc_identifier(list, NULL);
     session = parse(p, "_var");
     check_success("identifier", "_var", 4);
 }
 
 TEST(TerminalParsersNew, Identifier_FailsOnDigitStart)
 {
-    epc_parser_t * p = epc_identifier_l(list, NULL);
+    epc_parser_t * p = epc_identifier(list, NULL);
     session = parse(p, "1var");
     check_failure("Expected identifier");
 }
 
 TEST(TerminalParsersNew, Identifier_FailsOnSymbolStart)
 {
-    epc_parser_t * p = epc_identifier_l(list, NULL);
+    epc_parser_t * p = epc_identifier(list, NULL);
     session = parse(p, "$var");
     check_failure("Expected identifier");
 }
 
 TEST(TerminalParsersNew, Identifier_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_identifier_l(list, NULL);
+    epc_parser_t * p = epc_identifier(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
@@ -564,42 +564,42 @@ TEST(TerminalParsersNew, Identifier_FailsOnEmptyInput)
 // --- epc_octal tests ---
 TEST(TerminalParsersNew, Octal_MatchesZero)
 {
-    epc_parser_t * p = epc_octal_l(list, NULL);
+    epc_parser_t * p = epc_octal(list, NULL);
     session = parse(p, "0");
     check_success("octal", "0", 1);
 }
 
 TEST(TerminalParsersNew, Octal_MatchesSingleDigit)
 {
-    epc_parser_t * p = epc_octal_l(list, NULL);
+    epc_parser_t * p = epc_octal(list, NULL);
     session = parse(p, "07");
     check_success("octal", "07", 2);
 }
 
 TEST(TerminalParsersNew, Octal_MatchesMultipleDigits)
 {
-    epc_parser_t * p = epc_octal_l(list, NULL);
+    epc_parser_t * p = epc_octal(list, NULL);
     session = parse(p, "01234567");
     check_success("octal", "01234567", 8);
 }
 
 TEST(TerminalParsersNew, Octal_FailsOnNonZeroStart)
 {
-    epc_parser_t * p = epc_octal_l(list, NULL);
+    epc_parser_t * p = epc_octal(list, NULL);
     session = parse(p, "123");
     check_failure("Expected octal literal");
 }
 
 TEST(TerminalParsersNew, Octal_StopsOnNonOctalDigit)
 {
-    epc_parser_t * p = epc_octal_l(list, NULL);
+    epc_parser_t * p = epc_octal(list, NULL);
     session = parse(p, "0789");
     check_success("octal", "07", 2); // Should only match "07"
 }
 
 TEST(TerminalParsersNew, Octal_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_octal_l(list, NULL);
+    epc_parser_t * p = epc_octal(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }
@@ -607,42 +607,42 @@ TEST(TerminalParsersNew, Octal_FailsOnEmptyInput)
 // --- epc_hex tests ---
 TEST(TerminalParsersNew, Hex_MatchesLowercaseX)
 {
-    epc_parser_t * p = epc_hex_l(list, NULL);
+    epc_parser_t * p = epc_hex(list, NULL);
     session = parse(p, "0x123");
     check_success("hex", "0x123", 5);
 }
 
 TEST(TerminalParsersNew, Hex_MatchesUppercaseX)
 {
-    epc_parser_t * p = epc_hex_l(list, NULL);
+    epc_parser_t * p = epc_hex(list, NULL);
     session = parse(p, "0XABC");
     check_success("hex", "0XABC", 5);
 }
 
 TEST(TerminalParsersNew, Hex_MatchesMixedCaseDigits)
 {
-    epc_parser_t * p = epc_hex_l(list, NULL);
+    epc_parser_t * p = epc_hex(list, NULL);
     session = parse(p, "0xdeadBEEF");
     check_success("hex", "0xdeadBEEF", 10);
 }
 
 TEST(TerminalParsersNew, Hex_FailsIfNoDigitsAfterPrefix)
 {
-    epc_parser_t * p = epc_hex_l(list, NULL);
+    epc_parser_t * p = epc_hex(list, NULL);
     session = parse(p, "0xg");
     check_failure("Expected hex digit");
 }
 
 TEST(TerminalParsersNew, Hex_FailsOnInvalidPrefix)
 {
-    epc_parser_t * p = epc_hex_l(list, NULL);
+    epc_parser_t * p = epc_hex(list, NULL);
     session = parse(p, "1x123");
     check_failure("Expected hex literal");
 }
 
 TEST(TerminalParsersNew, Hex_FailsOnEmptyInput)
 {
-    epc_parser_t * p = epc_hex_l(list, NULL);
+    epc_parser_t * p = epc_hex(list, NULL);
     session = parse(p, "");
     check_failure("Unexpected end of input");
 }

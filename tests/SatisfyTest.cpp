@@ -54,8 +54,8 @@ TEST_GROUP(SatisfyTest)
 
 TEST(SatisfyTest, PSatisfyMatchesCorrectToken)
 {
-    epc_parser_t * p_any = epc_any_l(list, NULL);
-    epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_a", p_any, "expected 'a'", is_char_a, NULL);
+    epc_parser_t * p_any = epc_any(list, NULL);
+    epc_parser_t * p_satisfy = epc_satisfy(list, "satisfy_a", p_any, "expected 'a'", is_char_a, NULL);
 
     result = parse(p_satisfy, "abc");
 
@@ -68,8 +68,8 @@ TEST(SatisfyTest, PSatisfyMatchesCorrectToken)
 
 TEST(SatisfyTest, PSatisfyFailsOnPredicateFalse)
 {
-    epc_parser_t * p_any = epc_any_l(list, NULL);
-    epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_a", p_any, "expected 'a'", is_char_a, NULL);
+    epc_parser_t * p_any = epc_any(list, NULL);
+    epc_parser_t * p_satisfy = epc_satisfy(list, "satisfy_a", p_any, "expected 'a'", is_char_a, NULL);
 
     result = parse(p_satisfy, "bbc");
 
@@ -82,8 +82,8 @@ TEST(SatisfyTest, PSatisfyFailsOnPredicateFalse)
 
 TEST(SatisfyTest, PSatisfyFailsWhenTokenParserFails)
 {
-    epc_parser_t * p_char_b = epc_char_l(list, NULL, 'b');
-    epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_a", p_char_b, "expected 'a'", is_char_a, NULL);
+    epc_parser_t * p_char_b = epc_char(list, NULL, 'b');
+    epc_parser_t * p_satisfy = epc_satisfy(list, "satisfy_a", p_char_b, "expected 'a'", is_char_a, NULL);
 
     result = parse(p_satisfy, "abc");
 
@@ -96,10 +96,10 @@ TEST(SatisfyTest, PSatisfyFailsWhenTokenParserFails)
 
 TEST(SatisfyTest, PSatisfyWithComplexToken)
 {
-    epc_parser_t * p_digit = epc_digit_l(list, NULL);
-    epc_parser_t * p_three_digits = epc_count_l(list, NULL, 3, p_digit);
+    epc_parser_t * p_digit = epc_digit(list, NULL);
+    epc_parser_t * p_three_digits = epc_count(list, NULL, 3, p_digit);
     epc_parser_t * p_satisfy
-        = epc_satisfy_l(list, "three_digits", p_three_digits, "expected 3 digits", is_length_3, NULL);
+        = epc_satisfy(list, "three_digits", p_three_digits, "expected 3 digits", is_length_3, NULL);
 
     // Success case
     result = parse(p_satisfy, "12345");
@@ -115,9 +115,9 @@ TEST(SatisfyTest, PSatisfyWithComplexToken)
 
 TEST(SatisfyTest, PSatisfyPreservesSemanticOffsets)
 {
-    epc_parser_t * p_digit = epc_digit_l(list, NULL);
-    epc_parser_t * p_lexeme = epc_lexeme_l(list, NULL, p_digit);
-    epc_parser_t * p_satisfy = epc_satisfy_l(list, "satisfy_digit", p_lexeme, "expected digit", is_char_a, NULL);
+    epc_parser_t * p_digit = epc_digit(list, NULL);
+    epc_parser_t * p_lexeme = epc_lexeme(list, NULL, p_digit);
+    epc_parser_t * p_satisfy = epc_satisfy(list, "satisfy_digit", p_lexeme, "expected digit", is_char_a, NULL);
 
     // We'll use a predicate that always returns true for this test
     auto always_true = [](epc_cpt_node_t * node, epc_parser_ctx_t * parse_ctx, void * user_ctx) -> bool {
@@ -127,7 +127,7 @@ TEST(SatisfyTest, PSatisfyPreservesSemanticOffsets)
         return true;
     };
 
-    epc_parser_t * p_satisfy_ok = epc_satisfy_l(list, "satisfy_ok", p_lexeme, "ok", always_true, NULL);
+    epc_parser_t * p_satisfy_ok = epc_satisfy(list, "satisfy_ok", p_lexeme, "ok", always_true, NULL);
 
     result = parse(p_satisfy_ok, "  1  ");
 

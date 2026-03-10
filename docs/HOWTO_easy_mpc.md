@@ -97,7 +97,7 @@ Matches a single, specific character.
 
 ```c
 // Matches the character 'a'
-epc_parser_t* p_a = epc_char_l(list, "a", 'a');
+epc_parser_t* p_a = epc_char(list, "a", 'a');
 // On success, creates an epc_cpt_node_t with tag "char", name "char", content "a", len 1.
 ```
 
@@ -107,7 +107,7 @@ Matches an exact sequence of characters (a string literal).
 
 ```c
 // Matches the string "hello"
-epc_parser_t* p_hello = epc_string_l(list, "hello_string", "hello");
+epc_parser_t* p_hello = epc_string(list, "hello_string", "hello");
 // On success, creates an epc_cpt_node_t with tag "string", name "string", content "hello", len 5.
 ```
 
@@ -132,9 +132,9 @@ Combinators are functions that take one or more parsers as arguments and return 
 
 ```c
 // Matches "abc"
-epc_parser_t* p_a = epc_char_l(list, "a", 'a');
-epc_parser_t* p_b = epc_char_l(list, "b", 'b');
-epc_parser_t* p_c = epc_char_l(list, "c", 'c');
+epc_parser_t* p_a = epc_char(list, "a", 'a');
+epc_parser_t* p_b = epc_char(list, "b", 'b');
+epc_parser_t* p_c = epc_char(list, "c", 'c');
 epc_parser_t* p_abc = epc_and(3, p_a, p_b, p_c);
 // On success, p_abc node will have tag "and", content "abc", len 3, and three children ("a", "b", "c").
 ```
@@ -145,8 +145,8 @@ epc_parser_t* p_abc = epc_and(3, p_a, p_b, p_c);
 
 ```c
 // Matches either 'x' or 'y'
-epc_parser_t* p_x = epc_char_l(list, "x", 'x');
-epc_parser_t* p_y = epc_char_l(list, "y", 'y');
+epc_parser_t* p_x = epc_char(list, "x", 'x');
+epc_parser_t* p_y = epc_char(list, "y", 'y');
 epc_parser_t* p_x_or_y = epc_or(2, p_x, p_y);
 // On success, p_x_or_y node will have tag "or", content "x" (or "y"), len 1, and one child (the successful char node).
 ```
@@ -160,11 +160,11 @@ These combinators handle repetition:
 
 ```c
 // Matches one or more digits (e.g., "1", "12", "123")
-epc_parser_t* p_digits_plus = epc_plus_l(list, "digits_plus", epc_digit_l(list, "digit_char"));
+epc_parser_t* p_digits_plus = epc_plus(list, "digits_plus", epc_digit(list, "digit_char"));
 // On success with "123", p_digits_plus node will have tag "plus", content "123", len 3, and three "digit" children.
 
 // Matches zero or more spaces (e.g., "", " ", "   ")
-epc_parser_t* p_spaces_many = epc_many_l(list, "space_many", epc_space_l(list, "space_char"));
+epc_parser_t* p_spaces_many = epc_many(list, "space_many", epc_space(list, "space_char"));
 // On success with "   ", p_spaces_many node will have tag "many", content "   ", len 3, and three "space" children.
 // On success with "", p_spaces_many node will have tag "many", content "", len 0, and zero children.
 ```
@@ -186,11 +186,11 @@ These combinators are specifically designed for parsing sequences of `item`s sep
 
 // term = factor (mul_div_op factor)*
 // This will parse "2 * 3 / 4" as ((2 * 3) / 4)
-epc_parser_t* p_term = epc_chainl1_l(list, "term", p_factor, p_mul_div_op);
+epc_parser_t* p_term = epc_chainl1(list, "term", p_factor, p_mul_div_op);
 
 // expr = term (add_sub_op term)*
 // This will parse "1 + 2 - 3" as ((1 + 2) - 3)
-epc_parser_t* p_expr = epc_chainl1_l(list, "expr", p_term, p_add_sub_op);
+epc_parser_t* p_expr = epc_chainl1(list, "expr", p_term, p_add_sub_op);
 ```
 
 **Example: Right-Associative Exponentiation**
@@ -201,7 +201,7 @@ epc_parser_t* p_expr = epc_chainl1_l(list, "expr", p_term, p_add_sub_op);
 
 // power = base (exp_op power)*
 // This will parse "2 ^ 3 ^ 4" as (2 ^ (3 ^ 4))
-epc_parser_t* p_power = epc_chainr1_l(list, "power", p_base, p_exp_op);
+epc_parser_t* p_power = epc_chainr1(list, "power", p_base, p_exp_op);
 ```
 
 ### `epc_skip`
@@ -210,7 +210,7 @@ epc_parser_t* p_power = epc_chainr1_l(list, "power", p_base, p_exp_op);
 
 ```c
 // Skips any amount of whitespace
-epc_parser_t* p_ws = epc_skip_l(list, "ws_skip", epc_space_l(list, "space_char"));
+epc_parser_t* p_ws = epc_skip(list, "ws_skip", epc_space(list, "space_char"));
 // If input is "   hello", p_ws succeeds, consumes "   ", and produces a node with len 3 but no children.
 // The next parser would then attempt to match "hello".
 ```
@@ -221,7 +221,7 @@ epc_parser_t* p_ws = epc_skip_l(list, "ws_skip", epc_space_l(list, "space_char")
 
 ```c
 // Matches a complete "hello" string
-epc_parser_t* p_full_hello = epc_and(2, epc_string_l(list, "hello_str", "hello"), epc_eoi_l(list, "eoi_marker"));
+epc_parser_t* p_full_hello = epc_and(2, epc_string(list, "hello_str", "hello"), epc_eoi(list, "eoi_marker"));
 // p_full_hello succeeds for "hello" but fails for "hello world" because " world" remains.
 ```
 
@@ -239,14 +239,14 @@ The typical workflow involves:
     epc_parser_t *p_open_paren, *p_close_paren, *p_whitespace;
 
     // Define terminals
-    p_number = epc_double_l(list, "number_double"); // Or epc_int_l, depending on your needs
-    p_plus_op = epc_char_l(list, "plus_op", '+');
-    p_minus_op = epc_char_l(list, "minus_op", '-');
-    p_times_op = epc_char_l(list, "times_op", '*');
-    p_divide_op = epc_char_l(list, "divide_op", '/');
-    p_open_paren = epc_char_l(list, "open_paren", '(');
-    p_close_paren = epc_char_l(list, "close_paren", ')');
-    p_whitespace = epc_skip_l(list, "whitespace_skip", epc_space_l(list, "space_char")); // Skip all whitespace
+    p_number = epc_double(list, "number_double"); // Or epc_int_l, depending on your needs
+    p_plus_op = epc_char(list, "plus_op", '+');
+    p_minus_op = epc_char(list, "minus_op", '-');
+    p_times_op = epc_char(list, "times_op", '*');
+    p_divide_op = epc_char(list, "divide_op", '/');
+    p_open_paren = epc_char(list, "open_paren", '(');
+    p_close_paren = epc_char(list, "close_paren", ')');
+    p_whitespace = epc_skip(list, "whitespace_skip", epc_space(list, "space_char")); // Skip all whitespace
 
     // Define higher-level rules (example of simple arithmetic grammar)
     // p_factor = epc_or(2,
@@ -287,7 +287,7 @@ void epc_parser_set_ast_action(epc_parser_t* p, int action_type);
 **Example:**
 
 ```c
-epc_parser_t* p_number_parser = epc_int_l(list, "number");
+epc_parser_t* p_number_parser = epc_int(list, "number");
 epc_parser_set_ast_action(p_number_parser, AST_ACTION_CREATE_NUMBER_FROM_CONTENT);
 // When p_number_parser succeeds, the visitor will be told to create a number AST node.
 ```

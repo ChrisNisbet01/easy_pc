@@ -139,7 +139,7 @@ TEST(StreamingTest, StreamingBasicCharTest)
 {
     int fd = start_producer("a", 10);
 
-    epc_parser_t * p = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p = epc_char(list, NULL, 'a');
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
@@ -151,7 +151,7 @@ TEST(StreamingTest, StreamingBasicStringTest)
 {
     int fd = start_producer("hello", 10);
 
-    epc_parser_t * p = epc_string_l(list, NULL, "hello");
+    epc_parser_t * p = epc_string(list, NULL, "hello");
     session = parse_fd(p, fd);
     check_is_success(session.result);
     STRNCMP_EQUAL("hello", session.result.data.success->content, 5);
@@ -162,7 +162,7 @@ TEST(StreamingTest, StreamingIntTest)
 {
     int fd = start_producer("12345 ", 10); // Note the space to terminate parsing
 
-    epc_parser_t * p = epc_int_l(list, NULL);
+    epc_parser_t * p = epc_int(list, NULL);
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
@@ -174,7 +174,7 @@ TEST(StreamingTest, StreamingDoubleTest)
 {
     int fd = start_producer("3.14159 ", 10); // Note the space to terminate parsing
 
-    epc_parser_t * p = epc_double_l(list, NULL);
+    epc_parser_t * p = epc_double(list, NULL);
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
@@ -186,7 +186,7 @@ TEST(StreamingTest, StreamingScientificDoubleTest)
 {
     int fd = start_producer("1.23e-4 ", 10);
 
-    epc_parser_t * p = epc_double_l(list, NULL);
+    epc_parser_t * p = epc_double(list, NULL);
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
@@ -200,7 +200,7 @@ TEST(StreamingTest, StreamingAmbiguousDoubleTest)
     int delays[] = {0, 50, 0};
     int fd = start_producer_fragments(2, frags, delays);
 
-    epc_parser_t * p = epc_double_l(list, NULL);
+    epc_parser_t * p = epc_double(list, NULL);
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
@@ -214,9 +214,9 @@ TEST(StreamingTest, StreamingSequenceTest)
     int delays[] = {10, 10, 10, 10, 10};
     int fd = start_producer_fragments(5, frags, delays);
 
-    epc_parser_t * p_int = epc_int_l(list, NULL);
-    epc_parser_t * p_space = epc_space_l(list, NULL);
-    epc_parser_t * p_seq = epc_and_l(list, NULL, 5, p_int, p_space, p_int, p_space, p_int);
+    epc_parser_t * p_int = epc_int(list, NULL);
+    epc_parser_t * p_space = epc_space(list, NULL);
+    epc_parser_t * p_seq = epc_and(list, NULL, 5, p_int, p_space, p_int, p_space, p_int);
 
     session = parse_fd(p_seq, fd);
 
@@ -230,7 +230,7 @@ TEST(StreamingTest, StreamingEOFErrorTest)
 {
     int fd = start_producer("hello", 10); // producer closes fd after "hello"
 
-    epc_parser_t * p = epc_string_l(list, NULL, "hello world");
+    epc_parser_t * p = epc_string(list, NULL, "hello world");
     session = parse_fd(p, fd);
 
     CHECK_TRUE(session.result.is_error);
@@ -243,8 +243,8 @@ TEST(StreamingTest, StreamingLexemeTest)
     int delays[] = {10, 10, 10, 10, 10, 10, 10};
     int fd = start_producer_fragments(7, frags, delays);
 
-    epc_parser_t * p_int = epc_int_l(list, NULL);
-    epc_parser_t * p_lex = epc_lexeme_l(list, NULL, p_int);
+    epc_parser_t * p_int = epc_int(list, NULL);
+    epc_parser_t * p_lex = epc_lexeme(list, NULL, p_int);
 
     session = parse_fd(p_lex, fd);
 
@@ -259,7 +259,7 @@ TEST(StreamingTest, StreamingCppCommentTest)
     int delays[] = {10, 10, 10};
     int fd = start_producer_fragments(3, frags, delays);
 
-    epc_parser_t * p = epc_cpp_comment_l(list, NULL);
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
@@ -273,7 +273,7 @@ TEST(StreamingTest, StreamingCCommentTest)
     int delays[] = {10, 10, 10, 10, 10};
     int fd = start_producer_fragments(5, frags, delays);
 
-    epc_parser_t * p = epc_c_comment_l(list, NULL);
+    epc_parser_t * p = epc_c_comment(list, NULL);
     session = parse_fd(p, fd);
 
     check_is_success(session.result);

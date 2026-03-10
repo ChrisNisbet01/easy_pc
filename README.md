@@ -92,7 +92,7 @@ int main() {
     }
 
     // 1. Define a simple parser (e.g., to match the string "hello") using _l helpers
-    epc_parser_t* p_hello = epc_string_l(list, "hello_literal", "hello");
+    epc_parser_t* p_hello = epc_string(list, "hello_literal", "hello");
     if (p_hello == NULL)
     {
         fprintf(stderr, "Failed to create 'hello' parser.\n");
@@ -101,7 +101,7 @@ int main() {
     }
 
     // 2. Combine with an End-Of-Input parser to ensure the whole string is matched
-    epc_parser_t* p_eoi_marker = epc_eoi_l(list, "eoi_marker");
+    epc_parser_t* p_eoi_marker = epc_eoi(list, "eoi_marker");
     if (p_eoi_marker == NULL)
     {
         fprintf(stderr, "Failed to create EOI parser.\n");
@@ -193,7 +193,7 @@ epc_parser_list_add(list, my_char_parser);
 
 You can simply use:
 ```c
-epc_parser_t* my_char_parser = epc_char_l(list, "my_char", 'A');
+epc_parser_t* my_char_parser = epc_char(list, "my_char", 'A');
 ```
 
 ## Installation

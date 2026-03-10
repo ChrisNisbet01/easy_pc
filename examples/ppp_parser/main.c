@@ -112,21 +112,20 @@ main(int argc, char ** argv)
     size_t ppp_frame_len = sizeof(ppp_frame_buf);
 
     // --- Grammar Definition ---
-    epc_parser_t * stuffed_payload_and_fcs_parser
-        = epc_count_l(list, "stuffed_data_and_fcs", 6, epc_any_l(list, "byte"));
+    epc_parser_t * stuffed_payload_and_fcs_parser = epc_count(list, "stuffed_data_and_fcs", 6, epc_any(list, "byte"));
 
     // Assign semantic action to the parser that matches the stuffed data
     epc_parser_set_ast_action(stuffed_payload_and_fcs_parser, PPP_AST_ACTION_UNSTUFF_PAYLOAD);
 
-    epc_parser_t * frame_parser = epc_and_l(
+    epc_parser_t * frame_parser = epc_and(
         list,
         "ppp_frame",
         5,
-        epc_byte_l(list, "start_flag", 0x7E),
-        epc_byte_l(list, "address", 0xFF),
-        epc_byte_l(list, "control", 0x03),
+        epc_byte(list, "start_flag", 0x7E),
+        epc_byte(list, "address", 0xFF),
+        epc_byte(list, "control", 0x03),
         stuffed_payload_and_fcs_parser, // This will match the 6 raw bytes
-        epc_byte_l(list, "end_flag", 0x7E)
+        epc_byte(list, "end_flag", 0x7E)
     );
 
     // --- Parsing Phase ---

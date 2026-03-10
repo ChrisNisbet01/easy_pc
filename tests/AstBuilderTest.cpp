@@ -1,14 +1,14 @@
+#include "CppUTest/TestHarness.h"
+#include "CppUTestExt/MockSupport.h"
 #include "ast_private.h"
 #include "cpt_node.h"
 
-#include "CppUTest/TestHarness.h"
-#include "CppUTestExt/MockSupport.h"
-
-#include <iostream>
 #include <stdarg.h> // For va_list in epc_ast_builder_set_error
 #include <stdio.h>
 #include <stdlib.h> // For malloc, free
 #include <string.h>
+
+#include <iostream>
 
 // --- Mock AST Node Definition ---
 typedef struct MyNode
@@ -295,7 +295,7 @@ TEST_GROUP(AstBuilderTest)
 // --- Single Parser Single Action Test ---
 TEST(AstBuilderTest, SingleParserSingleAction)
 {
-    epc_parser_t * p_root = epc_int_l(parser_list, "Root");
+    epc_parser_t * p_root = epc_int(parser_list, "Root");
     epc_parser_set_ast_action(p_root, ACTION_NUMBER);
     grammar_root = p_root;
 
@@ -327,8 +327,8 @@ TEST(AstBuilderTest, SingleParserSingleAction)
 // --- Test Case 1: Simple Number and Root ---
 TEST(AstBuilderTest, BuildsSimpleNumberAst)
 {
-    epc_parser_t * p_number = epc_int_l(parser_list, "Number");
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_number);
+    epc_parser_t * p_number = epc_int(parser_list, "Number");
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_number);
     epc_parser_set_ast_action(p_number, ACTION_NUMBER);
     epc_parser_set_ast_action(p_root, ACTION_ROOT);
     grammar_root = p_root;
@@ -368,8 +368,8 @@ TEST(AstBuilderTest, BuildsSimpleNumberAst)
 // --- Test Case 2: Simple Identifier, default action ---
 TEST(AstBuilderTest, BuildsSimpleIdentifierAstWithDefaultAction)
 {
-    epc_parser_t * p_identifier = epc_string_l(parser_list, "Identifier", "abc");
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_identifier);
+    epc_parser_t * p_identifier = epc_string(parser_list, "Identifier", "abc");
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_identifier);
     epc_parser_set_ast_action(p_identifier, ACTION_IDENTIFIER);
     // p_root has no specific action, should default to pushing its child (identifier)
     grammar_root = p_root;
@@ -405,10 +405,10 @@ TEST(AstBuilderTest, BuildsSimpleIdentifierAstWithDefaultAction)
 // --- Test Case 3: Binary Expression (Number OP Number) ---
 TEST(AstBuilderTest, BuildsBinaryExpressionAst)
 {
-    epc_parser_t * p_num = epc_int_l(parser_list, "Number");
-    epc_parser_t * p_plus = epc_char_l(parser_list, "AddOp", '+');
-    epc_parser_t * p_expr = epc_and_l(parser_list, "Expression", 3, p_num, p_plus, p_num);
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_expr);
+    epc_parser_t * p_num = epc_int(parser_list, "Number");
+    epc_parser_t * p_plus = epc_char(parser_list, "AddOp", '+');
+    epc_parser_t * p_expr = epc_and(parser_list, "Expression", 3, p_num, p_plus, p_num);
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_expr);
 
     epc_parser_set_ast_action(p_num, ACTION_NUMBER);
     epc_parser_set_ast_action(p_plus, ACTION_ADD_OP);
@@ -476,8 +476,8 @@ TEST(AstBuilderTest, BuildsBinaryExpressionAst)
 // --- Test Case 5: Error during AST node creation (within action callback) ---
 TEST(AstBuilderTest, HandlesErrorDuringActionCallback)
 {
-    epc_parser_t * p_number = epc_int_l(parser_list, "Number");
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_number);
+    epc_parser_t * p_number = epc_int(parser_list, "Number");
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_number);
     epc_parser_set_ast_action(p_number, ACTION_NUMBER);
     epc_parser_set_ast_action(p_root, ACTION_ROOT);
     grammar_root = p_root;
@@ -514,10 +514,10 @@ TEST(AstBuilderTest, HandlesErrorDuringActionCallback)
 // --- Test Case 6: Pruning (action callback returns zero nodes) ---
 TEST(AstBuilderTest, PrunesAstNodes)
 {
-    epc_parser_t * p_keyword = epc_string_l(parser_list, "Keyword", "skipme");
-    epc_parser_t * p_number = epc_int_l(parser_list, "Number");
-    epc_parser_t * p_seq = epc_and_l(parser_list, "Sequence", 2, p_keyword, p_number);
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_seq);
+    epc_parser_t * p_keyword = epc_string(parser_list, "Keyword", "skipme");
+    epc_parser_t * p_number = epc_int(parser_list, "Number");
+    epc_parser_t * p_seq = epc_and(parser_list, "Sequence", 2, p_keyword, p_number);
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_seq);
 
     epc_parser_set_ast_action(p_keyword, ACTION_PRUNE);
     epc_parser_set_ast_action(p_number, ACTION_NUMBER);
@@ -570,19 +570,15 @@ TEST(AstBuilderTest, AstStackGrowsDynamically)
 {
     // Create a deeply nested structure (e.g., A = (B); B = (C); C = (D); ...)
     // CPT traversal will push many placeholders
-    epc_parser_t * p_char_a = epc_char_l(parser_list, "A", 'a');
-    epc_parser_t * p_expr_fwd = epc_parser_fwd_decl_l(parser_list, "ExprFwd");
-    epc_parser_t * p_paren_expr = epc_between_l(
-        parser_list,
-        "ParenExpr",
-        epc_char_l(parser_list, "LParen", '('),
-        p_expr_fwd,
-        epc_char_l(parser_list, "RParen", ')')
+    epc_parser_t * p_char_a = epc_char(parser_list, "A", 'a');
+    epc_parser_t * p_expr_fwd = epc_parser_fwd_decl(parser_list, "ExprFwd");
+    epc_parser_t * p_paren_expr = epc_between(
+        parser_list, "ParenExpr", epc_char(parser_list, "LParen", '('), p_expr_fwd, epc_char(parser_list, "RParen", ')')
     );
-    epc_parser_t * p_expr_alt = epc_or_l(parser_list, "ExprAlt", 2, p_char_a, p_paren_expr);
+    epc_parser_t * p_expr_alt = epc_or(parser_list, "ExprAlt", 2, p_char_a, p_paren_expr);
     epc_parser_duplicate(p_expr_fwd, p_expr_alt);
 
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_expr_fwd);
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_expr_fwd);
 
     epc_parser_set_ast_action(p_char_a, ACTION_IDENTIFIER);
     epc_parser_set_ast_action(p_paren_expr, ACTION_EXPRESSION);
@@ -642,10 +638,10 @@ TEST(AstBuilderTest, AstStackGrowsDynamically)
 TEST(AstBuilderTest, DefaultActionPushesChildrenBack)
 {
     // CPT: Root -> Seq (no action) -> Num1 (ACTION_NUMBER), Num2 (ACTION_NUMBER)
-    epc_parser_t * p_num1 = epc_digit_l(parser_list, "Num1");
-    epc_parser_t * p_num2 = epc_digit_l(parser_list, "Num2");
-    epc_parser_t * p_seq = epc_and_l(parser_list, "Sequence", 2, p_num1, p_num2);
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_seq);
+    epc_parser_t * p_num1 = epc_digit(parser_list, "Num1");
+    epc_parser_t * p_num2 = epc_digit(parser_list, "Num2");
+    epc_parser_t * p_seq = epc_and(parser_list, "Sequence", 2, p_num1, p_num2);
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_seq);
 
     epc_parser_set_ast_action(p_num1, ACTION_NUMBER);
     epc_parser_set_ast_action(p_num2, ACTION_NUMBER);
@@ -698,10 +694,10 @@ TEST(AstBuilderTest, DefaultActionPushesChildrenBack)
 // --- Test Case 9: Error recovery for partially built AST ---
 TEST(AstBuilderTest, ErrorRecoveryFreesPartialAst)
 {
-    epc_parser_t * p_num = epc_int_l(parser_list, "Number");
-    epc_parser_t * p_plus = epc_char_l(parser_list, "AddOp", '+');
-    epc_parser_t * p_expr = epc_and_l(parser_list, "Expression", 3, p_num, p_plus, p_num);
-    epc_parser_t * p_root = epc_or_l(parser_list, "Root", 1, p_expr);
+    epc_parser_t * p_num = epc_int(parser_list, "Number");
+    epc_parser_t * p_plus = epc_char(parser_list, "AddOp", '+');
+    epc_parser_t * p_expr = epc_and(parser_list, "Expression", 3, p_num, p_plus, p_num);
+    epc_parser_t * p_root = epc_or(parser_list, "Root", 1, p_expr);
 
     epc_parser_set_ast_action(p_num, ACTION_NUMBER);
     epc_parser_set_ast_action(p_plus, ACTION_ADD_OP);

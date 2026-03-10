@@ -73,24 +73,24 @@ Number literals are sequences of one or more digits. They are primarily used as 
 
 ## 3. Keywords and Built-in Terminals
 
-GDL provides several predefined keywords that directly map to `easy_pc`'s built-in parsers or combinators. When these keywords are used in a rule definition, the `gdl_compiler` generates the corresponding `epc_xxx_l()` function call.
+GDL provides several predefined keywords that directly map to `easy_pc`'s built-in parsers or combinators. When these keywords are used in a rule definition, the `gdl_compiler` generates the corresponding `epc_xxx()` function call.
 
 | Keyword     | Description                                                     | Generated `easy_pc` Call (Example)                        |
 | :---------- | :-------------------------------------------------------------- | :-------------------------------------------------------- |
-| `alpha`     | Matches any alphabetic character.                               | `epc_alpha_l(list, "alpha")`                              |
-| `digit`     | Matches any digit (0-9).                                        | `epc_digit_l(list, "digit")`                              |
-| `alphanum`  | Matches any alphanumeric character.                             | `epc_alphanum_l(list, "alphanum")`                        |
-| `identifier`| Matches a standard programming identifier.                      | `epc_identifier_l(list, "identifier")`                    |
-| `underscore`| Matches the underscore character `_`.                           | `epc_char_l(list, "underscore", '_')`                     |
-| `space`     | Matches any whitespace character.                               | `epc_space_l(list, "space")`                              |
-| `hex_digit` | Matches any hexadecimal digit (0-9, a-f, A-F).                  | `epc_hex_digit_l(list, "hex_digit")`                      |
-| `int`       | Matches an integer number.                                      | `epc_int_l(list, "int")`                                  |
-| `octal`     | Matches an octal integer literal (starts with 0).               | `epc_octal_l(list, "octal")`                              |
-| `hex`       | Matches a hexadecimal integer literal (starts with 0x/0X).      | `epc_hex_l(list, "hex")`                                  |
-| `double`    | Matches a floating-point number.                                | `epc_double_l(list, "double")`                            |
-| `eoi`       | Matches the End Of Input. Essential for top-level rules.        | `epc_eoi_l(list, "eoi")`                                  |
-| `fail`      | Always fails.                                                   | `epc_fail_l(list, "fail")`                                |
-| `succeed`   | Always succeeds without consuming input.                        | `epc_succeed_l(list, "succeed")`                          |
+| `alpha`     | Matches any alphabetic character.                               | `epc_alpha(list, "alpha")`                              |
+| `digit`     | Matches any digit (0-9).                                        | `epc_digit(list, "digit")`                              |
+| `alphanum`  | Matches any alphanumeric character.                             | `epc_alphanum(list, "alphanum")`                        |
+| `identifier`| Matches a standard programming identifier.                      | `epc_identifier(list, "identifier")`                    |
+| `underscore`| Matches the underscore character `_`.                           | `epc_char(list, "underscore", '_')`                     |
+| `space`     | Matches any whitespace character.                               | `epc_space(list, "space")`                              |
+| `hex_digit` | Matches any hexadecimal digit (0-9, a-f, A-F).                  | `epc_hex_digit(list, "hex_digit")`                      |
+| `int`       | Matches an integer number.                                      | `epc_int(list, "int")`                                  |
+| `octal`     | Matches an octal integer literal (starts with 0).               | `epc_octal(list, "octal")`                              |
+| `hex`       | Matches a hexadecimal integer literal (starts with 0x/0X).      | `epc_hex(list, "hex")`                                  |
+| `double`    | Matches a floating-point number.                                | `epc_double(list, "double")`                            |
+| `eoi`       | Matches the End Of Input. Essential for top-level rules.        | `epc_eoi(list, "eoi")`                                  |
+| `fail`      | Always fails.                                                   | `epc_fail(list, "fail")`                                |
+| `succeed`   | Always succeeds without consuming input.                        | `epc_succeed(list, "succeed")`                          |
 
 ## 4. Repetition Operators
 
@@ -98,9 +98,9 @@ GDL supports postfix repetition operators for expressions, directly mapping to `
 
 | Operator | Description                    | Generated `easy_pc` Call (Example for `expr`) |
 | :------- | :----------------------------- | :-------------------------------------------- |
-| `*`      | Zero or more occurrences.      | `epc_many_l(list, "many", expr)`              |
-| `+`      | One or more occurrences.       | `epc_plus_l(list, "plus", expr)`              |
-| `?`      | Zero or one occurrence (optional). | `epc_optional_l(list, "optional_rep", expr)`  |
+| `*`      | Zero or more occurrences.      | `epc_many(list, "many", expr)`              |
+| `+`      | One or more occurrences.       | `epc_plus(list, "plus", expr)`              |
+| `?`      | Zero or one occurrence (optional). | `epc_optional(list, "optional_rep", expr)`  |
 
 *   **Example:**
     ```gdl
@@ -115,22 +115,22 @@ GDL provides a rich set of combinators, which are functions that combine simpler
 
 | Combinator  | Arguments                               | Description                                                                 | Generated `easy_pc` Call (Example)                                          |
 | :---------- | :-------------------------------------- | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| `lexeme`    | `(expression)`                          | Groups the matched input of `expression` into a single semantic token. Consumes leading/trailing whitespace and comments. | `epc_lexeme_l(list, "lexeme", expression_parser)` |
-| `strip`     | `(expression)`                          | Strips leading and trailing whitespace from the matched input of `expression`. | `epc_strip_l(list, "strip", expression_parser)` |
-| `stripl`    | `(expression)`                          | Strips leading whitespace from the matched input of `expression`. | `epc_stripl_l(list, "stripl", expression_parser)` |
-| `stripr`    | `(expression)`                          | Strips trailing whitespace from the matched input of `expression`. | `epc_stripr_l(list, "stripr", expression_parser)` |
-| `optional`  | `(expression)`                          | Makes `expression` optional. (Equivalent to `expr?`)                        | `epc_optional_l(list, "optional", expression_parser)`                       |
-| `count`     | `(number, expression)`                  | Matches `expression` exactly `number` times.                                | `epc_count_l(list, "count", number, expression_parser)`                     |
-| `delimited` | `(item_expr, delimiter_expr)`           | Matches `item_expr`s separated by `delimiter_expr`. Returns only `item_expr`s. | `epc_delimited_l(list, "delimited", item_parser, delimiter_parser)`      |
-| `delimited_flex` | `(item_expr, delimiter_expr)`      | Like `delimited`, but backtracks if it finds a delimiter but no subsequent item. | `epc_delimited_flex_l(list, "delimited_flex", item_parser, delimiter_parser)` |
-| `between`   | `(open_expr, content_expr, close_expr)` | Matches `open_expr`, then `content_expr`, then `close_expr`.                | `epc_between_l(list, "between", open_parser, content_parser, close_parser)` |
-| `chainl1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, left-associative. | `epc_chainl1_l(list, "chainl1", item_parser, op_parser)`                     |
-| `chainr1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, right-associative. | `epc_chainr1_l(list, "chainr1", item_parser, op_parser)`                    |
-| `lookahead` | `(expression)`                          | Succeeds if `expression` matches, but does not consume input.               | `epc_lookahead_l(list, "lookahead", expression_parser)`                     |
-| `not`       | `(expression)`                          | Succeeds if `expression` fails, fails if it succeeds. Does not consume input. | `epc_not_l(list, "not", expression_parser)`                               |
-| `skip`      | `(expression)`                          | Matches `expression` and consumes input, but does not add to CPT.           | `epc_skip_l(list, "skip", expression_parser)`                               |
-| `one_of`    | `(string_literal)`                      | Matches any single character from the provided list string.                 | `epc_one_of_l(list, "one_of", "abc")`                                       |
-| `none_of`   | `(string_literal)`                      | Matches any single character NOT from the provided string.                  | `epc_none_of_l(list, "none_of", "abc")`                                     |
+| `lexeme`    | `(expression)`                          | Groups the matched input of `expression` into a single semantic token. Consumes leading/trailing whitespace and comments. | `epc_lexeme(list, "lexeme", expression_parser)` |
+| `strip`     | `(expression)`                          | Strips leading and trailing whitespace from the matched input of `expression`. | `epc_strip(list, "strip", expression_parser)` |
+| `stripl`    | `(expression)`                          | Strips leading whitespace from the matched input of `expression`. | `epc_stripl(list, "stripl", expression_parser)` |
+| `stripr`    | `(expression)`                          | Strips trailing whitespace from the matched input of `expression`. | `epc_stripr(list, "stripr", expression_parser)` |
+| `optional`  | `(expression)`                          | Makes `expression` optional. (Equivalent to `expr?`)                        | `epc_optional(list, "optional", expression_parser)`                       |
+| `count`     | `(number, expression)`                  | Matches `expression` exactly `number` times.                                | `epc_count(list, "count", number, expression_parser)`                     |
+| `delimited` | `(item_expr, delimiter_expr)`           | Matches `item_expr`s separated by `delimiter_expr`. Returns only `item_expr`s. | `epc_delimited(list, "delimited", item_parser, delimiter_parser)`      |
+| `delimited_flex` | `(item_expr, delimiter_expr)`      | Like `delimited`, but backtracks if it finds a delimiter but no subsequent item. | `epc_delimited_flex(list, "delimited_flex", item_parser, delimiter_parser)` |
+| `between`   | `(open_expr, content_expr, close_expr)` | Matches `open_expr`, then `content_expr`, then `close_expr`.                | `epc_between(list, "between", open_parser, content_parser, close_parser)` |
+| `chainl1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, left-associative. | `epc_chainl1(list, "chainl1", item_parser, op_parser)`                     |
+| `chainr1`   | `(item_expr, op_expr)`                  | Matches one or more `item_expr`s separated by `op_expr`, right-associative. | `epc_chainr1(list, "chainr1", item_parser, op_parser)`                    |
+| `lookahead` | `(expression)`                          | Succeeds if `expression` matches, but does not consume input.               | `epc_lookahead(list, "lookahead", expression_parser)`                     |
+| `not`       | `(expression)`                          | Succeeds if `expression` fails, fails if it succeeds. Does not consume input. | `epc_not(list, "not", expression_parser)`                               |
+| `skip`      | `(expression)`                          | Matches `expression` and consumes input, but does not add to CPT.           | `epc_skip(list, "skip", expression_parser)`                               |
+| `one_of`    | `(string_literal)`                      | Matches any single character from the provided list string.                 | `epc_one_of(list, "one_of", "abc")`                                       |
+| `none_of`   | `(string_literal)`                      | Matches any single character NOT from the provided string.                  | `epc_none_of(list, "none_of", "abc")`                                     |
 
 
 *   **Examples:**
@@ -186,7 +186,7 @@ The most basic expressions.
 Multiple expressions placed next to each other form a sequence. All parts must match in order for the sequence to succeed.
 
 *   **Syntax:** `Expression1` `Expression2` ... `ExpressionN`
-*   **Generated `easy_pc` Call:** `epc_and_l(list, "seq_label", N, Exp1_parser, Exp2_parser, ...)`
+*   **Generated `easy_pc` Call:** `epc_and(list, "seq_label", N, Exp1_parser, Exp2_parser, ...)`
 *   **Example:**
     ```gdl
     FullName = FirstName space LastName;
@@ -198,7 +198,7 @@ Multiple expressions placed next to each other form a sequence. All parts must m
 The `|` operator specifies alternatives. The parser attempts to match the first alternative; if it fails, it tries the next, and so on. The first successful match wins.
 
 *   **Syntax:** `Expression1` `|` `Expression2` `|` ... `|` `ExpressionN`
-*   **Generated `easy_pc` Call:** `epc_or_l(list, "alt_label", N, Exp1_parser, Exp2_parser, ...)`
+*   **Generated `easy_pc` Call:** `epc_or(list, "alt_label", N, Exp1_parser, Exp2_parser, ...)`
 *   **Example:**
     ```gdl
     DigitOrLetter = digit | alpha;

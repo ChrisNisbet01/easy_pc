@@ -63,13 +63,13 @@ TEST(MemoizeTest, Memoize_CallsWrappedParserOnlyOnce)
 {
     epc_wrap_callbacks_t callbacks = {on_entry_count, NULL};
     /* Construct a parser that calls p_memo twice at the same position */
-    epc_parser_t * p_a = epc_char_l(list, "a", 'a');
-    epc_parser_t * pwrap_a = epc_wrap_l(list, "wrap", p_a, callbacks, &tctx);
-    epc_parser_t * p_memo = epc_memoize_l(list, "memo", pwrap_a);
-    epc_parser_t * p_b = epc_char_l(list, "b", 'b');
-    epc_parser_t * p_aa = epc_and_l(list, "aa", 2, p_memo, p_a);
-    epc_parser_t * p_ab = epc_and_l(list, "ab", 2, p_memo, p_b);
-    epc_parser_t * p_aa_or_ab = epc_or_l(list, "aa_or_ab", 2, p_aa, p_ab);
+    epc_parser_t * p_a = epc_char(list, "a", 'a');
+    epc_parser_t * pwrap_a = epc_wrap(list, "wrap", p_a, callbacks, &tctx);
+    epc_parser_t * p_memo = epc_memoize(list, "memo", pwrap_a);
+    epc_parser_t * p_b = epc_char(list, "b", 'b');
+    epc_parser_t * p_aa = epc_and(list, "aa", 2, p_memo, p_a);
+    epc_parser_t * p_ab = epc_and(list, "ab", 2, p_memo, p_b);
+    epc_parser_t * p_aa_or_ab = epc_or(list, "aa_or_ab", 2, p_aa, p_ab);
 
     session = epc_parse_str(p_aa_or_ab, "ab", NULL);
 
@@ -79,13 +79,13 @@ TEST(MemoizeTest, Memoize_CallsWrappedParserOnlyOnce)
 
 TEST(MemoizeTest, Memoize_WorksAtDifferentPositions)
 {
-    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {on_entry_count, NULL};
-    epc_parser_t * p_wrap = epc_wrap_l(list, "wrap", p_a, callbacks, &tctx);
-    epc_parser_t * p_memo = epc_memoize_l(list, "memo", p_wrap);
+    epc_parser_t * p_wrap = epc_wrap(list, "wrap", p_a, callbacks, &tctx);
+    epc_parser_t * p_memo = epc_memoize(list, "memo", p_wrap);
 
     /* Construct a parser that calls p_memo twice at different positions */
-    epc_parser_t * p_double = epc_and_l(list, "double", 2, p_memo, p_memo);
+    epc_parser_t * p_double = epc_and(list, "double", 2, p_memo, p_memo);
 
     session = epc_parse_str(p_double, "aa", NULL);
 
@@ -95,13 +95,13 @@ TEST(MemoizeTest, Memoize_WorksAtDifferentPositions)
 
 TEST(MemoizeTest, Memoize_CachesFailures)
 {
-    epc_parser_t * p_a = epc_char_l(list, NULL, 'a');
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
     epc_wrap_callbacks_t callbacks = {on_entry_count, NULL};
-    epc_parser_t * p_wrap = epc_wrap_l(list, "wrap", p_a, callbacks, &tctx);
-    epc_parser_t * p_memo = epc_memoize_l(list, "memo", p_wrap);
+    epc_parser_t * p_wrap = epc_wrap(list, "wrap", p_a, callbacks, &tctx);
+    epc_parser_t * p_memo = epc_memoize(list, "memo", p_wrap);
 
     /* Construct a parser that calls p_memo twice at the same position, where it fails */
-    epc_parser_t * p_double = epc_or_l(list, "double", 2, p_memo, p_memo);
+    epc_parser_t * p_double = epc_or(list, "double", 2, p_memo, p_memo);
 
     session = epc_parse_str(p_double, "b", NULL);
 

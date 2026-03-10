@@ -118,7 +118,7 @@ TEST_GROUP(SequentialStreamingTest)
 
 TEST(SequentialStreamingTest, ParseTwoStringsSequentially)
 {
-    epc_parser_t * p = epc_string_l(list, NULL, "hello");
+    epc_parser_t * p = epc_string(list, NULL, "hello");
 
     // 1. Start reactive session
     session = epc_parse_fd_reactive(p, pipe_fds[0], on_complete_cb, NULL, NULL);
@@ -152,7 +152,7 @@ TEST(SequentialStreamingTest, ParseTwoStringsSequentially)
 
 TEST(SequentialStreamingTest, ParseWithLeftoverData)
 {
-    epc_parser_t * p = epc_string_l(list, NULL, "abc");
+    epc_parser_t * p = epc_string(list, NULL, "abc");
 
     session = epc_parse_fd_reactive(p, pipe_fds[0], on_complete_cb, NULL, NULL);
 
