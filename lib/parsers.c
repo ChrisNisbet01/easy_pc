@@ -1408,101 +1408,6 @@ epc_or(epc_parser_list * list, char const * name, int count, ...)
     return p;
 }
 
-static epc_parse_result_t
-pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
-{
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-
-    if (input_result.is_eof)
-    {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "and", "EOF");
-    }
-
-    parser_list_t * sequence = self->data.parser_list;
-
-    if (sequence == NULL || sequence->count == 0)
-    {
-        return epc_parser_error_result(
-            ctx, input_offset, "No parsers in 'and' sequence", epc_parser_get_name(self), "N/A"
-        );
-    }
-
-    epc_cpt_node_t ** children_nodes = calloc(sequence->count, sizeof(*children_nodes));
-
-    if (children_nodes == NULL)
-    {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
-    }
-
-    size_t current_input_offset = input_offset;
-    size_t and_start_offset = current_input_offset;
-    char const * and_start_input = input_result.next_input;
-
-    epc_parse_result_t failed_child_result = {0};
-    epc_parse_result_t null_child_result = {0};
-    int child_count = 0;
-    for (int i = 0; i < sequence->count; i++, child_count++)
-    {
-        epc_parser_t * current_parser = sequence->parsers[i];
-        if (current_parser)
-        {
-            epc_parse_result_t child_result = parse(current_parser, ctx, current_input_offset);
-            if (child_result.is_error)
-            {
-                failed_child_result = child_result;
-                break;
-            }
-            children_nodes[i] = child_result.data.success;
-            current_input_offset += child_result.data.success->len;
-        }
-        else
-        {
-            null_child_result = epc_parser_error_result(
-                ctx, current_input_offset, "NULL parser found in 'and' sequence", epc_parser_get_name(self), "NULL"
-            );
-            break;
-        }
-    }
-
-    /* Check if any errors occurred while checking the sequence of parsers. */
-    if (null_child_result.is_error || failed_child_result.is_error)
-    {
-        for (int i = 0; i < child_count; i++)
-        {
-            epc_node_free(children_nodes[i]);
-        }
-        free(children_nodes);
-    }
-
-    if (null_child_result.is_error)
-    {
-        return null_child_result;
-    }
-    if (failed_child_result.is_error)
-    {
-        return failed_child_result;
-    }
-
-    /* No child errors, so the AND condition has succeeded. */
-
-    epc_cpt_node_t * parent_node = epc_node_alloc(ctx, self, self->tag);
-    if (parent_node == NULL)
-    {
-        for (int i = 0; i < sequence->count; i++)
-        {
-            epc_node_free(children_nodes[i]);
-        }
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
-    }
-
-    parent_node->children = children_nodes;
-    parent_node->children_count = sequence->count;
-    parent_node->content = and_start_input;
-    parent_node->len = current_input_offset - and_start_offset;
-
-    return epc_parser_success_result(parent_node);
-}
-
 // --- C++ Comment Parser Implementation ---
 // Matches "//" followed by any characters until a newline or EOF.
 static epc_parse_result_t
@@ -1694,6 +1599,101 @@ EASY_PC_API epc_parser_t *
 epc_bash_comment(epc_parser_list * list, char const * name)
 {
     return epc_parser_list_add(list, _epc_bash_comment(name));
+}
+
+static epc_parse_result_t
+pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+
+    if (input_result.is_eof)
+    {
+        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "and", "EOF");
+    }
+
+    parser_list_t * sequence = self->data.parser_list;
+
+    if (sequence == NULL || sequence->count == 0)
+    {
+        return epc_parser_error_result(
+            ctx, input_offset, "No parsers in 'and' sequence", epc_parser_get_name(self), "N/A"
+        );
+    }
+
+    epc_cpt_node_t ** children_nodes = calloc(sequence->count, sizeof(*children_nodes));
+
+    if (children_nodes == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    size_t current_input_offset = input_offset;
+    size_t and_start_offset = current_input_offset;
+    char const * and_start_input = input_result.next_input;
+
+    epc_parse_result_t failed_child_result = {0};
+    epc_parse_result_t null_child_result = {0};
+    int child_count = 0;
+    for (int i = 0; i < sequence->count; i++, child_count++)
+    {
+        epc_parser_t * current_parser = sequence->parsers[i];
+        if (current_parser)
+        {
+            epc_parse_result_t child_result = parse(current_parser, ctx, current_input_offset);
+            if (child_result.is_error)
+            {
+                failed_child_result = child_result;
+                break;
+            }
+            children_nodes[i] = child_result.data.success;
+            current_input_offset += child_result.data.success->len;
+        }
+        else
+        {
+            null_child_result = epc_parser_error_result(
+                ctx, current_input_offset, "NULL parser found in 'and' sequence", epc_parser_get_name(self), "NULL"
+            );
+            break;
+        }
+    }
+
+    /* Check if any errors occurred while checking the sequence of parsers. */
+    if (null_child_result.is_error || failed_child_result.is_error)
+    {
+        for (int i = 0; i < child_count; i++)
+        {
+            epc_node_free(children_nodes[i]);
+        }
+        free(children_nodes);
+    }
+
+    if (null_child_result.is_error)
+    {
+        return null_child_result;
+    }
+    if (failed_child_result.is_error)
+    {
+        return failed_child_result;
+    }
+
+    /* No child errors, so the AND condition has succeeded. */
+
+    epc_cpt_node_t * parent_node = epc_node_alloc(ctx, self, self->tag);
+    if (parent_node == NULL)
+    {
+        for (int i = 0; i < sequence->count; i++)
+        {
+            epc_node_free(children_nodes[i]);
+        }
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    parent_node->children = children_nodes;
+    parent_node->children_count = sequence->count;
+    parent_node->content = and_start_input;
+    parent_node->len = current_input_offset - and_start_offset;
+
+    return epc_parser_success_result(parent_node);
 }
 
 static epc_parser_t *
