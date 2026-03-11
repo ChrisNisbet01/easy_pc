@@ -1,4 +1,3 @@
-Backslash = '\\';
 Quote = "\"";
 EscapeChar = oneof("\"\\/bfnrt");
 SimpleEscape = '\\' EscapeChar;
@@ -13,19 +12,23 @@ StringContentChar = NonQuoteNonBackslash | EscapedChar;
 
 Comma = strip(',');
 OBracket = strip('[');
-CBracket = strip(']');
+CBracket = stripl(']');
 OObject = strip('{');
-CObject = strip('}');
+CObject = stripl('}');
 Colon = strip(':');
 
 True = "true";
 False = "false";
 Boolean = True | False                          @JSON_ACTION_CREATE_BOOLEAN;
+DoubleIndicators = oneof(".eE");
+Integer = int not(lookahead(DoubleIndicators))  @JSON_ACTION_CREATE_INTEGER;
 Number = double                                 @JSON_ACTION_CREATE_NUMBER;
 Null = "null"                                   @JSON_ACTION_CREATE_NULL;
-QuotedString = Quote StringContentChar* Quote   @JSON_ACTION_CREATE_STRING;
+# By associating the action with the string contents we can avoid having to deal with the surrounding quotes.
+QuotedStingContents = StringContentChar*        @JSON_ACTION_CREATE_STRING;
+QuotedString = Quote QuotedStingContents Quote;
 
-Value = strip(QuotedString | Null | Boolean | Number | Object | Array);
+Value = stripl(QuotedString | Null | Boolean | Integer | Number | Object | Array);
 
 ArrayElements = delimited(Value, Comma)         @JSON_ACTION_CREATE_ARRAY_ELEMENTS;
 OptionalArrayElements = ArrayElements?          @JSON_ACTION_CREATE_OPTIONAL_ARRAY_ELEMENTS;
@@ -36,4 +39,7 @@ Members = delimited(Member, Comma)              @JSON_ACTION_CREATE_OBJECT_ELEME
 OptionalMembers = Members?                      @JSON_ACTION_CREATE_OPTIONAL_OBJECT_ELEMENTS;
 Object = OObject OptionalMembers CObject        @JSON_ACTION_CREATE_OBJECT;
 
-Json = Value eoi;
+Newline = '\n';
+
+Json = Newline* Value eoi;
+
