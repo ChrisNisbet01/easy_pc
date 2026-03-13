@@ -7,6 +7,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+
+static bool
+directory_exists(char const * path)
+{
+    struct stat sb;
+
+    if (stat(path, &sb) != 0 || !S_ISDIR(sb.st_mode))
+    {
+        // Check 'errno' here for specific reasons (e.g., ENOENT for Not Found)
+        return false;
+    }
+    return true;
+}
 
 int
 main(int argc, char ** argv)
@@ -203,8 +217,26 @@ main(int argc, char ** argv)
 
                 if (bootstrap_ast)
                 {
+                    /*
+                        If the 'bootstrap subdirectory exists, write the files into that, else default to the output
+                       dir.
+                     */
+                    char const * bootstrap_output_dir;
+                    char bootstrap_subdir[512];
+                    snprintf(bootstrap_subdir, sizeof(bootstrap_subdir), "%s/bootstrap", output_dir);
+                    if (directory_exists(bootstrap_subdir))
+                    {
+                        bootstrap_output_dir = bootstrap_subdir;
+                    }
+                    else
+                    {
+                        bootstrap_output_dir = output_dir;
+                    }
                     printf("AST bootstrap files generation requested.\n");
-                    generate_ast_bootstrap_files((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir);
+                    generate_ast_bootstrap_files(
+                        (gdl_ast_node_t *)ast_build_result.ast_root, base_name, bootstrap_output_dir
+                    );
+                    printf("AST bootstrap files generation completed.\n");
                 }
 
                 gdl_ast_node_free((gdl_ast_node_t *)ast_build_result.ast_root, NULL);

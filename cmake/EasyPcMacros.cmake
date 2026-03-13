@@ -33,12 +33,14 @@ function(epc_generate_grammar)
     set(EXTRA_ARGS)
     set(EXTRA_DEPENDS)
     if(EPC_GEN_BOOTSTRAP_AST)
+        set(BOOTSTRAP_DIR "${EPC_GEN_OUTPUT_DIR}/bootstrap")
+        file(MAKE_DIRECTORY "${BOOTSTRAP_DIR}")
         list(APPEND EXTRA_ARGS "--bootstrap-ast")
         # Bootstrap files are generated but NOT added to LIB_SOURCES
-        list(APPEND ALL_GENERATED_SOURCES "${EPC_GEN_OUTPUT_DIR}/${GDL_BASE_NAME}_ast_actions.c")
+        list(APPEND ALL_GENERATED_SOURCES "${BOOTSTRAP_DIR}/${GDL_BASE_NAME}_ast_actions.c")
         list(APPEND GENERATED_HEADERS
-            "${EPC_GEN_OUTPUT_DIR}/${GDL_BASE_NAME}_ast.h"
-            "${EPC_GEN_OUTPUT_DIR}/${GDL_BASE_NAME}_ast_actions.h"
+            "${BOOTSTRAP_DIR}/${GDL_BASE_NAME}_ast.h"
+            "${BOOTSTRAP_DIR}/${GDL_BASE_NAME}_ast_actions.h"
         )
     endif()
 
