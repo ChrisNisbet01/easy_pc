@@ -100,7 +100,7 @@ epc_node_free(epc_cpt_node_t * node)
 }
 
 EASY_PC_API const char *
-epc_cpt_node_get_semantic_content(epc_cpt_node_t * node)
+epc_cpt_node_get_semantic_content(epc_cpt_node_t const * node)
 {
     if (node == NULL || node->content == NULL)
     {
@@ -117,7 +117,24 @@ epc_cpt_node_get_semantic_content(epc_cpt_node_t * node)
 }
 
 EASY_PC_API size_t
-epc_cpt_node_get_semantic_len(epc_cpt_node_t * node)
+epc_cpt_node_get_semantic_content_offset(epc_cpt_node_t const * node)
+{
+    if (node == NULL || node->content == NULL || node->ctx == NULL)
+    {
+        return 0;
+    }
+    // Ensure start offset does not go beyond the actual content.
+    // If it does, effectively, there is no semantic content.
+    if (node->semantic_start_offset >= node->len)
+    {
+        return node->content + node->len - node->ctx->input_start;
+    }
+
+    return node->content + node->semantic_start_offset - node->ctx->input_start;
+}
+
+EASY_PC_API size_t
+epc_cpt_node_get_semantic_len(epc_cpt_node_t const * node)
 {
     if (node == NULL)
     {
@@ -142,7 +159,7 @@ epc_cpt_node_get_semantic_len(epc_cpt_node_t * node)
 }
 
 EASY_PC_API const char *
-epc_cpt_node_get_content(epc_cpt_node_t * node)
+epc_cpt_node_get_content(epc_cpt_node_t const * node)
 {
     if (node == NULL || node->content == NULL)
     {
@@ -153,7 +170,18 @@ epc_cpt_node_get_content(epc_cpt_node_t * node)
 }
 
 EASY_PC_API size_t
-epc_cpt_node_get_len(epc_cpt_node_t * node)
+epc_cpt_node_get_content_offset(epc_cpt_node_t const * node)
+{
+    if (node == NULL || node->content == NULL || node->ctx == NULL)
+    {
+        return 0;
+    }
+
+    return node->content - node->ctx->input_start;
+}
+
+EASY_PC_API size_t
+epc_cpt_node_get_len(epc_cpt_node_t const * node)
 {
     if (node == NULL)
     {

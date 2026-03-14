@@ -999,7 +999,19 @@ epc_parse_bytes(epc_parser_t * top_parser, char const * buf, size_t len, void * 
  * @param node A pointer to the `epc_cpt_node_t`.
  * @return A `const char*` pointer to the semantic content.
  */
-EASY_PC_API const char * epc_cpt_node_get_semantic_content(epc_cpt_node_t * node);
+EASY_PC_API const char * epc_cpt_node_get_semantic_content(epc_cpt_node_t const * node);
+
+/**
+ * @brief Retrieves the offset from the input start to the semantically relevant content from a CPT node.
+ *
+ * This function returns a pointer to the start of the substring within the
+ * node's full `content` that is considered semantically relevant, after
+ * accounting for any `semantic_start_offset`.
+ *
+ * @param node A pointer to the `epc_cpt_node_t`.
+ * @return A `const char*` pointer to the semantic content.
+ */
+EASY_PC_API size_t epc_cpt_node_get_semantic_content_offset(epc_cpt_node_t const * node);
 
 /**
  * @brief Retrieves the length of the semantically relevant content from a CPT node.
@@ -1011,7 +1023,7 @@ EASY_PC_API const char * epc_cpt_node_get_semantic_content(epc_cpt_node_t * node
  * @param node A pointer to the `epc_cpt_node_t`.
  * @return A `size_t` representing the length of the semantic content.
  */
-EASY_PC_API size_t epc_cpt_node_get_semantic_len(epc_cpt_node_t * node);
+EASY_PC_API size_t epc_cpt_node_get_semantic_len(epc_cpt_node_t const * node);
 
 /**
  * @brief Retrieves the content from a CPT node.
@@ -1023,7 +1035,17 @@ EASY_PC_API size_t epc_cpt_node_get_semantic_len(epc_cpt_node_t * node);
  * @param node A pointer to the `epc_cpt_node_t`.
  * @return A `const char*` pointer to the content.
  */
-EASY_PC_API const char * epc_cpt_node_get_content(epc_cpt_node_t * node);
+EASY_PC_API const char * epc_cpt_node_get_content(epc_cpt_node_t const * node);
+
+/**
+ * @brief Retrieves the content offset from a CPT node.
+ *
+ * This function returns an offset from the start of the input to the node's content from a CTP node.
+ *
+ * @param node A pointer to the `epc_cpt_node_t`.
+ * @return A `const char*` pointer to the content.
+ */
+EASY_PC_API size_t epc_cpt_node_get_content_offset(epc_cpt_node_t const * node);
 
 /**
  * @brief Retrieves the length of the content from a CPT node.
@@ -1035,7 +1057,7 @@ EASY_PC_API const char * epc_cpt_node_get_content(epc_cpt_node_t * node);
  * @param node A pointer to the `epc_cpt_node_t`.
  * @return A `size_t` representing the length of the content.
  */
-EASY_PC_API size_t epc_cpt_node_get_len(epc_cpt_node_t * node);
+EASY_PC_API size_t epc_cpt_node_get_len(epc_cpt_node_t const * node);
 
 /**
  * @brief Prints a Concrete Parse Tree (CPT) to a dynamically allocated string.
