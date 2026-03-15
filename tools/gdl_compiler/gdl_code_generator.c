@@ -422,6 +422,14 @@ traverse_expression_for_references(
         break;
     }
 
+    case GDL_AST_NODE_TYPE_COMBINATOR_COUNT_RANGE:
+    {
+        traverse_expression_for_references(
+            expression_node->data.count_range_call.expression, current_rule_info, all_rules
+        );
+        break;
+    }
+
     case GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN:
     {
         traverse_expression_for_references(expression_node->data.between_call.open_expr, current_rule_info, all_rules);
@@ -806,6 +814,26 @@ generate_expression_code(
         );
         if (!generate_expression_code(
                 source_file, expression_node->data.count_call.expression, indent_level + 1, rule_list, NULL
+            ))
+        {
+            return false;
+        }
+        fprintf(source_file, ")");
+
+        break;
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_COUNT_RANGE:
+        fprintf(
+            source_file,
+            "epc_count_range(list, %s%s%s, %llu, %llu, ",
+            q,
+            expr_name,
+            q,
+            expression_node->data.count_range_call.min_node->data.number_literal.value,
+            expression_node->data.count_range_call.max_node->data.number_literal.value
+        );
+        if (!generate_expression_code(
+                source_file, expression_node->data.count_range_call.expression, indent_level + 1, rule_list, NULL
             ))
         {
             return false;

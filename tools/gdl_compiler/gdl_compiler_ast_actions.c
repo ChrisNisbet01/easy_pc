@@ -1,8 +1,9 @@
-#include "easy_pc_private.h" // For epc_ast_builder_set_error
-#include "gdl_ast.h"
 #include "gdl_compiler_ast_actions.h"
 
 #include "easy_pc/easy_pc_ast.h"
+
+#include "easy_pc_private.h" // For epc_ast_builder_set_error
+#include "gdl_ast.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -164,6 +165,12 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
     case GDL_AST_NODE_TYPE_COMBINATOR_COUNT:
         gdl_ast_node_free(node->data.count_call.count_node, user_data);
         gdl_ast_node_free(node->data.count_call.expression, user_data);
+        break;
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_COUNT_RANGE:
+        gdl_ast_node_free(node->data.count_range_call.min_node, user_data);
+        gdl_ast_node_free(node->data.count_range_call.max_node, user_data);
+        gdl_ast_node_free(node->data.count_range_call.expression, user_data);
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN:
@@ -1074,6 +1081,76 @@ handle_create_count_call(
 }
 
 static void
+handle_create_count_range_call(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+#ifdef AST_DEBUG
+    debug_indent -= 4;
+    fprintf(
+        stderr,
+        "%*sAST_DEBUG: EXIT CPT node '%s' (action %d) num_children %u\n",
+        debug_indent,
+        "",
+        node->name,
+        node->ast_config.action,
+        count
+    );
+    for (int i = 0; i < count; i++)
+    {
+        gdl_ast_node_t * child = (gdl_ast_node_t *)children[i];
+        fprintf(stderr, "%*schild %d type %d\n", debug_indent, "", i, child->type);
+    }
+#endif
+
+    (void)node;
+    if (count != 3)
+    {
+        epc_ast_builder_set_error(
+            ctx, "Count range call expects 3 children (min_node, max_node, expression), got %d", count
+        );
+        for (int i = 0; i < count; ++i)
+        {
+            gdl_ast_node_free(children[i], user_data);
+        }
+        return;
+    }
+
+    gdl_ast_node_t * min_val_node = (gdl_ast_node_t *)children[0];
+    gdl_ast_node_t * max_val_node = (gdl_ast_node_t *)children[1];
+    gdl_ast_node_t * expr_node = (gdl_ast_node_t *)children[2];
+
+    if (min_val_node == NULL || min_val_node->type != GDL_AST_NODE_TYPE_NUMBER_LITERAL)
+    {
+        epc_ast_builder_set_error(ctx, "Count call expects a number literal for the min value.");
+        for (int i = 0; i < count; ++i)
+        {
+            gdl_ast_node_free(children[i], user_data);
+        }
+        return;
+    }
+
+    if (max_val_node == NULL || max_val_node->type != GDL_AST_NODE_TYPE_NUMBER_LITERAL)
+    {
+        epc_ast_builder_set_error(ctx, "Count call expects a number literal for the max value.");
+        for (int i = 0; i < count; ++i)
+        {
+            gdl_ast_node_free(children[i], user_data);
+        }
+        return;
+    }
+
+    gdl_ast_node_t * result_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_COMBINATOR_COUNT_RANGE);
+    if (result_node != NULL)
+    {
+        result_node->data.count_range_call.min_node = min_val_node;
+        result_node->data.count_range_call.max_node = max_val_node;
+        result_node->data.count_range_call.expression = expr_node;
+        epc_ast_push(ctx, result_node);
+    }
+}
+
+static void
 handle_create_delimited_call(
     epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
@@ -1843,6 +1920,7 @@ gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_ONEOF_CALL, handle_create_oneof_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_NONEOF_CALL, handle_create_noneof_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_COUNT_CALL, handle_create_count_call);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_COUNT_RANGE_CALL, handle_create_count_range_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_BETWEEN_CALL, handle_create_between_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_DELIMITED_CALL, handle_create_delimited_call);
     epc_ast_hook_registry_set_action(

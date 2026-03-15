@@ -137,6 +137,8 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_many_raw = epc_string(l, "many", "many");
     epc_parser_t * p_count_raw = epc_string(l, "count", "count");
     epc_parser_t * p_count = epc_lexeme(l, "count", p_count_raw);
+    epc_parser_t * p_count_range_raw = epc_string(l, "count_range", "count_range");
+    epc_parser_t * p_count_range = epc_lexeme(l, "count_range", p_count_range_raw);
     epc_parser_t * p_between_raw = epc_string(l, "between", "between");
     epc_parser_t * p_between = epc_lexeme(l, "between", p_between_raw);
     epc_parser_t * p_delimited_raw = epc_string(l, "delimited", "delimited");
@@ -206,12 +208,13 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * combinator_parser = epc_or(
         l,
         "CombinatorKeyword",
-        22,
+        23,
         p_string_raw,
         p_char_range_raw,
         p_none_of_raw,
         p_many_raw,
         p_count_raw,
+        p_count_range_raw,
         p_between_raw,
         p_delimited_raw,
         p_delimited_flex_raw,
@@ -316,6 +319,14 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * count_call = epc_and(l, "CountCall", 4, p_count, gdl_lparen, count_args, gdl_rparen);
     epc_parser_set_ast_action(count_call, GDL_AST_ACTION_CREATE_COUNT_CALL);
 
+    // count_range_call: 'count_range' '(' number_literal ',' number_literal ',' definition_expression ')'
+    epc_parser_t * count_range_args = epc_and(
+        l, "CountRangeArgs", 5, gdl_number_literal, gdl_comma, gdl_number_literal, gdl_comma, gdl_definition_expression
+    );
+    epc_parser_t * count_range_call
+        = epc_and(l, "CountRangeCall", 4, p_count_range, gdl_lparen, count_range_args, gdl_rparen);
+    epc_parser_set_ast_action(count_range_call, GDL_AST_ACTION_CREATE_COUNT_RANGE_CALL);
+
     epc_parser_t * between_args = epc_and(
         l, "BetweenArgs", 5, gdl_expression_arg, gdl_comma, gdl_expression_arg, gdl_comma, gdl_expression_arg
     );
@@ -390,9 +401,10 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_combinator_call = epc_or(
         l,
         "CombinatorCall",
-        19,
+        20,
         none_of_call,
         count_call,
+        count_range_call,
         between_call,
         delimited_call,
         delimited_flex_call,

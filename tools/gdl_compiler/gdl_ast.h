@@ -23,6 +23,7 @@ typedef enum epc_ast_user_defined_action_gdl
     GDL_AST_ACTION_CREATE_ONEOF_CALL,
     GDL_AST_ACTION_CREATE_NONEOF_CALL,
     GDL_AST_ACTION_CREATE_COUNT_CALL,
+    GDL_AST_ACTION_CREATE_COUNT_RANGE_CALL,
     GDL_AST_ACTION_CREATE_BETWEEN_CALL,
     GDL_AST_ACTION_CREATE_DELIMITED_CALL,
     GDL_AST_ACTION_CREATE_DELIMITED_FLEX_CALL,
@@ -71,6 +72,7 @@ typedef enum
     GDL_AST_NODE_TYPE_COMBINATOR_ONEOF,
     GDL_AST_NODE_TYPE_COMBINATOR_NONEOF,
     GDL_AST_NODE_TYPE_COMBINATOR_COUNT,
+    GDL_AST_NODE_TYPE_COMBINATOR_COUNT_RANGE,
     GDL_AST_NODE_TYPE_COMBINATOR_BETWEEN,
     GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED,
     GDL_AST_NODE_TYPE_COMBINATOR_DELIMITED_FLEX,
@@ -182,9 +184,16 @@ typedef struct
 
 typedef struct
 {
-    gdl_ast_node_t * count_node; // GDL_AST_NODE_TYPE_NUMBER_LITERAL
+    gdl_ast_node_t * count_node;
     gdl_ast_node_t * expression;
 } gdl_ast_combinator_count_t;
+
+typedef struct
+{
+    gdl_ast_node_t * min_node;
+    gdl_ast_node_t * max_node;
+    gdl_ast_node_t * expression;
+} gdl_ast_combinator_count_range_t;
 
 typedef struct
 {
@@ -267,6 +276,7 @@ struct gdl_ast_node_t
 
         gdl_ast_combinator_none_or_one_of_t none_or_one_of_call;
         gdl_ast_combinator_count_t count_call;
+        gdl_ast_combinator_count_range_t count_range_call;
         gdl_ast_combinator_between_t between_call;
         gdl_ast_combinator_delimited_t delimited_call;
         gdl_ast_combinator_unary_t unary_combinator_call;
