@@ -16,6 +16,24 @@ typedef enum
     OUTPUT_FORMAT_HTML,
 } output_format_t;
 
+typedef enum
+{
+    QUANTIFIER_DESC_TYPE_STAR,
+    QUANTIFIER_DESC_TYPE_PLUS,
+    QUANTIFIER_DESC_TYPE_QUESTION,
+    QUANTIFIER_DESC_TYPE_EXACT,
+    QUANTIFIER_DESC_TYPE_MIN_OR_MORE,
+    QUANTIFIER_DESC_TYPE_BETWEEN
+} quantifier_desc_type_t;
+
+typedef struct
+{
+    quantifier_desc_type_t type;
+    bool is_lazy;
+    int min;
+    int max;
+} quantifier_desc_t;
+
 // Forward declarations
 static void describe_node_md(regex_node_t * const node, int const indent, char const * const full_regex);
 static void describe_node_html(regex_node_t * const node, int const indent, char const * const full_regex);
@@ -234,12 +252,34 @@ escaped_char_node_description(char const * text, bool is_class_escape)
     return desc;
 }
 
+static char const *
+get_simple_node_name(regex_node_t * const node)
+{
+    if (node == NULL)
+    {
+        return "the following";
+    }
+
+    switch (node->type)
+    {
+    case REGEX_NODE_PRIMARY_LITERAL:
+        return node->data.text;
+    case REGEX_NODE_PRIMARY_DOT:
+        return "any character";
+    default:
+        return "the following";
+    }
+}
+
 static void
-describe_escaped_char_node_md(regex_node_t * const node, char const * const full_regex, bool is_class_escape)
+describe_escaped_char_node_md(
+    regex_node_t * const node, int const indent, char const * const full_regex, bool is_class_escape
+)
 {
     char const * text = node->data.text;
     char const * desc = escaped_char_node_description(text, is_class_escape);
 
+    print_indent_md(indent);
     if (desc != NULL)
     {
         printf("- %s (`%s`)\n", desc, text);
@@ -282,6 +322,138 @@ describe_escaped_char_node_html(regex_node_t * const node, char const * const fu
     print_highlight_html(full_regex, node->content_offset, node->len);
 }
 
+static quantifier_desc_t
+get_quantifier_desc(regex_node_t * const quantifier_node)
+{
+    quantifier_desc_t desc = {0};
+    if (quantifier_node == NULL || quantifier_node->type != REGEX_NODE_QUANTIFIER)
+    {
+        return desc;
+    }
+
+    desc.is_lazy = quantifier_node->data.quantifier.lazy;
+    switch (quantifier_node->data.quantifier.type)
+    {
+    case QUANTIFIER_STAR:
+        desc.type = QUANTIFIER_DESC_TYPE_STAR;
+        break;
+    case QUANTIFIER_PLUS:
+        desc.type = QUANTIFIER_DESC_TYPE_PLUS;
+        break;
+    case QUANTIFIER_QUESTION:
+        desc.type = QUANTIFIER_DESC_TYPE_QUESTION;
+        break;
+    case QUANTIFIER_RANGE:
+        if (quantifier_node->data.quantifier.range.max == -1)
+        {
+            desc.type = QUANTIFIER_DESC_TYPE_MIN_OR_MORE;
+            desc.min = quantifier_node->data.quantifier.range.min;
+        }
+        else if (quantifier_node->data.quantifier.range.min == quantifier_node->data.quantifier.range.max)
+        {
+            desc.type = QUANTIFIER_DESC_TYPE_EXACT;
+            desc.min = quantifier_node->data.quantifier.range.min;
+        }
+        else
+        {
+            desc.type = QUANTIFIER_DESC_TYPE_BETWEEN;
+            desc.min = quantifier_node->data.quantifier.range.min;
+            desc.max = quantifier_node->data.quantifier.range.max;
+        }
+        break;
+    }
+    return desc;
+}
+
+static void
+describe_repetition_md(regex_node_t * const node, int const indent, char const * const full_regex)
+{
+    regex_node_t * primary = node->data.repetition.primary;
+    regex_node_t * quantifier_node = node->data.repetition.quantifier;
+    quantifier_desc_t desc = get_quantifier_desc(quantifier_node);
+    char const * primary_name = get_simple_node_name(primary);
+
+    print_indent_md(indent);
+    printf("- **");
+
+    switch (desc.type)
+    {
+    case QUANTIFIER_DESC_TYPE_STAR:
+        printf("Zero or more of");
+        break;
+    case QUANTIFIER_DESC_TYPE_PLUS:
+        printf("One or more of");
+        break;
+    case QUANTIFIER_DESC_TYPE_QUESTION:
+        printf("Zero or one of");
+        break;
+    case QUANTIFIER_DESC_TYPE_EXACT:
+        printf("Exactly %d of", desc.min);
+        break;
+    case QUANTIFIER_DESC_TYPE_MIN_OR_MORE:
+        printf("%d or more of", desc.min);
+        break;
+    case QUANTIFIER_DESC_TYPE_BETWEEN:
+        printf("Between %d and %d of", desc.min, desc.max);
+        break;
+    }
+
+    if (strcmp(primary_name, "the following") == 0)
+    {
+        printf(" %s**:\n", primary_name);
+        print_highlight_md(full_regex, node->content_offset, node->len);
+        describe_node_md(primary, indent + 1, full_regex);
+    }
+    else
+    {
+        printf(" %s**\n", primary_name);
+        print_highlight_md(full_regex, node->content_offset, node->len);
+    }
+}
+
+static void
+describe_repetition_html(regex_node_t * const node, int const indent, char const * const full_regex)
+{
+    regex_node_t * primary = node->data.repetition.primary;
+    regex_node_t * quantifier_node = node->data.repetition.quantifier;
+    quantifier_desc_t desc = get_quantifier_desc(quantifier_node);
+    char const * primary_name = get_simple_node_name(primary);
+
+    printf("<strong>");
+
+    switch (desc.type)
+    {
+    case QUANTIFIER_DESC_TYPE_STAR:
+        printf("Zero or more of");
+        break;
+    case QUANTIFIER_DESC_TYPE_PLUS:
+        printf("One or more of");
+        break;
+    case QUANTIFIER_DESC_TYPE_QUESTION:
+        printf("Zero or one of");
+        break;
+    case QUANTIFIER_DESC_TYPE_EXACT:
+        printf("Exactly %d of", desc.min);
+        break;
+    case QUANTIFIER_DESC_TYPE_MIN_OR_MORE:
+        printf("%d or more of", desc.min);
+        break;
+    case QUANTIFIER_DESC_TYPE_BETWEEN:
+        printf("Between %d and %d of", desc.min, desc.max);
+        break;
+    }
+
+    printf(" %s", primary_name);
+    printf("</strong>:");
+
+    print_highlight_html(full_regex, node->content_offset, node->len);
+
+    if (strcmp(primary_name, "the following") == 0)
+    {
+        describe_node_html(primary, indent + 1, full_regex);
+    }
+}
+
 static void
 describe_node_md_literal(regex_node_t * const node, int const indent, char const * const full_regex)
 {
@@ -290,11 +462,10 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         return;
     }
 
-    print_indent_md(indent);
-
     switch (node->type)
     {
     case REGEX_NODE_ALTERNATION:
+        print_indent_md(indent);
         printf("- **Alternation** (matches one of the following):\n");
         print_highlight_md(full_regex, node->content_offset, node->len);
         for (size_t i = 0; i < node->data.list.count; i++)
@@ -334,12 +505,10 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         break;
     }
     case REGEX_NODE_REPETITION:
-        printf("- **Repetition**:\n");
-        print_highlight_md(full_regex, node->content_offset, node->len);
-        describe_node_md(node->data.repetition.primary, indent + 1, full_regex);
-        describe_node_md(node->data.repetition.quantifier, indent + 1, full_regex);
+        describe_repetition_md(node, indent, full_regex);
         break;
     case REGEX_NODE_QUANTIFIER:
+        print_indent_md(indent);
         switch (node->data.quantifier.type)
         {
         case QUANTIFIER_STAR:
@@ -386,19 +555,22 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_PRIMARY_LITERAL:
+        print_indent_md(indent);
         printf("- Literal character: `%s`\n", node->data.text);
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_PRIMARY_ESCAPED_CHAR:
-        describe_escaped_char_node_md(node, full_regex, false);
+        describe_escaped_char_node_md(node, indent, full_regex, false);
         break;
     case REGEX_NODE_PRIMARY_DOT:
+        print_indent_md(indent);
         printf("- Any character (dot `.`)\n");
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_PRIMARY_ANCHOR:
     case REGEX_NODE_WORD_BOUNDARY:
     case REGEX_NODE_NON_WORD_BOUNDARY:
+        print_indent_md(indent);
         if (node->type == REGEX_NODE_WORD_BOUNDARY)
         {
             printf("- Word boundary (`\\b`)\n");
@@ -418,6 +590,7 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_PRIMARY_CHAR_CLASS:
+        print_indent_md(indent);
         printf("- **Character Class** (%s any of):\n", node->data.char_class.negated ? "Does not match" : "Matches");
         print_highlight_md(full_regex, node->content_offset, node->len);
         for (size_t i = 0; i < node->data.char_class.body.count; i++)
@@ -426,32 +599,38 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         }
         break;
     case REGEX_NODE_CHAR_RANGE:
+        print_indent_md(indent);
         printf("- Range: `%s` to `%s`\n", node->data.char_range.start->data.text, node->data.char_range.end->data.text);
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_CC_CHAR:
+        print_indent_md(indent);
         printf("- Character: `%s`\n", node->data.text);
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_CLASS_ESCAPE:
-        describe_escaped_char_node_md(node, full_regex, true);
+        describe_escaped_char_node_md(node, indent, full_regex, true);
         break;
     case REGEX_NODE_PRIMARY_GROUP:
+        print_indent_md(indent);
         printf("- **Grouped Expression**:\n");
         print_highlight_md(full_regex, node->content_offset, node->len);
         describe_node_md(node->data.group_content, indent + 1, full_regex);
         break;
     case REGEX_NODE_LOOKAHEAD:
+        print_indent_md(indent);
         printf("- **Positive Lookahead** (matches if the following is present, but doesn't consume it):\n");
         print_highlight_md(full_regex, node->content_offset, node->len);
         describe_node_md(node->data.group_content, indent + 1, full_regex);
         break;
     case REGEX_NODE_NEGATIVE_LOOKAHEAD:
+        print_indent_md(indent);
         printf("- **Negative Lookahead** (matches if the following is NOT present, but doesn't consume it):\n");
         print_highlight_md(full_regex, node->content_offset, node->len);
         describe_node_md(node->data.group_content, indent + 1, full_regex);
         break;
     case REGEX_NODE_NON_CAPTURING_GROUP:
+        print_indent_md(indent);
         printf("- **Non-Capturing Group**:\n");
         print_highlight_md(full_regex, node->content_offset, node->len);
         describe_node_md(node->data.group_content, indent + 1, full_regex);
@@ -528,10 +707,7 @@ describe_node_html_literal(regex_node_t * const node, int const indent, char con
         break;
     }
     case REGEX_NODE_REPETITION:
-        printf("<strong>Repetition</strong>:\n");
-        print_highlight_html(full_regex, node->content_offset, node->len);
-        describe_node_html(node->data.repetition.primary, indent + 1, full_regex);
-        describe_node_html(node->data.repetition.quantifier, indent + 1, full_regex);
+        describe_repetition_html(node, indent, full_regex);
         break;
     case REGEX_NODE_QUANTIFIER:
         switch (node->data.quantifier.type)

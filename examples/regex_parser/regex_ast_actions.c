@@ -753,6 +753,27 @@ handle_range_quantifier_action(
             regex_node_free(max_node, user_data);
         }
     }
+    else
+    {
+        /* Check if there was a comma in the source text */
+        char const * content = epc_cpt_node_get_content(cpt_node);
+        size_t const len = epc_cpt_node_get_len(cpt_node);
+        bool has_comma = false;
+
+        for (size_t i = 0; i < len; i++)
+        {
+            if (content[i] == ',')
+            {
+                has_comma = true;
+                break;
+            }
+        }
+
+        if (!has_comma)
+        {
+            node->data.quantifier.range.max = node->data.quantifier.range.min;
+        }
+    }
 
     epc_ast_push(ctx, node);
 }
