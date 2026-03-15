@@ -102,7 +102,7 @@ TEST(SatisfyTest, PSatisfyWithComplexToken)
         = epc_satisfy(list, "three_digits", p_three_digits, "expected 3 digits", is_length_3, NULL);
 
     // Success case
-    result = parse(p_satisfy, "12345");
+    result = parse(p_satisfy, "123ab");
     CHECK_FALSE(result.is_error);
     STRNCMP_EQUAL("123", result.data.success->content, 3);
     LONGS_EQUAL(3, result.data.success->len);

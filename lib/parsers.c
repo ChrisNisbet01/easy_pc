@@ -13,6 +13,7 @@
 #include <string.h>
 
 #define FOUND_BUFFER_SIZE 21
+#define ERROR_MSG_BUFFER_SIZE 64
 
 static char const memory_allocation_error[] = "Memory allocation error";
 static char const infinite_recursion_detected_msg[] = "Infinite recursion detected";
@@ -2005,7 +2006,7 @@ pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
 {
     char const * chars_to_avoid = self->data.string;
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-    char expected_str[64];
+    char expected_str[ERROR_MSG_BUFFER_SIZE];
 
     snprintf(expected_str, sizeof(expected_str), "character not in set '%s'", chars_to_avoid);
 
@@ -2158,38 +2159,27 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
 {
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
 
-    if (input_result.is_eof)
-    {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "count", "EOF");
-    }
-
     count_data_t * count_data = &self->data.count;
     epc_parser_t * parser_to_repeat = count_data->parser;
-    int num_to_match = count_data->count;
+    size_t min_matches = count_data->count_min;
+    size_t max_matches = count_data->count_max;
 
     if (parser_to_repeat == NULL)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "p_count received NULL child parser", epc_parser_get_name(self), "NULL"
+            ctx, input_offset, "received NULL child parser", epc_parser_get_name(self), "NULL"
         );
+    }
+    /* max must be >= min. */
+    if (max_matches < min_matches)
+    {
+        char found[FOUND_BUFFER_SIZE];
+
+        snprintf(found, sizeof(found), "min: %zu, max: %zu", min_matches, max_matches);
+        return epc_parser_error_result(ctx, input_offset, "Max should be >= min", epc_parser_get_name(self), found);
     }
 
     char const * input = input_result.next_input;
-
-    if (num_to_match <= 0) // Matching 0 times is always a success (empty match)
-    {
-        epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
-        if (node == NULL)
-        {
-            return epc_parser_error_result(
-                ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
-            );
-        }
-        node->content = input;
-        node->len = 0;
-
-        return epc_parser_success_result(node);
-    }
 
     size_t current_input_offset = input_offset;
     child_list_t children = {0};
@@ -2201,23 +2191,32 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
         );
     }
 
-    for (int i = 0; i < num_to_match; ++i)
+    size_t match_count;
+    for (match_count = 0; match_count < max_matches; match_count++)
     {
         epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input_offset);
+
         if (child_result.is_error)
         {
-            // Child parser failed to match required number of times
-            char msg[64];
+            if (match_count < min_matches)
+            {
+                child_list_release(&children);
 
-            snprintf(msg, sizeof(msg), "Count failed to match child at count %u", i + 1);
-            epc_parse_result_t error_result = epc_parser_error_result(
-                ctx, current_input_offset, msg, child_result.data.error->expected, child_result.data.error->found
-            );
+                // Child parser failed to match required number of times
+                char msg[ERROR_MSG_BUFFER_SIZE];
 
+                snprintf(msg, sizeof(msg), "Failed to match child at count %zu", match_count + 1);
+                epc_parse_result_t error_result = epc_parser_error_result(
+                    ctx, current_input_offset, msg, child_result.data.error->expected, child_result.data.error->found
+                );
+                epc_parser_result_cleanup(&child_result);
+
+                return error_result;
+            }
             epc_parser_result_cleanup(&child_result);
-
-            return error_result;
+            break;
         }
+
         if (!child_list_append(&children, child_result.data.success))
         {
             child_list_release(&children);
@@ -2226,6 +2225,29 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
             );
         }
         current_input_offset += child_result.data.success->len;
+    }
+
+    if (min_matches > 0 && max_matches > 0 && match_count == max_matches)
+    {
+        /* Matched exactly max times. The next parse needs to fail for this to be called a success. */
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input_offset);
+
+        if (!child_result.is_error)
+        {
+            child_list_release(&children);
+
+            // Child parser matched more than the maximum number of allowed times.
+            char msg[ERROR_MSG_BUFFER_SIZE];
+
+            snprintf(msg, sizeof(msg), "Child matched unexpectedly at count %zu", max_matches + 1);
+            epc_parse_result_t error_result = epc_parser_error_result(
+                ctx, current_input_offset, msg, child_result.data.error->expected, child_result.data.error->found
+            );
+            epc_parser_result_cleanup(&child_result);
+
+            return error_result;
+        }
+        epc_parser_result_cleanup(&child_result);
     }
 
     epc_cpt_node_t * parent_node = epc_node_alloc(ctx, self, self->tag);
@@ -2243,7 +2265,7 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
 }
 
 static epc_parser_t *
-_epc_count(char const * name, int num, epc_parser_t * p_to_repeat)
+_epc_count(char const * name, size_t num, epc_parser_t * p_to_repeat)
 {
     epc_parser_t * p = epc_parser_allocate(name, "count", pcount_parse_fn);
     if (p == NULL)
@@ -2251,15 +2273,37 @@ _epc_count(char const * name, int num, epc_parser_t * p_to_repeat)
         return NULL;
     }
     p->data.type = PARSER_DATA_TYPE_COUNT;
-    p->data.count.count = num;
+    p->data.count.count_min = num;
+    p->data.count.count_max = num;
     p->data.count.parser = p_to_repeat;
     return p;
 }
 
 EASY_PC_API epc_parser_t *
-epc_count(epc_parser_list * list, char const * name, int num, epc_parser_t * p)
+epc_count(epc_parser_list * list, char const * name, size_t num, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_count(name, num, p));
+}
+
+static epc_parser_t *
+_epc_count_range(char const * name, size_t min, size_t max, epc_parser_t * p_to_repeat)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "count_range", pcount_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+    p->data.type = PARSER_DATA_TYPE_COUNT;
+    p->data.count.count_min = min;
+    p->data.count.count_max = max;
+    p->data.count.parser = p_to_repeat;
+    return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_count_range(epc_parser_list * list, char const * name, size_t min, size_t max, epc_parser_t * p)
+{
+    return epc_parser_list_add(list, _epc_count_range(name, min, max, p));
 }
 
 static epc_parse_result_t
@@ -2948,7 +2992,7 @@ pone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
 {
     char const * chars_to_match = self->data.string;
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-    char expected_str[64];
+    char expected_str[ERROR_MSG_BUFFER_SIZE];
 
     snprintf(expected_str, sizeof(expected_str), "character in set '%s'", chars_to_match);
 

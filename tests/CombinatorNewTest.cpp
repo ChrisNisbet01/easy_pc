@@ -118,7 +118,7 @@ TEST(CombinatorParsersNew, Count_FailsIfLessThanExpected)
     epc_parser_t * p_a = epc_char(list, NULL, 'a');
     epc_parser_t * p_count_3_a = epc_count(list, NULL, 3, p_a);
     session = parse(p_count_3_a, "aa");
-    check_failure("Count failed to match child at count 3"); // from p_char
+    check_failure("Failed to match child at count 3");
 }
 
 TEST(CombinatorParsersNew, Count_FailsIfMoreThanExpected)
@@ -126,8 +126,7 @@ TEST(CombinatorParsersNew, Count_FailsIfMoreThanExpected)
     epc_parser_t * p_a = epc_char(list, NULL, 'a');
     epc_parser_t * p_count_3_a = epc_count(list, NULL, 3, p_a);
     session = parse(p_count_3_a, "aaaa"); // Will match 3 'a's, but next char is 'a'
-    check_success("count", "aaa", 3, 3);
-    // The remaining 'a' is not consumed, but the p_count itself is successful for the first 3
+    check_failure("Child matched unexpectedly at count 4");
 }
 
 TEST(CombinatorParsersNew, Count_ZeroCountSucceedsWithZeroLength)
@@ -142,7 +141,71 @@ TEST(CombinatorParsersNew, Count_FailsNullChildParser)
 {
     epc_parser_t * p_count_3_null = epc_count(list, NULL, 3, NULL);
     session = parse(p_count_3_null, "abc");
-    check_failure("p_count received NULL child parser");
+    check_failure("received NULL child parser");
+}
+
+// --- p_count_range tests ---
+TEST(CombinatorParsersNew, CountRange_MatchesExactMinNumber)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_range(list, NULL, 3, 4, p_a);
+    session = parse(p_count_3_a, "aaa");
+    check_success("count_range", "aaa", 3, 3);
+}
+
+TEST(CombinatorParsersNew, CountRange_MatchesExactMaxNumber)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_range(list, NULL, 2, 3, p_a);
+    session = parse(p_count_3_a, "aaa");
+    check_success("count_range", "aaa", 3, 3);
+}
+
+TEST(CombinatorParsersNew, CountRange_MatchesBetweenMinMaxNumber)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_range(list, NULL, 2, 4, p_a);
+    session = parse(p_count_3_a, "aaa");
+    check_success("count_range", "aaa", 3, 3);
+}
+
+TEST(CombinatorParsersNew, CountRange_FailsIfLessThanMinExpected)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_range(list, NULL, 3, 4, p_a);
+    session = parse(p_count_3_a, "aa");
+    check_failure("Failed to match child at count 3");
+}
+
+TEST(CombinatorParsersNew, CountRange_FailsIfMoreThanMaxExpected)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_count_3_a = epc_count_range(list, NULL, 2, 3, p_a);
+    session = parse(p_count_3_a, "aaaa"); // Will match 3 'a's, but next char is 'a'
+    check_failure("Child matched unexpectedly at count 4");
+}
+
+TEST(CombinatorParsersNew, CountRange_ZeroCountSucceedsWithZeroLengthOnOneMatch)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_count_0_a = epc_count_range(list, NULL, 0, 0, p_a);
+    session = parse(p_count_0_a, "abc");
+    check_success("count_range", "", 0, 0);
+}
+
+TEST(CombinatorParsersNew, CountRange_ZeroCountSucceedsWithZeroLengthOnNoMatch)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_count_0_a = epc_count_range(list, NULL, 0, 2, p_a);
+    session = parse(p_count_0_a, "bcd");
+    check_success("count_range", "", 0, 0);
+}
+
+TEST(CombinatorParsersNew, CountRange_FailsNullChildParser)
+{
+    epc_parser_t * p_count_3_null = epc_count_range(list, NULL, 3, 4, NULL);
+    session = parse(p_count_3_null, "abc");
+    check_failure("received NULL child parser");
 }
 
 // --- p_between tests ---

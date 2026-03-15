@@ -30,7 +30,8 @@ typedef struct
 
 typedef struct
 {
-    int count;
+    size_t count_min;
+    size_t count_max;
     epc_parser_t * parser;
 } count_data_t;
 

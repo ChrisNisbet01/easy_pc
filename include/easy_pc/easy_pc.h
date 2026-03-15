@@ -413,7 +413,20 @@ EASY_PC_API epc_parser_t * epc_many(epc_parser_list * list, char const * name, e
  * @param p The child parser to repeat.
  * @return A new `parser_t` instance, or NULL on error.
  */
-EASY_PC_API epc_parser_t * epc_count(epc_parser_list * list, char const * name, int num, epc_parser_t * p);
+EASY_PC_API epc_parser_t * epc_count(epc_parser_list * list, char const * name, size_t num, epc_parser_t * p);
+
+/**
+ * @brief Creates a parser that matches the given parser between `min` and `max` times and adds it to the list.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param min The minimum number of times the child parser must match.
+ *            If `num` is 0, it always succeeds, consuming no input.
+ * @param max The maximum number of times the child parser must match.
+ * @param p The child parser to repeat.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t *
+epc_count_range(epc_parser_list * list, char const * name, size_t min, size_t max, epc_parser_t * p);
 
 /**
  * @brief Creates a parser that matches `open`, then `p` (wrapped content), then `close` and adds it to the list.
