@@ -199,7 +199,7 @@ epc_node_id(epc_cpt_node_t const * node)
     {
         return "NULL";
     }
-    if (node->name)
+    if (node->name != NULL)
     {
         return node->name;
     }

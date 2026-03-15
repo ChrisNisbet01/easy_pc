@@ -1,0 +1,57 @@
+// Regular Expression Grammar for easy_pc
+// This grammar supports a subset of standard regex features.
+
+AlternationList = delimited(Concatenation, '|');
+Alternation = AlternationList @HANDLE_ALTERNATION;
+
+Concatenation = Repetition+ @HANDLE_CONCATENATION;
+
+Repetition = Primary Quantifier? @HANDLE_REPETITION;
+
+Star = '*' @HANDLE_STAR;
+Plus = '+' @HANDLE_PLUS;
+Question = '?' @HANDLE_QUESTION;
+RangeQuantifierEnd = ',' Number? | succeed;
+Number = digit+ @HANDLE_NUMBER;
+RangeQuantifier = '{' Number RangeQuantifierEnd '}' @HANDLE_RANGE_QUANTIFIER;
+
+LazyMarker = '?' @HANDLE_LAZY_MARKER;
+BaseQuantifier = Star | Plus | Question | RangeQuantifier;
+Quantifier = BaseQuantifier LazyMarker?;
+
+PositiveLookahead = "?=" Alternation @HANDLE_POSITIVE_LOOKAHEAD;
+NegativeLookahead = "?!" Alternation @HANDLE_NEGATIVE_LOOKAHEAD;
+NonCapturingGroup = "?:" Alternation @HANDLE_NON_CAPTURING_GROUP;
+GroupContent = PositiveLookahead | NegativeLookahead | NonCapturingGroup | Alternation;
+Group = '(' GroupContent ')' @HANDLE_GROUP;
+
+Negation = '^' @HANDLE_NEGATION;
+CcCharLiteral = noneof("\\]-") @HANDLE_CC_CHAR;
+CcCharEscaped = '\\' oneof("\\]-") @HANDLE_CC_CHAR_ESCAPED;
+CcChar = CcCharLiteral | CcCharEscaped;
+CharRange = CcChar '-' CcChar @HANDLE_CHAR_RANGE;
+ClassEscape = '\\' oneof("\\]-^dswDSW") @HANDLE_CC_ESCAPE;
+TrailingDash = '-' @HANDLE_CC_CHAR;
+CharClassBody = (CharRange | ClassEscape | CcChar)+ TrailingDash?;
+CharClass = '[' Negation? CharClassBody ']' @HANDLE_CHAR_CLASS;
+
+AnchorStart = '^' @HANDLE_ANCHOR_START;
+AnchorEnd = '$' @HANDLE_ANCHOR_END;
+WordBoundary = "\\b" @HANDLE_WORD_BOUNDARY;
+NonWordBoundary = "\\B" @HANDLE_NON_WORD_BOUNDARY;
+Anchor = AnchorStart | AnchorEnd | WordBoundary | NonWordBoundary;
+
+Dot = '.' @HANDLE_DOT;
+
+EscapedChar = '\\' oneof("\\|()*+?{[.^$dswDSW") @HANDLE_ESCAPED_CHAR;
+
+Literal = noneof("\\|()*+?{[.^$") @HANDLE_LITERAL;
+
+Primary = Group
+        | CharClass
+        | Anchor
+        | Dot
+        | EscapedChar
+        | Literal;
+
+Regex = Alternation eoi @HANDLE_REGEX;
