@@ -184,6 +184,105 @@ match_identifier_pattern_prefix(regex_node_t * const node)
 }
 
 static void
+print_highlight_html(char const * const full_regex, size_t content_offset, size_t const len)
+{
+    printf("<pre><code>");
+    for (size_t i = 0; i < strlen(full_regex); ++i)
+    {
+        if (i >= content_offset && i < (content_offset + len))
+        {
+            printf("<span class=\"highlight\">%c</span>", full_regex[i]);
+        }
+        else
+        {
+            printf("%c", full_regex[i]);
+        }
+    }
+    printf("</code></pre>\n");
+}
+
+static char const *
+escaped_char_node_description(char const * text, bool is_class_escape)
+{
+    char const * desc = NULL;
+
+    if (strcmp(text, "\\s") == 0)
+    {
+        desc = "Whitespace";
+    }
+    else if (strcmp(text, "\\d") == 0)
+    {
+        desc = "Digit";
+    }
+    else if (strcmp(text, "\\n") == 0)
+    {
+        desc = "Newline";
+    }
+    else if (strcmp(text, "\\w") == 0)
+    {
+        desc = "Word";
+    }
+    else if (!is_class_escape && strcmp(text, "\\(") == 0)
+    {
+        desc = "Open parenthesis";
+    }
+    else if (!is_class_escape && strcmp(text, "\\)") == 0)
+    {
+        desc = "Close parenthesis";
+    }
+
+    return desc;
+}
+
+static void
+describe_escaped_char_node_md(regex_node_t * const node, char const * const full_regex, bool is_class_escape)
+{
+    char const * text = node->data.text;
+    char const * desc = escaped_char_node_description(text, is_class_escape);
+
+    if (desc != NULL)
+    {
+        printf("- %s (`%s`)\n", desc, text);
+    }
+    else
+    {
+        if (is_class_escape)
+        {
+            printf("- Escaped class: `%s`\n", text);
+        }
+        else
+        {
+            printf("- Escaped character or class: `%s`\n", text);
+        }
+    }
+    print_highlight_md(full_regex, node->content_offset, node->len);
+}
+
+static void
+describe_escaped_char_node_html(regex_node_t * const node, char const * const full_regex, bool is_class_escape)
+{
+    char const * text = node->data.text;
+    char const * desc = escaped_char_node_description(text, is_class_escape);
+
+    if (desc != NULL)
+    {
+        printf("%s (<code>%s</code>)\n", desc, text);
+    }
+    else
+    {
+        if (is_class_escape)
+        {
+            printf("Escaped class: <code>%s</code>\n", text);
+        }
+        else
+        {
+            printf("Escaped character or class: <code>%s</code>\n", text);
+        }
+    }
+    print_highlight_html(full_regex, node->content_offset, node->len);
+}
+
+static void
 describe_node_md_literal(regex_node_t * const node, int const indent, char const * const full_regex)
 {
     if (node == NULL)
@@ -291,8 +390,7 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_PRIMARY_ESCAPED_CHAR:
-        printf("- Escaped character or class: `%s`\n", node->data.text);
-        print_highlight_md(full_regex, node->content_offset, node->len);
+        describe_escaped_char_node_md(node, full_regex, false);
         break;
     case REGEX_NODE_PRIMARY_DOT:
         printf("- Any character (dot `.`)\n");
@@ -336,8 +434,7 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         print_highlight_md(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_CLASS_ESCAPE:
-        printf("- Escaped class: `%s`\n", node->data.text);
-        print_highlight_md(full_regex, node->content_offset, node->len);
+        describe_escaped_char_node_md(node, full_regex, true);
         break;
     case REGEX_NODE_PRIMARY_GROUP:
         printf("- **Grouped Expression**:\n");
@@ -373,24 +470,6 @@ describe_node_md(regex_node_t * const node, int const indent, char const * const
         return;
 
     describe_node_md_literal(node, indent, full_regex);
-}
-
-static void
-print_highlight_html(char const * const full_regex, size_t content_offset, size_t const len)
-{
-    printf("<pre><code>");
-    for (size_t i = 0; i < strlen(full_regex); ++i)
-    {
-        if (i >= content_offset && i < (content_offset + len))
-        {
-            printf("<span class=\"highlight\">%c</span>", full_regex[i]);
-        }
-        else
-        {
-            printf("%c", full_regex[i]);
-        }
-    }
-    printf("</code></pre>\n");
 }
 
 static void
@@ -505,8 +584,7 @@ describe_node_html_literal(regex_node_t * const node, int const indent, char con
         print_highlight_html(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_PRIMARY_ESCAPED_CHAR:
-        printf("Escaped character or class: <code>%s</code>\n", node->data.text);
-        print_highlight_html(full_regex, node->content_offset, node->len);
+        describe_escaped_char_node_html(node, full_regex, false);
         break;
     case REGEX_NODE_PRIMARY_DOT:
         printf("Any character (dot <code>.</code>)\n");
@@ -557,8 +635,7 @@ describe_node_html_literal(regex_node_t * const node, int const indent, char con
         print_highlight_html(full_regex, node->content_offset, node->len);
         break;
     case REGEX_NODE_CLASS_ESCAPE:
-        printf("Escaped class: <code>%s</code>\n", node->data.text);
-        print_highlight_html(full_regex, node->content_offset, node->len);
+        describe_escaped_char_node_html(node, full_regex, true);
         break;
     case REGEX_NODE_PRIMARY_GROUP:
         printf("<strong>Grouped Expression</strong>:\n");
