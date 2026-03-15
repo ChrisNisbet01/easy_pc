@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define UNUSED_PARAM(x) (void)(x)
+
 typedef enum
 {
     OUTPUT_FORMAT_MARKDOWN,
@@ -17,6 +19,7 @@ typedef enum
 // Forward declarations
 static void describe_node_md(regex_node_t * const node, int const indent, char const * const full_regex);
 static void describe_node_html(regex_node_t * const node, int const indent, char const * const full_regex);
+static void describe_node_html_literal(regex_node_t * const node, int const indent, char const * const full_regex);
 
 static void
 print_indent_md(int const indent)
@@ -47,28 +50,137 @@ print_highlight_md(char const * const full_regex, size_t content_offset, size_t 
 }
 
 static bool
-try_match_identifier_md(regex_node_t * const node, int const indent, char const * const full_regex)
+is_identifier_start_char_class(regex_node_t * const node)
 {
-    if (node->type == REGEX_NODE_CONCATENATION && node->data.list.count == 2)
+    if (node->type != REGEX_NODE_PRIMARY_CHAR_CLASS || node->data.char_class.negated)
     {
-        regex_node_t * first = node->data.list.nodes[0];
-        regex_node_t * second = node->data.list.nodes[1];
+        return false;
+    }
 
-        if (first->type == REGEX_NODE_PRIMARY_CHAR_CLASS && second->type == REGEX_NODE_REPETITION)
+    bool has_valid_part = false;
+    for (size_t i = 0; i < node->data.char_class.body.count; i++)
+    {
+        regex_node_t * item = node->data.char_class.body.nodes[i];
+        if (item->type == REGEX_NODE_CHAR_RANGE)
         {
-            if (second->data.repetition.quantifier->type == REGEX_NODE_QUANTIFIER
-                && second->data.repetition.quantifier->data.quantifier.type == QUANTIFIER_STAR
-                && second->data.repetition.primary->type == REGEX_NODE_PRIMARY_CHAR_CLASS)
+            if ((strcmp(item->data.char_range.start->data.text, "a") == 0
+                 && strcmp(item->data.char_range.end->data.text, "z") == 0))
             {
-
-                print_indent_md(indent);
-                printf("- **Pattern**: Matches a standard programming language identifier.\n");
-                print_highlight_md(full_regex, node->content_offset, node->len);
-                return true;
+                has_valid_part = true;
+            }
+            else if ((strcmp(item->data.char_range.start->data.text, "A") == 0
+                      && strcmp(item->data.char_range.end->data.text, "Z") == 0))
+            {
+                has_valid_part = true;
+            }
+            else
+            {
+                return false; // contains something else
             }
         }
+        else if (item->type == REGEX_NODE_CC_CHAR)
+        {
+            if (strcmp(item->data.text, "_") == 0)
+            {
+                has_valid_part = true;
+            }
+            else
+            {
+                return false; // contains something else
+            }
+        }
+        else
+        {
+            return false; // contains something else
+        }
     }
-    return false;
+
+    return has_valid_part;
+}
+
+static bool
+is_identifier_continue_char_class(regex_node_t * const node)
+{
+    if (node->type != REGEX_NODE_PRIMARY_CHAR_CLASS || node->data.char_class.negated)
+    {
+        return false;
+    }
+
+    if (node->data.char_class.body.count == 1)
+    {
+        regex_node_t * item = node->data.char_class.body.nodes[0];
+        if (item->type == REGEX_NODE_CLASS_ESCAPE && strcmp(item->data.text, "\\w") == 0)
+        {
+            return true;
+        }
+    }
+
+    bool has_valid_part = false;
+    for (size_t i = 0; i < node->data.char_class.body.count; i++)
+    {
+        regex_node_t * item = node->data.char_class.body.nodes[i];
+        if (item->type == REGEX_NODE_CHAR_RANGE)
+        {
+            if (strcmp(item->data.char_range.start->data.text, "a") == 0
+                && strcmp(item->data.char_range.end->data.text, "z") == 0)
+            {
+                has_valid_part = true;
+            }
+            else if (strcmp(item->data.char_range.start->data.text, "A") == 0
+                     && strcmp(item->data.char_range.end->data.text, "Z") == 0)
+            {
+                has_valid_part = true;
+            }
+            else if (strcmp(item->data.char_range.start->data.text, "0") == 0
+                     && strcmp(item->data.char_range.end->data.text, "9") == 0)
+            {
+                has_valid_part = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else if (item->type == REGEX_NODE_CC_CHAR)
+        {
+            if (strcmp(item->data.text, "_") == 0)
+            {
+                has_valid_part = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return has_valid_part;
+}
+
+static int
+match_identifier_pattern_prefix(regex_node_t * const node)
+{
+    if (node->type != REGEX_NODE_CONCATENATION || node->data.list.count < 2)
+    {
+        return 0;
+    }
+
+    regex_node_t * first = node->data.list.nodes[0];
+    regex_node_t * second = node->data.list.nodes[1];
+
+    if (is_identifier_start_char_class(first) && second->type == REGEX_NODE_REPETITION
+        && second->data.repetition.quantifier->type == REGEX_NODE_QUANTIFIER
+        && second->data.repetition.quantifier->data.quantifier.type == QUANTIFIER_STAR
+        && is_identifier_continue_char_class(second->data.repetition.primary))
+    {
+        return 2;
+    }
+
+    return 0;
 }
 
 static void
@@ -92,13 +204,36 @@ describe_node_md_literal(regex_node_t * const node, int const indent, char const
         }
         break;
     case REGEX_NODE_CONCATENATION:
-        printf("- **Sequence** (matches the following in order):\n");
-        print_highlight_md(full_regex, node->content_offset, node->len);
-        for (size_t i = 0; i < node->data.list.count; i++)
+    {
+        int consumed_nodes = match_identifier_pattern_prefix(node);
+        if (consumed_nodes > 0)
+        {
+            print_indent_md(indent);
+            printf("- **Pattern**: Matches a standard programming language identifier.\n");
+            regex_node_t * const first_part = node->data.list.nodes[0];
+            regex_node_t * const second_part = node->data.list.nodes[1];
+            size_t const pattern_len = first_part->len + second_part->len;
+            print_highlight_md(full_regex, first_part->content_offset, pattern_len);
+
+            if ((size_t)consumed_nodes < node->data.list.count)
+            {
+                print_indent_md(indent);
+                printf("- Followed by:\n");
+            }
+        }
+        else
+        {
+            print_indent_md(indent);
+            printf("- **Sequence** (matches the following in order):\n");
+            print_highlight_md(full_regex, node->content_offset, node->len);
+        }
+
+        for (size_t i = consumed_nodes; i < node->data.list.count; i++)
         {
             describe_node_md(node->data.list.nodes[i], indent + 1, full_regex);
         }
         break;
+    }
     case REGEX_NODE_REPETITION:
         printf("- **Repetition**:\n");
         print_highlight_md(full_regex, node->content_offset, node->len);
@@ -237,11 +372,6 @@ describe_node_md(regex_node_t * const node, int const indent, char const * const
     if (node == NULL)
         return;
 
-    if (try_match_identifier_md(node, indent, full_regex))
-    {
-        return;
-    }
-
     describe_node_md_literal(node, indent, full_regex);
 }
 
@@ -271,12 +401,19 @@ describe_node_html(regex_node_t * const node, int const indent, char const * con
         return;
     }
 
+    describe_node_html_literal(node, indent, full_regex);
+}
+
+static void
+describe_node_html_literal(regex_node_t * const node, int const indent, char const * const full_regex)
+{
+
     printf("<ul>\n<li>");
 
     switch (node->type)
     {
     case REGEX_NODE_ALTERNATION:
-        printf("<strong>Alternation</strong> (matches one of the following):\n");
+        printf("<strong>Alternation</strong> (matches one of the following):");
         print_highlight_html(full_regex, node->content_offset, node->len);
         for (size_t i = 0; i < node->data.list.count; i++)
         {
@@ -284,13 +421,33 @@ describe_node_html(regex_node_t * const node, int const indent, char const * con
         }
         break;
     case REGEX_NODE_CONCATENATION:
-        printf("<strong>Sequence</strong> (matches the following in order):\n");
-        print_highlight_html(full_regex, node->content_offset, node->len);
-        for (size_t i = 0; i < node->data.list.count; i++)
+    {
+        int consumed_nodes = match_identifier_pattern_prefix(node);
+        if (consumed_nodes > 0)
+        {
+            printf("<strong>Pattern</strong>: Matches a standard programming language identifier.");
+            regex_node_t * const first_part = node->data.list.nodes[0];
+            regex_node_t * const second_part = node->data.list.nodes[1];
+            size_t const pattern_len = first_part->len + second_part->len;
+            print_highlight_html(full_regex, first_part->content_offset, pattern_len);
+
+            if ((size_t)consumed_nodes < node->data.list.count)
+            {
+                printf("Followed by:");
+            }
+        }
+        else
+        {
+            printf("<strong>Sequence</strong> (matches the following in order):");
+            print_highlight_html(full_regex, node->content_offset, node->len);
+        }
+
+        for (size_t i = consumed_nodes; i < node->data.list.count; i++)
         {
             describe_node_html(node->data.list.nodes[i], indent + 1, full_regex);
         }
         break;
+    }
     case REGEX_NODE_REPETITION:
         printf("<strong>Repetition</strong>:\n");
         print_highlight_html(full_regex, node->content_offset, node->len);
