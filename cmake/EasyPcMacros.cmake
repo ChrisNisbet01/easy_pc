@@ -66,7 +66,7 @@ function(epc_generate_grammar)
     target_include_directories("${EPC_GEN_TARGET}" PUBLIC
         "${EPC_GEN_OUTPUT_DIR}"
         "${CMAKE_CURRENT_SOURCE_DIR}" # Add source directory to find extra headers
-        "${CMAKE_SOURCE_DIR}/include" # Add easy_pc's public include directory
+        "${CMAKE_CURRENT_LIST_DIR}/../include" # Add easy_pc's public include directory
     )
     target_link_libraries("${EPC_GEN_TARGET}" PUBLIC easy_pc_shared)
 
