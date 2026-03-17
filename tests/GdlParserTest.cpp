@@ -53,11 +53,8 @@ TEST_GROUP(GdlParserTest)
 
     void teardown()
     {
-        std::cout << "teardown" << std::endl;
         epc_parse_session_destroy(&session);
-        std::cout << "destroyed" << std::endl;
         epc_parser_list_free(parser_list);
-        std::cout << "freed" << std::endl;
     }
 };
 
@@ -1886,8 +1883,11 @@ TEST(GdlParserTest, ParseLexemeCallRule)
     STRCMP_EQUAL("LParen", lparen_node->name);
     STRNCMP_EQUAL("(", epc_cpt_node_get_semantic_content(lparen_node), epc_cpt_node_get_semantic_len(lparen_node));
 
+    epc_cpt_node_t * lexeme_args_node = lexeme_call_node->children[2];
+    STRCMP_EQUAL("LexemeArgs", lexeme_args_node->name);
+
     // Check DefinitionExpression (arg)
-    epc_cpt_node_t * arg_def_expr_node = lexeme_call_node->children[2];
+    epc_cpt_node_t * arg_def_expr_node = lexeme_args_node->children[0];
     STRCMP_EQUAL("DefinitionExpression", arg_def_expr_node->name);
     CHECK_EQUAL(2, arg_def_expr_node->children_count);
 

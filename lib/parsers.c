@@ -3185,7 +3185,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
 }
 
 static epc_parser_t *
-_epc_lexeme(char const * name, epc_parser_t * p)
+_epc_lexeme_ex(char const * name, epc_parser_t * p, epc_consume_flags_t flags)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "lexeme", plexeme_parse_fn);
     if (lex == NULL)
@@ -3194,11 +3194,17 @@ _epc_lexeme(char const * name, epc_parser_t * p)
     }
     lex->data.type = PARSER_DATA_TYPE_LEXEME;
     lex->data.lexeme.parser = p;
-    lex->data.lexeme.consume_flags = EPC_CONSUME_ALL;
+    lex->data.lexeme.consume_flags = flags;
     lex->data.lexeme.strip_leading = true;
     lex->data.lexeme.strip_trailing = true;
 
     return lex;
+}
+
+static epc_parser_t *
+_epc_lexeme(char const * name, epc_parser_t * p)
+{
+    return _epc_lexeme_ex(name, p, EPC_CONSUME_ALL);
 }
 
 EASY_PC_API epc_parser_t *
@@ -3207,8 +3213,14 @@ epc_lexeme(epc_parser_list * list, char const * name, epc_parser_t * p)
     return epc_parser_list_add(list, _epc_lexeme(name, p));
 }
 
+EASY_PC_API epc_parser_t *
+epc_lexeme_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags)
+{
+    return epc_parser_list_add(list, _epc_lexeme_ex(name, p, flags));
+}
+
 static epc_parser_t *
-_epc_strip(char const * name, epc_parser_t * p)
+_epc_strip_ex(char const * name, epc_parser_t * p, epc_consume_flags_t flags)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "strip", plexeme_parse_fn);
     if (lex == NULL)
@@ -3217,11 +3229,17 @@ _epc_strip(char const * name, epc_parser_t * p)
     }
     lex->data.type = PARSER_DATA_TYPE_LEXEME;
     lex->data.lexeme.parser = p;
-    lex->data.lexeme.consume_flags = EPC_CONSUME_WS;
+    lex->data.lexeme.consume_flags = flags;
     lex->data.lexeme.strip_leading = true;
     lex->data.lexeme.strip_trailing = true;
 
     return lex;
+}
+
+static epc_parser_t *
+_epc_strip(char const * name, epc_parser_t * p)
+{
+    return _epc_strip_ex(name, p, EPC_CONSUME_WS);
 }
 
 EASY_PC_API epc_parser_t *
@@ -3230,8 +3248,14 @@ epc_strip(epc_parser_list * list, char const * name, epc_parser_t * p)
     return epc_parser_list_add(list, _epc_strip(name, p));
 }
 
+EASY_PC_API epc_parser_t *
+epc_strip_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags)
+{
+    return epc_parser_list_add(list, _epc_strip_ex(name, p, flags));
+}
+
 static epc_parser_t *
-_epc_stripl(char const * name, epc_parser_t * p)
+_epc_stripl_ex(char const * name, epc_parser_t * p, epc_consume_flags_t flags)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "stripl", plexeme_parse_fn);
     if (lex == NULL)
@@ -3240,11 +3264,17 @@ _epc_stripl(char const * name, epc_parser_t * p)
     }
     lex->data.type = PARSER_DATA_TYPE_LEXEME;
     lex->data.lexeme.parser = p;
-    lex->data.lexeme.consume_flags = EPC_CONSUME_WS;
+    lex->data.lexeme.consume_flags = flags;
     lex->data.lexeme.strip_leading = true;
     lex->data.lexeme.strip_trailing = false;
 
     return lex;
+}
+
+static epc_parser_t *
+_epc_stripl(char const * name, epc_parser_t * p)
+{
+    return _epc_stripl_ex(name, p, EPC_CONSUME_WS);
 }
 
 EASY_PC_API epc_parser_t *
@@ -3253,8 +3283,14 @@ epc_stripl(epc_parser_list * list, char const * name, epc_parser_t * p)
     return epc_parser_list_add(list, _epc_stripl(name, p));
 }
 
+EASY_PC_API epc_parser_t *
+epc_stripl_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags)
+{
+    return epc_parser_list_add(list, _epc_stripl_ex(name, p, flags));
+}
+
 static epc_parser_t *
-_epc_stripr(char const * name, epc_parser_t * p)
+_epc_stripr_ex(char const * name, epc_parser_t * p, epc_consume_flags_t flags)
 {
     epc_parser_t * lex = epc_parser_allocate(name, "stripr", plexeme_parse_fn);
     if (lex == NULL)
@@ -3263,17 +3299,29 @@ _epc_stripr(char const * name, epc_parser_t * p)
     }
     lex->data.type = PARSER_DATA_TYPE_LEXEME;
     lex->data.lexeme.parser = p;
-    lex->data.lexeme.consume_flags = EPC_CONSUME_WS;
+    lex->data.lexeme.consume_flags = flags;
     lex->data.lexeme.strip_leading = false;
     lex->data.lexeme.strip_trailing = true;
 
     return lex;
 }
 
+static epc_parser_t *
+_epc_stripr(char const * name, epc_parser_t * p)
+{
+    return _epc_stripr_ex(name, p, EPC_CONSUME_WS);
+}
+
 EASY_PC_API epc_parser_t *
 epc_stripr(epc_parser_list * list, char const * name, epc_parser_t * p)
 {
     return epc_parser_list_add(list, _epc_stripr(name, p));
+}
+
+EASY_PC_API epc_parser_t *
+epc_stripr_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags)
+{
+    return epc_parser_list_add(list, _epc_stripr_ex(name, p, flags));
 }
 
 static epc_parse_result_t

@@ -187,13 +187,17 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
 
     case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
+    case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
+    case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
+        gdl_ast_node_free(node->data.unary_combinator_call.expr, user_data);
+        break;
+
     case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
-    case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
-    case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
-        gdl_ast_node_free(node->data.unary_combinator_call.expr, user_data);
+        gdl_ast_node_free(node->data.lexeme_call.expr, user_data);
+        gdl_ast_list_free_recursive(&node->data.lexeme_call.args, user_data);
         break;
 
     case GDL_AST_NODE_TYPE_OPTIONAL_EXPRESSION:
@@ -1321,6 +1325,70 @@ handle_unary_combinator_call(
     }
 }
 
+// Lexeme combinator helper action for multiple arguments
+static void
+handle_lexeme_combinator_call(
+    epc_ast_builder_ctx_t * ctx,
+    epc_cpt_node_t * node,
+    void ** children,
+    int count,
+    void * user_data,
+    gdl_ast_node_type_t node_type
+)
+{
+#ifdef AST_DEBUG
+    debug_indent -= 4;
+    fprintf(
+        stderr,
+        "%*sAST_DEBUG: EXIT CPT node '%s' (action %d) num_children %u\n",
+        debug_indent,
+        "",
+        node->name,
+        node->ast_config.action,
+        count
+    );
+#endif
+
+    (void)node;
+    if (count != 2)
+    {
+        epc_ast_builder_set_error(ctx, "Lexeme-style combinator call expects 2 children (expr, flags), got %d", count);
+        for (int i = 0; i < count; ++i)
+        {
+            gdl_ast_node_free(children[i], user_data);
+        }
+        return;
+    }
+
+    gdl_ast_node_t * expr_node = (gdl_ast_node_t *)children[0];
+    gdl_ast_node_t * flags_seq_node = (gdl_ast_node_t *)children[1];
+
+    if (flags_seq_node->type != GDL_AST_NODE_TYPE_SEQUENCE)
+    {
+        epc_ast_builder_set_error(ctx, "Lexeme-style combinator call expects flags sequence.");
+        gdl_ast_node_free(expr_node, user_data);
+        gdl_ast_node_free(flags_seq_node, user_data);
+        return;
+    }
+
+    gdl_ast_node_t * result_node = gdl_ast_node_alloc(ctx, node_type);
+    if (result_node)
+    {
+        result_node->data.lexeme_call.expr = expr_node;
+        result_node->data.lexeme_call.args = flags_seq_node->data.sequence.elements;
+        // Transfer ownership of list nodes
+        flags_seq_node->data.sequence.elements.head = NULL;
+        flags_seq_node->data.sequence.elements.tail = NULL;
+        flags_seq_node->data.sequence.elements.count = 0;
+        epc_ast_push(ctx, result_node);
+    }
+    else
+    {
+        gdl_ast_node_free(expr_node, user_data);
+    }
+    gdl_ast_node_free(flags_seq_node, user_data);
+}
+
 static void
 handle_create_lookahead_call(
     epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
@@ -1340,28 +1408,28 @@ handle_create_lexeme_call(
     epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_LEXEME);
+    handle_lexeme_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_LEXEME);
 }
 static void
 handle_create_strip_call(
     epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIP);
+    handle_lexeme_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIP);
 }
 static void
 handle_create_stripl_call(
     epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIPL);
+    handle_lexeme_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIPL);
 }
 static void
 handle_create_stripr_call(
     epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIPR);
+    handle_lexeme_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_STRIPR);
 }
 static void
 handle_create_skip_call(

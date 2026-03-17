@@ -211,7 +211,13 @@ typedef struct
 typedef struct
 {
     gdl_ast_node_t * expr;
-} gdl_ast_combinator_unary_t; // For lookahead, not, lexeme, skip, optional
+    gdl_ast_list_t args; // Additional arguments (e.g., flags)
+} gdl_ast_combinator_lexeme_t;
+
+typedef struct
+{
+    gdl_ast_node_t * expr;
+} gdl_ast_combinator_unary_t; // For lookahead, not, skip, optional
 
 typedef struct
 {
@@ -279,6 +285,7 @@ struct gdl_ast_node_t
         gdl_ast_combinator_count_range_t count_range_call;
         gdl_ast_combinator_between_t between_call;
         gdl_ast_combinator_delimited_t delimited_call;
+        gdl_ast_combinator_lexeme_t lexeme_call;
         gdl_ast_combinator_unary_t unary_combinator_call;
         gdl_ast_combinator_chain_t chain_combinator_call;
         gdl_ast_sequence_t sequence;

@@ -491,6 +491,14 @@ TEST(CombinatorParsersNew, Lexeme_ParsesWithCppStyleComments)
     check_success("lexeme", "//comment\n   hello   //another comment\n", 39, 1);
 }
 
+TEST(CombinatorParsersNew, Lexeme_DoesNotConsumeBashCommentsByDefault)
+{
+    epc_parser_t * p_word = epc_string(list, "word", "hello");
+    epc_parser_t * p_lex = epc_lexeme(list, "lexeme", p_word);
+    session = parse(p_lex, "#bash comment\nhello");
+    check_failure("Unexpected string"); // Should fail because # is not consumed
+}
+
 // --- epc_strip tests ---
 TEST(CombinatorParsersNew, Strip_ParsesWithLeadingAndTrailingSpaces)
 {

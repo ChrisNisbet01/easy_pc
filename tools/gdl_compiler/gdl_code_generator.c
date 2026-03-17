@@ -442,16 +442,24 @@ traverse_expression_for_references(
 
     case GDL_AST_NODE_TYPE_COMBINATOR_LOOKAHEAD:
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
-    case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
-    case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
-    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
-    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
     case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
     {
         traverse_expression_for_references(
             expression_node->data.unary_combinator_call.expr, current_rule_info, all_rules
         );
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
+    {
+        traverse_expression_for_references(
+            expression_node->data.lexeme_call.expr, current_rule_info, all_rules
+        );
+        // Flags are keywords, don't need traversal for references
         break;
     }
 
@@ -771,6 +779,73 @@ generate_rule_definition_code(
 }
 
 // --- Expression Code Generation (Recursive) ---
+static bool
+generate_lexeme_call_code(
+    FILE * source_file,
+    gdl_ast_node_t * expression_node,
+    int indent_level,
+    gdl_rule_list_t const * rule_list,
+    char const * expression_name,
+    char const * q,
+    char const * expr_name
+)
+{
+    char const * base_fn = "";
+    switch (expression_node->type)
+    {
+    case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
+        base_fn = "lexeme";
+        break;
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
+        base_fn = "strip";
+        break;
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
+        base_fn = "stripl";
+        break;
+    case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
+        base_fn = "stripr";
+        break;
+    default:
+        return false;
+    }
+
+    if (expression_node->data.lexeme_call.args.count == 0)
+    {
+        fprintf(source_file, "epc_%s(list, %s%s%s, ", base_fn, q, expr_name, q);
+    }
+    else
+    {
+        fprintf(source_file, "epc_%s_ex(list, %s%s%s, ", base_fn, q, expr_name, q);
+    }
+
+    if (!generate_expression_code(
+            source_file, expression_node->data.lexeme_call.expr, indent_level + 1, rule_list, NULL
+        ))
+    {
+        return false;
+    }
+
+    if (expression_node->data.lexeme_call.args.count > 0)
+    {
+        fprintf(source_file, ", ");
+        gdl_ast_list_node_t * current_flag = expression_node->data.lexeme_call.args.head;
+        while (current_flag)
+        {
+            char * flag_upper = to_upper_case(current_flag->item->data.keyword.name);
+            fprintf(source_file, "EPC_CONSUME_%s", flag_upper);
+            free(flag_upper);
+            current_flag = current_flag->next;
+            if (current_flag)
+            {
+                fprintf(source_file, " | ");
+            }
+        }
+    }
+
+    fprintf(source_file, ")");
+    return true;
+}
+
 static bool
 generate_expression_code(
     FILE * source_file,
@@ -1181,47 +1256,13 @@ generate_expression_code(
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_LEXEME:
-        fprintf(source_file, "epc_lexeme(list, %s%s%s, ", q, expr_name, q);
-        if (!generate_expression_code(
-                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
-            ))
-        {
-            return false;
-        }
-        fprintf(source_file, ")");
-        break;
-
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
-        fprintf(source_file, "epc_strip(list, %s%s%s, ", q, expr_name, q);
-        if (!generate_expression_code(
-                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
-            ))
-        {
-            return false;
-        }
-        fprintf(source_file, ")");
-        break;
-
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
-        fprintf(source_file, "epc_stripl(list, %s%s%s, ", q, expr_name, q);
-        if (!generate_expression_code(
-                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
-            ))
-        {
-            return false;
-        }
-        fprintf(source_file, ")");
-        break;
-
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
-        fprintf(source_file, "epc_stripr(list, %s%s%s, ", q, expr_name, q);
-        if (!generate_expression_code(
-                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
-            ))
+        if (!generate_lexeme_call_code(source_file, expression_node, indent_level, rule_list, expression_name, q, expr_name))
         {
             return false;
         }
-        fprintf(source_file, ")");
         break;
 
     case GDL_AST_NODE_TYPE_COMBINATOR_ONEOF:

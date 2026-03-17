@@ -394,6 +394,9 @@ IterationStatement = (KwWhile LParen Expression RParen Statement)
 
 CompoundStatement = LBrace Statement* RBrace;
 
+// Rule to match a preprocessor directive, including support for line continuations
+PreprocessorDirective = lexeme('#' ("\\" any | noneof("\n\r"))*);
+
 Statement = LabeledStatement
           | CompoundStatement
           | SelectionStatement
@@ -402,6 +405,7 @@ Statement = LabeledStatement
           | JumpStatement
           | ExpressionStatement
           | (KwAsm Attribute* LParen delimited(Expression, Comma) RParen Semicolon)
+          | PreprocessorDirective
           ;
 
 // --- Top Level ---
@@ -412,7 +416,7 @@ ParameterTypeList = delimited_flex(ParameterDeclaration, Comma) (Comma Ellipsis)
 
 ParameterList = LParen ParameterTypeList? RParen;
 
-ExternalDeclaration = KwExtension? (FunctionDefinition | TypedefDeclaration | Declaration);
+ExternalDeclaration = PreprocessorDirective | (KwExtension? (FunctionDefinition | TypedefDeclaration | Declaration));
 
 FunctionDefinition = DeclarationSpecifiers Declarator CompoundStatement;
 

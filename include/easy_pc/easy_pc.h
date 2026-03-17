@@ -213,7 +213,8 @@ typedef enum
     EPC_CONSUME_CPP_COMMENT = 1 << 2,  /**< Consume C++-style comments (// ...). */
     EPC_CONSUME_BASH_COMMENT = 1 << 3, /**< Consume Bash-style comments (# ...). */
     EPC_CONSUME_ALL_COMMENTS = (EPC_CONSUME_C_COMMENT | EPC_CONSUME_CPP_COMMENT | EPC_CONSUME_BASH_COMMENT),
-    EPC_CONSUME_ALL = (EPC_CONSUME_WS | EPC_CONSUME_ALL_COMMENTS)
+    EPC_CONSUME_ALL = (EPC_CONSUME_WS | EPC_CONSUME_C_COMMENT | EPC_CONSUME_CPP_COMMENT),
+    EPC_CONSUME_ALL_STYLES = (EPC_CONSUME_ALL | EPC_CONSUME_BASH_COMMENT)
 } epc_consume_flags_t;
 
 /**
@@ -535,6 +536,17 @@ EASY_PC_API epc_parser_t * epc_one_of(epc_parser_list * list, char const * name,
 EASY_PC_API epc_parser_t * epc_lexeme(epc_parser_list * list, char const * name, epc_parser_t * p);
 
 /**
+ * @brief Creates a parser that matches its child parser, optionally surrounded by whitespace/comments.
+ * Similar to epc_lexeme, but allows specifying which whitespace/comments to consume.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p The child parser to wrap.
+ * @param flags Flags for controlling whitespace and comment consumption.
+ */
+EASY_PC_API epc_parser_t *
+epc_lexeme_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags);
+
+/**
  * @brief Creates a parser that strips leading and trailing whitespace. Similar to epc_lexeme, except that
  * if doesn't strip comments.
  * @param list The parser list to add to.
@@ -542,6 +554,17 @@ EASY_PC_API epc_parser_t * epc_lexeme(epc_parser_list * list, char const * name,
  * @param p The child parser to strip
  */
 EASY_PC_API epc_parser_t * epc_strip(epc_parser_list * list, char const * name, epc_parser_t * p);
+
+/**
+ * @brief Creates a parser that strips leading and trailing whitespace. Similar to epc_strip, but allows
+ * specifying which whitespace/comments to consume.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p The child parser to strip
+ * @param flags Flags for controlling whitespace and comment consumption.
+ */
+EASY_PC_API epc_parser_t *
+epc_strip_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags);
 
 /**
  * @brief Creates a parser that strips leading whitespace. Similar to epc_strip, but only strips leading whitespace.
@@ -552,12 +575,34 @@ EASY_PC_API epc_parser_t * epc_strip(epc_parser_list * list, char const * name, 
 EASY_PC_API epc_parser_t * epc_stripl(epc_parser_list * list, char const * name, epc_parser_t * p);
 
 /**
+ * @brief Creates a parser that strips leading whitespace. Similar to epc_stripl, but allows
+ * specifying which whitespace/comments to consume.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p The child parser to strip
+ * @param flags Flags for controlling whitespace and comment consumption.
+ */
+EASY_PC_API epc_parser_t *
+epc_stripl_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags);
+
+/**
  * @brief Creates a parser that strips trailing whitespace. Similar to epc_strip, but only strips trailing whitespace.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.
  * @param p The child parser to strip
  */
 EASY_PC_API epc_parser_t * epc_stripr(epc_parser_list * list, char const * name, epc_parser_t * p);
+
+/**
+ * @brief Creates a parser that strips trailing whitespace. Similar to epc_stripr, but allows
+ * specifying which whitespace/comments to consume.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param p The child parser to strip
+ * @param flags Flags for controlling whitespace and comment consumption.
+ */
+EASY_PC_API epc_parser_t *
+epc_stripr_ex(epc_parser_list * list, char const * name, epc_parser_t * p, epc_consume_flags_t flags);
 
 /**
  * @brief Creates a parser that matches one or more `item` parsers,
