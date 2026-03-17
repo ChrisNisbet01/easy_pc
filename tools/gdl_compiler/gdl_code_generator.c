@@ -456,9 +456,7 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
     {
-        traverse_expression_for_references(
-            expression_node->data.lexeme_call.expr, current_rule_info, all_rules
-        );
+        traverse_expression_for_references(expression_node->data.lexeme_call.expr, current_rule_info, all_rules);
         // Flags are keywords, don't need traversal for references
         break;
     }
@@ -785,7 +783,6 @@ generate_lexeme_call_code(
     gdl_ast_node_t * expression_node,
     int indent_level,
     gdl_rule_list_t const * rule_list,
-    char const * expression_name,
     char const * q,
     char const * expr_name
 )
@@ -1259,7 +1256,7 @@ generate_expression_code(
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIP:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPL:
     case GDL_AST_NODE_TYPE_COMBINATOR_STRIPR:
-        if (!generate_lexeme_call_code(source_file, expression_node, indent_level, rule_list, expression_name, q, expr_name))
+        if (!generate_lexeme_call_code(source_file, expression_node, indent_level, rule_list, q, expr_name))
         {
             return false;
         }
