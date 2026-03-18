@@ -82,7 +82,8 @@ TEST(WrapTest, Wrap_CallsEntryAndExitOnSuccess)
 
     session = epc_parse_str(p_wrap, "a", &tctx);
 
-    check_success("char", "a", 1, 0);
+    check_success("wrap", "a", 1, 1);
+
     LONGS_EQUAL(1, tctx.entry_calls);
     LONGS_EQUAL(1, tctx.exit_calls);
     POINTERS_EQUAL(session.internal_parse_ctx, tctx.last_parse_ctx);
@@ -124,5 +125,5 @@ TEST(WrapTest, Wrap_HandlesNullCallbacks)
 
     session = epc_parse_str(p_wrap, "a", NULL);
 
-    check_success("char", "a", 1, 0);
+    check_success("wrap", "a", 1, 1);
 }

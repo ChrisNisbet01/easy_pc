@@ -3877,7 +3877,37 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
     }
 
     epc_parser_error_free(original_furthest_error);
-    return result;
+
+    if (result.is_error)
+    {
+        return result;
+    }
+
+    // If we get here, the child parser succeeded.
+    // We now create a new parent node to represent the 'wrap' parser itself.
+    epc_cpt_node_t * wrap_node = epc_node_alloc(ctx, self, self->tag);
+    if (wrap_node == NULL)
+    {
+        epc_parser_result_cleanup(&result);
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    // The child of the wrap_node is the success node from the wrapped parser.
+    wrap_node->children = calloc(1, sizeof(*wrap_node->children));
+    if (wrap_node->children == NULL)
+    {
+        epc_parser_result_cleanup(&result);
+        epc_node_free(wrap_node);
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+    wrap_node->children[0] = result.data.success;
+    wrap_node->children_count = 1;
+
+    // The wrap_node spans the same content as its child.
+    wrap_node->content = result.data.success->content;
+    wrap_node->len = result.data.success->len;
+
+    return epc_parser_success_result(wrap_node);
 }
 
 static epc_parser_t *
@@ -3914,19 +3944,51 @@ pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     epc_parser_t * wrapped_parser = self->data.parser;
 
     /* 1. Look up in memo table */
-    epc_parse_result_t * cached_result = epc_memo_table_get(ctx, wrapped_parser, input_offset);
+    epc_parse_result_t * cached_result = epc_memo_table_get(ctx, self, input_offset);
     if (cached_result != NULL)
     {
         return epc_parse_result_copy(ctx, *cached_result);
     }
 
     /* 2. Not found, parse it */
-    epc_parse_result_t result = parse(wrapped_parser, ctx, input_offset);
+    epc_parse_result_t child_result = parse(wrapped_parser, ctx, input_offset);
 
-    /* 3. Store in memo table (set handles the copy) */
-    epc_memo_table_set(ctx, wrapped_parser, input_offset, result);
+    if (child_result.is_error)
+    {
+        // Cache and return the error result as is.
+        epc_memo_table_set(ctx, self, input_offset, child_result);
+        return child_result;
+    }
 
-    return result;
+    // On success, create a new parent node for the memoize parser.
+    epc_cpt_node_t * memoize_node = epc_node_alloc(ctx, self, self->tag);
+    if (memoize_node == NULL)
+    {
+        epc_parser_result_cleanup(&child_result);
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    // The child of the memoize_node is the success node from the wrapped parser.
+    memoize_node->children = calloc(1, sizeof(*memoize_node->children));
+    if (memoize_node->children == NULL)
+    {
+        epc_parser_result_cleanup(&child_result);
+        epc_node_free(memoize_node);
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+    memoize_node->children[0] = child_result.data.success;
+    memoize_node->children_count = 1;
+
+    // The memoize_node spans the same content as its child.
+    memoize_node->content = child_result.data.success->content;
+    memoize_node->len = child_result.data.success->len;
+
+    epc_parse_result_t parent_result = epc_parser_success_result(memoize_node);
+
+    /* 3. Store the new parent result in the memo table */
+    epc_memo_table_set(ctx, self, input_offset, parent_result);
+
+    return parent_result;
 }
 
 static epc_parser_t *

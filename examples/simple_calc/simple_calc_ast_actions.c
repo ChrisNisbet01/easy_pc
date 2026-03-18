@@ -1,8 +1,9 @@
 #include "simple_calc_ast_actions.h"
 
+#include "easy_pc/easy_pc_ast.h"
+
 #include "ast.h"
 #include "function_definitions.h"
-#include "easy_pc/easy_pc_ast.h"
 
 #include <math.h>
 #include <stdarg.h>
@@ -55,7 +56,7 @@ ast_list_append(ast_list_t * list, ast_node_t * item)
 }
 
 static void
-free_calc_children_on_error(void * * children, int count, void * user_data)
+free_calc_children_on_error(void ** children, int count, void * user_data)
 {
     for (int i = 0; i < count; i++)
     {
@@ -76,41 +77,25 @@ ast_node_free(void * node_ptr, void * user_data)
         return;
     }
 
-    switch(node->type)
+    switch (node->type)
     {
-        case AST_NODE_TYPE_NUMBER:
-        case AST_NODE_TYPE_OPERATOR:
-        case AST_NODE_TYPE_PLACEHOLDER:
-            /* Nothing to do. */
-            break;
+    case AST_NODE_TYPE_NUMBER:
+    case AST_NODE_TYPE_OPERATOR:
+    case AST_NODE_TYPE_PLACEHOLDER:
+        /* Nothing to do. */
+        break;
 
-        case AST_NODE_TYPE_EXPRESSION:
-            ast_node_free(node->data.expression.left, user_data);
-            ast_node_free(node->data.expression.operator_node, user_data);
-            ast_node_free(node->data.expression.right, user_data);
-            break;
+    case AST_NODE_TYPE_EXPRESSION:
+        ast_node_free(node->data.expression.left, user_data);
+        ast_node_free(node->data.expression.operator_node, user_data);
+        ast_node_free(node->data.expression.right, user_data);
+        break;
 
-        case AST_NODE_TYPE_LIST:
+    case AST_NODE_TYPE_LIST:
+    {
+        if (node->data.list.count > 0)
         {
-            if (node->data.list.count > 0)
-            {
-                ast_list_node_t * item = node->data.list.head;
-                while (item != NULL)
-                {
-                    ast_list_node_t * next_item = item->next;
-                    ast_node_free(item->item, user_data);
-                    free(item);
-                    item = next_item;
-                }
-            }
-            break;
-        }
-
-        case AST_NODE_TYPE_FUNCTION_CALL:
-        {
-            ast_list_t * list = &node->data.function_call.arguments;
-            ast_list_node_t * item = list->head;
-
+            ast_list_node_t * item = node->data.list.head;
             while (item != NULL)
             {
                 ast_list_node_t * next_item = item->next;
@@ -118,12 +103,28 @@ ast_node_free(void * node_ptr, void * user_data)
                 free(item);
                 item = next_item;
             }
-            break;
         }
+        break;
+    }
 
-        case AST_NODE_TYPE_IDENTIFIER:
-            free((char *)node->data.identifier.name);
-            break;
+    case AST_NODE_TYPE_FUNCTION_CALL:
+    {
+        ast_list_t * list = &node->data.function_call.arguments;
+        ast_list_node_t * item = list->head;
+
+        while (item != NULL)
+        {
+            ast_list_node_t * next_item = item->next;
+            ast_node_free(item->item, user_data);
+            free(item);
+            item = next_item;
+        }
+        break;
+    }
+
+    case AST_NODE_TYPE_IDENTIFIER:
+        free((char *)node->data.identifier.name);
+        break;
     }
 
     free(node);
@@ -133,11 +134,7 @@ ast_node_free(void * node_ptr, void * user_data)
 
 static void
 create_number_from_content_action(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
     (void)children;
@@ -152,7 +149,7 @@ create_number_from_content_action(
 
     size_t content_len = epc_cpt_node_get_semantic_len(node);
     char * num_str_buf = malloc(content_len + 1);
-    if (num_str_buf== NULL)
+    if (num_str_buf == NULL)
     {
         ast_node_free(num_node, user_data);
         epc_ast_builder_set_error(ctx, "Failed to allocate AST number node buffer");
@@ -167,14 +164,12 @@ create_number_from_content_action(
 
 static void
 create_operator_from_char_action(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    (void)children; (void)count; (void)user_data;
+    (void)children;
+    (void)count;
+    (void)user_data;
     ast_node_t * op_node = ast_node_alloc(AST_NODE_TYPE_OPERATOR);
     if (op_node == NULL)
     {
@@ -187,38 +182,30 @@ create_operator_from_char_action(
 
 static void
 create_identifier_action(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    (void)children; (void)count; (void)user_data;
+    (void)children;
+    (void)count;
+    (void)user_data;
     ast_node_t * ident_node = ast_node_alloc(AST_NODE_TYPE_IDENTIFIER);
     if (ident_node == NULL)
     {
         epc_ast_builder_set_error(ctx, "Failed to allocate AST identifier node");
         return;
     }
-    ident_node->data.identifier.name =
-        strndup(
-            epc_cpt_node_get_semantic_content(node),
-            epc_cpt_node_get_semantic_len(node)
-        );
+    ident_node->data.identifier.name
+        = strndup(epc_cpt_node_get_semantic_content(node), epc_cpt_node_get_semantic_len(node));
     epc_ast_push(ctx, ident_node);
 }
 
 static void
 collect_child_results_action(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    (void)node; (void)user_data;
+    (void)node;
+    (void)user_data;
     ast_node_t * collected_list_node = ast_node_alloc(AST_NODE_TYPE_LIST);
     if (collected_list_node == NULL)
     {
@@ -238,14 +225,11 @@ collect_child_results_action(
 
 static void
 build_binary_expression_action(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
-    (void)node; (void)user_data;
+    (void)node;
+    (void)user_data;
     if (count != 3)
     {
         free_calc_children_on_error(children, count, user_data);
@@ -281,11 +265,7 @@ build_binary_expression_action(
 
 static void
 create_function_call_action(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
 )
 {
     (void)node;
@@ -293,7 +273,9 @@ create_function_call_action(
     if (count == 0 || count > 2)
     {
         free_calc_children_on_error(children, count, user_data);
-        epc_ast_builder_set_error(ctx, "Function call expects 1 or 2 children (identifier [, args_list]), got %d", count);
+        epc_ast_builder_set_error(
+            ctx, "Function call expects 1 or 2 children (identifier [, args_list]), got %d", count
+        );
         return;
     }
 
@@ -318,8 +300,8 @@ create_function_call_action(
         }
     }
 
-    const char * func_name_str = func_name_node->data.identifier.name;
-    const function_t * func_def = function_lookup_by_name(func_name_str);
+    char const * func_name_str = func_name_node->data.identifier.name;
+    function_t const * func_def = function_lookup_by_name(func_name_str);
 
     if (!func_def)
     {
@@ -330,7 +312,9 @@ create_function_call_action(
     size_t args_count = args_list_node != NULL ? (size_t)args_list_node->data.list.count : 0;
     if (func_def->num_args != args_count)
     {
-        epc_ast_builder_set_error(ctx, "Function '%s' expects %zu args, got %d", func_def->name, func_def->num_args, args_count);
+        epc_ast_builder_set_error(
+            ctx, "Function '%s' expects %zu args, got %d", func_def->name, func_def->num_args, args_count
+        );
         free_calc_children_on_error(children, count, user_data);
         return;
     }
@@ -364,13 +348,7 @@ create_function_call_action(
 }
 
 static void
-assign_root_action(
-    epc_ast_builder_ctx_t * ctx,
-    epc_cpt_node_t * node,
-    void * * children,
-    int count,
-    void * user_data
-)
+assign_root_action(epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data)
 {
     (void)node;
 
@@ -388,7 +366,9 @@ simple_calc_ast_hook_registry_init(epc_ast_hook_registry_t * registry)
 {
     epc_ast_hook_registry_set_free_node(registry, ast_node_free);
 
-    epc_ast_hook_registry_set_action(registry, AST_ACTION_CREATE_NUMBER_FROM_CONTENT, create_number_from_content_action);
+    epc_ast_hook_registry_set_action(
+        registry, AST_ACTION_CREATE_NUMBER_FROM_CONTENT, create_number_from_content_action
+    );
     epc_ast_hook_registry_set_action(registry, AST_ACTION_CREATE_OPERATOR_FROM_CHAR, create_operator_from_char_action);
     epc_ast_hook_registry_set_action(registry, AST_ACTION_CREATE_IDENTIFIER, create_identifier_action);
     epc_ast_hook_registry_set_action(registry, AST_ACTION_COLLECT_CHILD_RESULTS, collect_child_results_action);

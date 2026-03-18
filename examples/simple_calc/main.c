@@ -1,10 +1,10 @@
 
+#include "easy_pc/easy_pc.h"
+#include "easy_pc/easy_pc_ast.h"
+
 #include "ast_evaluator.h"
 #include "grammar.h"
 #include "simple_calc_ast_actions.h" // For registry init, free, and action enum
-
-#include "easy_pc/easy_pc.h"
-#include "easy_pc/easy_pc_ast.h"
 
 #include <math.h>
 #include <stdarg.h>
@@ -65,6 +65,7 @@ main(int argc, char ** argv)
     else
     {
         printf("Expression successfully compiled.\n");
+
         double calculated_result = evaluate_ast(compile_result.ast, variables, 1, constants, 2);
 
         printf("Result: %lf\n", calculated_result);
