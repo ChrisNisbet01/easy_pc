@@ -1,0 +1,798 @@
+chris@chris-work:~/projects/c_compiler/build(master)$ src/ncc -o test_types ../tests/test_types.c 
+Attempting to parse C file: ../tests/test_types.c
+Successfully parsed the C file!
+Concrete Parse Tree:
+<and> (Program) 'float add_floats(float a, float b) {
+    return a + b;
+}
+
+int main() {
+    float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+}
+' (line=0, col=0, len=208)
+    <plus> (Translationunit) 'float add_floats(float a, float b) {
+    return a + b;
+}
+
+int main() {
+    float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+}
+' (line=0, col=0, len=208)
+        <or> (Externaldeclaration) 'float add_floats(float a, float b) {
+    return a + b;
+}
+
+' (line=0, col=0, len=58)
+            <and> (and) 'float add_floats(float a, float b) {
+    return a + b;
+}
+
+' (line=0, col=0, len=58)
+                <optional> (optional) (line=0, col=0, len=0)
+                <or> (or) 'float add_floats(float a, float b) {
+    return a + b;
+}
+
+' (line=0, col=0, len=58)
+                    <and> (Functiondefinition) 'float add_floats(float a, float b) {
+    return a + b;
+}
+
+' (line=0, col=0, len=58)
+                        <memoize> (Declarationspecifiers) 'float ' (line=0, col=0, len=6)
+                            <or> (Declarationspecifiersraw) 'float ' (line=0, col=0, len=6)
+                                <plus> (plus) 'float ' (line=0, col=0, len=6)
+                                    <or> (or) 'float ' (line=0, col=0, len=6)
+                                        <memoize> (Declarationspecifier) 'float ' (line=0, col=0, len=6)
+                                            <or> (Declarationspecifierraw) 'float ' (line=0, col=0, len=6)
+                                                <or> (Nontypedeftypespecifier) 'float ' (line=0, col=0, len=6)
+                                                    <lexeme> (Kwfloat) 'float ' (line=0, col=0, len=6) 'float' (line=0, col=0, len=5)
+                                                        <and> (and) 'float' (line=0, col=0, len=5)
+                                                            <string> (string) 'float' (line=0, col=0, len=5)
+                                                            <not> (Idboundary) (line=0, col=5, len=0)
+                        <memoize> (Declarator) 'add_floats(float a, float b) ' (line=0, col=6, len=29)
+                            <and> (Declaratorraw) 'add_floats(float a, float b) ' (line=0, col=6, len=29)
+                                <many> (many) (line=0, col=6, len=0)
+                                <memoize> (Directdeclarator) 'add_floats' (line=0, col=6, len=10)
+                                    <or> (Directdeclaratorraw) 'add_floats' (line=0, col=6, len=10)
+                                        <and> (and) 'add_floats' (line=0, col=6, len=10)
+                                            <lexeme> (Identifier) 'add_floats' (line=0, col=6, len=10)
+                                                <and> (and) 'add_floats' (line=0, col=6, len=10)
+                                                    <not> (not) (line=0, col=6, len=0)
+                                                    <identifier> (identifier) 'add_floats' (line=0, col=6, len=10)
+                                            <many> (many) (line=0, col=16, len=0)
+                                <many> (many) '(float a, float b) ' (line=0, col=16, len=19)
+                                    <or> (Declaratorsuffix) '(float a, float b) ' (line=0, col=16, len=19)
+                                        <and> (and) '(float a, float b) ' (line=0, col=16, len=19)
+                                            <lexeme> (Lparen) '(' (line=0, col=16, len=1)
+                                                <char> (char) '(' (line=0, col=16, len=1)
+                                            <optional> (optional) 'float a, float b' (line=0, col=17, len=16)
+                                                <and> (Parametertypelist) 'float a, float b' (line=0, col=17, len=16)
+                                                    <delimited_flex> (delimited_flex) 'float a, float b' (line=0, col=17, len=16)
+                                                        <and> (Parameterdeclaration) 'float a' (line=0, col=17, len=7)
+                                                            <optional> (optional) (line=0, col=17, len=0)
+                                                            <memoize> (Declarationspecifiers) 'float ' (line=0, col=17, len=6)
+                                                                <or> (Declarationspecifiersraw) 'float ' (line=0, col=17, len=6)
+                                                                    <plus> (plus) 'float ' (line=0, col=17, len=6)
+                                                                        <or> (or) 'float ' (line=0, col=17, len=6)
+                                                                            <memoize> (Declarationspecifier) 'float ' (line=0, col=17, len=6)
+                                                                                <or> (Declarationspecifierraw) 'float ' (line=0, col=17, len=6)
+                                                                                    <or> (Nontypedeftypespecifier) 'float ' (line=0, col=17, len=6)
+                                                                                        <lexeme> (Kwfloat) 'float ' (line=0, col=17, len=6) 'float' (line=0, col=17, len=5)
+                                                                                            <and> (and) 'float' (line=0, col=17, len=5)
+                                                                                                <string> (string) 'float' (line=0, col=17, len=5)
+                                                                                                <not> (Idboundary) (line=0, col=22, len=0)
+                                                            <optional> (optional) 'a' (line=0, col=23, len=1)
+                                                                <or> (or) 'a' (line=0, col=23, len=1)
+                                                                    <memoize> (Declarator) 'a' (line=0, col=23, len=1)
+                                                                        <and> (Declaratorraw) 'a' (line=0, col=23, len=1)
+                                                                            <many> (many) (line=0, col=23, len=0)
+                                                                            <memoize> (Directdeclarator) 'a' (line=0, col=23, len=1)
+                                                                                <or> (Directdeclaratorraw) 'a' (line=0, col=23, len=1)
+                                                                                    <and> (and) 'a' (line=0, col=23, len=1)
+                                                                                        <lexeme> (Identifier) 'a' (line=0, col=23, len=1)
+                                                                                            <and> (and) 'a' (line=0, col=23, len=1)
+                                                                                                <not> (not) (line=0, col=23, len=0)
+                                                                                                <identifier> (identifier) 'a' (line=0, col=23, len=1)
+                                                                                        <many> (many) (line=0, col=24, len=0)
+                                                                            <many> (many) (line=0, col=24, len=0)
+                                                                            <many> (many) (line=0, col=24, len=0)
+                                                        <and> (Parameterdeclaration) 'float b' (line=0, col=26, len=7)
+                                                            <optional> (optional) (line=0, col=26, len=0)
+                                                            <memoize> (Declarationspecifiers) 'float ' (line=0, col=26, len=6)
+                                                                <or> (Declarationspecifiersraw) 'float ' (line=0, col=26, len=6)
+                                                                    <plus> (plus) 'float ' (line=0, col=26, len=6)
+                                                                        <or> (or) 'float ' (line=0, col=26, len=6)
+                                                                            <memoize> (Declarationspecifier) 'float ' (line=0, col=26, len=6)
+                                                                                <or> (Declarationspecifierraw) 'float ' (line=0, col=26, len=6)
+                                                                                    <or> (Nontypedeftypespecifier) 'float ' (line=0, col=26, len=6)
+                                                                                        <lexeme> (Kwfloat) 'float ' (line=0, col=26, len=6) 'float' (line=0, col=26, len=5)
+                                                                                            <and> (and) 'float' (line=0, col=26, len=5)
+                                                                                                <string> (string) 'float' (line=0, col=26, len=5)
+                                                                                                <not> (Idboundary) (line=0, col=31, len=0)
+                                                            <optional> (optional) 'b' (line=0, col=32, len=1)
+                                                                <or> (or) 'b' (line=0, col=32, len=1)
+                                                                    <memoize> (Declarator) 'b' (line=0, col=32, len=1)
+                                                                        <and> (Declaratorraw) 'b' (line=0, col=32, len=1)
+                                                                            <many> (many) (line=0, col=32, len=0)
+                                                                            <memoize> (Directdeclarator) 'b' (line=0, col=32, len=1)
+                                                                                <or> (Directdeclaratorraw) 'b' (line=0, col=32, len=1)
+                                                                                    <and> (and) 'b' (line=0, col=32, len=1)
+                                                                                        <lexeme> (Identifier) 'b' (line=0, col=32, len=1)
+                                                                                            <and> (and) 'b' (line=0, col=32, len=1)
+                                                                                                <not> (not) (line=0, col=32, len=0)
+                                                                                                <identifier> (identifier) 'b' (line=0, col=32, len=1)
+                                                                                        <many> (many) (line=0, col=33, len=0)
+                                                                            <many> (many) (line=0, col=33, len=0)
+                                                                            <many> (many) (line=0, col=33, len=0)
+                                                    <optional> (optional) (line=0, col=33, len=0)
+                                            <lexeme> (Rparen) ') ' (line=0, col=33, len=2) ')' (line=0, col=33, len=1)
+                                                <char> (char) ')' (line=0, col=33, len=1)
+                                <many> (many) (line=0, col=35, len=0)
+                        <and> (Compoundstatement) '{
+    return a + b;
+}
+
+' (line=0, col=35, len=23)
+                            <lexeme> (Lbrace) '{
+    ' (line=0, col=35, len=6) '{' (line=0, col=35, len=1)
+                                <char> (char) '{' (line=0, col=35, len=1)
+                            <many> (many) 'return a + b;
+' (line=1, col=5, len=14)
+                                <or> (Statement) 'return a + b;
+' (line=1, col=5, len=14)
+                                    <or> (Jumpstatement) 'return a + b;
+' (line=1, col=5, len=14)
+                                        <and> (Returnstatement) 'return a + b;
+' (line=1, col=5, len=14)
+                                            <lexeme> (Kwreturn) 'return ' (line=1, col=5, len=7) 'return' (line=1, col=5, len=6)
+                                                <and> (and) 'return' (line=1, col=5, len=6)
+                                                    <string> (string) 'return' (line=1, col=5, len=6)
+                                                    <not> (Idboundary) (line=1, col=11, len=0)
+                                            <optional> (optional) 'a + b' (line=1, col=12, len=5)
+                                                <and> (Expression) 'a + b' (line=1, col=12, len=5)
+                                                    <or> (Assignmentexpression) 'a + b' (line=1, col=12, len=5)
+                                                        <and> (Conditionalexpression) 'a + b' (line=1, col=12, len=5)
+                                                            <chainl1> (Additiveexpression) 'a + b' (line=1, col=12, len=5)
+                                                                <chainl1> (Additiveexpression) 'a ' (line=1, col=12, len=2)
+                                                                    <memoize> (Castexpression) 'a ' (line=1, col=12, len=2)
+                                                                        <or> (Castexpressionraw) 'a ' (line=1, col=12, len=2)
+                                                                            <memoize> (Unaryexpression) 'a ' (line=1, col=12, len=2)
+                                                                                <or> (Unaryexpressionraw) 'a ' (line=1, col=12, len=2)
+                                                                                    <and> (Postfixexpression) 'a ' (line=1, col=12, len=2)
+                                                                                        <or> (Primaryexpression) 'a ' (line=1, col=12, len=2)
+                                                                                            <lexeme> (Identifier) 'a ' (line=1, col=12, len=2) 'a' (line=1, col=12, len=1)
+                                                                                                <and> (and) 'a' (line=1, col=12, len=1)
+                                                                                                    <not> (not) (line=1, col=12, len=0)
+                                                                                                    <identifier> (identifier) 'a' (line=1, col=12, len=1)
+                                                                                        <many> (many) (line=1, col=14, len=0)
+                                                                <and> (Addop) '+ ' (line=1, col=14, len=2)
+                                                                    <or> (Addopraw) '+ ' (line=1, col=14, len=2)
+                                                                        <lexeme> (Plus) '+ ' (line=1, col=14, len=2) '+' (line=1, col=14, len=1)
+                                                                            <and> (and) '+' (line=1, col=14, len=1)
+                                                                                <char> (char) '+' (line=1, col=14, len=1)
+                                                                                <not> (not) (line=1, col=15, len=0)
+                                                                                <not> (not) (line=1, col=15, len=0)
+                                                                <memoize> (Castexpression) 'b' (line=1, col=16, len=1)
+                                                                    <or> (Castexpressionraw) 'b' (line=1, col=16, len=1)
+                                                                        <memoize> (Unaryexpression) 'b' (line=1, col=16, len=1)
+                                                                            <or> (Unaryexpressionraw) 'b' (line=1, col=16, len=1)
+                                                                                <and> (Postfixexpression) 'b' (line=1, col=16, len=1)
+                                                                                    <or> (Primaryexpression) 'b' (line=1, col=16, len=1)
+                                                                                        <lexeme> (Identifier) 'b' (line=1, col=16, len=1)
+                                                                                            <and> (and) 'b' (line=1, col=16, len=1)
+                                                                                                <not> (not) (line=1, col=16, len=0)
+                                                                                                <identifier> (identifier) 'b' (line=1, col=16, len=1)
+                                                                                    <many> (many) (line=1, col=17, len=0)
+                                                            <optional> (optional) (line=1, col=17, len=0)
+                                            <lexeme> (Semicolon) ';
+' (line=1, col=17, len=2) ';' (line=1, col=17, len=1)
+                                                <char> (char) ';' (line=1, col=17, len=1)
+                            <lexeme> (Rbrace) '}
+
+' (line=2, col=1, len=3) '}' (line=2, col=1, len=1)
+                                <char> (char) '}' (line=2, col=1, len=1)
+        <or> (Externaldeclaration) 'int main() {
+    float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+}
+' (line=4, col=1, len=150)
+            <and> (and) 'int main() {
+    float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+}
+' (line=4, col=1, len=150)
+                <optional> (optional) (line=4, col=1, len=0)
+                <or> (or) 'int main() {
+    float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+}
+' (line=4, col=1, len=150)
+                    <and> (Functiondefinition) 'int main() {
+    float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+}
+' (line=4, col=1, len=150)
+                        <memoize> (Declarationspecifiers) 'int ' (line=4, col=1, len=4)
+                            <or> (Declarationspecifiersraw) 'int ' (line=4, col=1, len=4)
+                                <plus> (plus) 'int ' (line=4, col=1, len=4)
+                                    <or> (or) 'int ' (line=4, col=1, len=4)
+                                        <memoize> (Declarationspecifier) 'int ' (line=4, col=1, len=4)
+                                            <or> (Declarationspecifierraw) 'int ' (line=4, col=1, len=4)
+                                                <or> (Nontypedeftypespecifier) 'int ' (line=4, col=1, len=4)
+                                                    <lexeme> (Kwint) 'int ' (line=4, col=1, len=4) 'int' (line=4, col=1, len=3)
+                                                        <and> (and) 'int' (line=4, col=1, len=3)
+                                                            <string> (string) 'int' (line=4, col=1, len=3)
+                                                            <not> (Idboundary) (line=4, col=4, len=0)
+                        <memoize> (Declarator) 'main() ' (line=4, col=5, len=7)
+                            <and> (Declaratorraw) 'main() ' (line=4, col=5, len=7)
+                                <many> (many) (line=4, col=5, len=0)
+                                <memoize> (Directdeclarator) 'main' (line=4, col=5, len=4)
+                                    <or> (Directdeclaratorraw) 'main' (line=4, col=5, len=4)
+                                        <and> (and) 'main' (line=4, col=5, len=4)
+                                            <lexeme> (Identifier) 'main' (line=4, col=5, len=4)
+                                                <and> (and) 'main' (line=4, col=5, len=4)
+                                                    <not> (not) (line=4, col=5, len=0)
+                                                    <identifier> (identifier) 'main' (line=4, col=5, len=4)
+                                            <many> (many) (line=4, col=9, len=0)
+                                <many> (many) '() ' (line=4, col=9, len=3)
+                                    <or> (Declaratorsuffix) '() ' (line=4, col=9, len=3)
+                                        <and> (and) '() ' (line=4, col=9, len=3)
+                                            <lexeme> (Lparen) '(' (line=4, col=9, len=1)
+                                                <char> (char) '(' (line=4, col=9, len=1)
+                                            <optional> (optional) (line=4, col=10, len=0)
+                                            <lexeme> (Rparen) ') ' (line=4, col=10, len=2) ')' (line=4, col=10, len=1)
+                                                <char> (char) ')' (line=4, col=10, len=1)
+                                <many> (many) (line=4, col=12, len=0)
+                        <and> (Compoundstatement) '{
+    float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+}
+' (line=4, col=12, len=139)
+                            <lexeme> (Lbrace) '{
+    ' (line=4, col=12, len=6) '{' (line=4, col=12, len=1)
+                                <char> (char) '{' (line=4, col=12, len=1)
+                            <many> (many) 'float x = 1.5f;
+    float y = 2.5f;
+    float res = add_floats(x, y);
+    if (res == 4.0f) {
+        return 0;
+    }
+    return 1;
+' (line=5, col=5, len=131)
+                                <or> (Statement) 'float x = 1.5f;
+    ' (line=5, col=5, len=20)
+                                    <and> (Declaration) 'float x = 1.5f;
+    ' (line=5, col=5, len=20)
+                                        <optional> (optional) (line=5, col=5, len=0)
+                                        <memoize> (Declarationspecifiers) 'float ' (line=5, col=5, len=6)
+                                            <or> (Declarationspecifiersraw) 'float ' (line=5, col=5, len=6)
+                                                <plus> (plus) 'float ' (line=5, col=5, len=6)
+                                                    <or> (or) 'float ' (line=5, col=5, len=6)
+                                                        <memoize> (Declarationspecifier) 'float ' (line=5, col=5, len=6)
+                                                            <or> (Declarationspecifierraw) 'float ' (line=5, col=5, len=6)
+                                                                <or> (Nontypedeftypespecifier) 'float ' (line=5, col=5, len=6)
+                                                                    <lexeme> (Kwfloat) 'float ' (line=5, col=5, len=6) 'float' (line=5, col=5, len=5)
+                                                                        <and> (and) 'float' (line=5, col=5, len=5)
+                                                                            <string> (string) 'float' (line=5, col=5, len=5)
+                                                                            <not> (Idboundary) (line=5, col=10, len=0)
+                                        <optional> (optional) 'x = 1.5f' (line=5, col=11, len=8)
+                                            <delimited> (Initdeclaratorlist) 'x = 1.5f' (line=5, col=11, len=8)
+                                                <and> (Initdeclarator) 'x = 1.5f' (line=5, col=11, len=8)
+                                                    <memoize> (Declarator) 'x ' (line=5, col=11, len=2)
+                                                        <and> (Declaratorraw) 'x ' (line=5, col=11, len=2)
+                                                            <many> (many) (line=5, col=11, len=0)
+                                                            <memoize> (Directdeclarator) 'x ' (line=5, col=11, len=2)
+                                                                <or> (Directdeclaratorraw) 'x ' (line=5, col=11, len=2)
+                                                                    <and> (and) 'x ' (line=5, col=11, len=2)
+                                                                        <lexeme> (Identifier) 'x ' (line=5, col=11, len=2) 'x' (line=5, col=11, len=1)
+                                                                            <and> (and) 'x' (line=5, col=11, len=1)
+                                                                                <not> (not) (line=5, col=11, len=0)
+                                                                                <identifier> (identifier) 'x' (line=5, col=11, len=1)
+                                                                        <many> (many) (line=5, col=13, len=0)
+                                                            <many> (many) (line=5, col=13, len=0)
+                                                            <many> (many) (line=5, col=13, len=0)
+                                                    <many> (many) (line=5, col=13, len=0)
+                                                    <optional> (optional) (line=5, col=13, len=0)
+                                                    <many> (many) (line=5, col=13, len=0)
+                                                    <optional> (optional) '= 1.5f' (line=5, col=13, len=6)
+                                                        <and> (and) '= 1.5f' (line=5, col=13, len=6)
+                                                            <lexeme> (Assign) '= ' (line=5, col=13, len=2) '=' (line=5, col=13, len=1)
+                                                                <and> (and) '=' (line=5, col=13, len=1)
+                                                                    <char> (char) '=' (line=5, col=13, len=1)
+                                                                    <not> (not) (line=5, col=14, len=0)
+                                                            <or> (Initializer) '1.5f' (line=5, col=15, len=4)
+                                                                <or> (Assignmentexpression) '1.5f' (line=5, col=15, len=4)
+                                                                    <and> (Conditionalexpression) '1.5f' (line=5, col=15, len=4)
+                                                                        <memoize> (Castexpression) '1.5f' (line=5, col=15, len=4)
+                                                                            <or> (Castexpressionraw) '1.5f' (line=5, col=15, len=4)
+                                                                                <memoize> (Unaryexpression) '1.5f' (line=5, col=15, len=4)
+                                                                                    <or> (Unaryexpressionraw) '1.5f' (line=5, col=15, len=4)
+                                                                                        <and> (Postfixexpression) '1.5f' (line=5, col=15, len=4)
+                                                                                            <or> (Primaryexpression) '1.5f' (line=5, col=15, len=4)
+                                                                                                <lexeme> (Numberliteral) '1.5f' (line=5, col=15, len=4)
+                                                                                                    <and> (and) '1.5f' (line=5, col=15, len=4)
+                                                                                                        <or> (or) '1.5f' (line=5, col=15, len=4)
+                                                                                                            <and> (Floatliteral) '1.5f' (line=5, col=15, len=4)
+                                                                                                                <or> (Floatliteralbase) '1.5' (line=5, col=15, len=3)
+                                                                                                                    <and> (and) '1.5' (line=5, col=15, len=3)
+                                                                                                                        <optional> (optional) '1' (line=5, col=15, len=1)
+                                                                                                                            <plus> (Digitseq) '1' (line=5, col=15, len=1)
+                                                                                                                                <digit> (digit) '1' (line=5, col=15, len=1)
+                                                                                                                        <char> (char) '.' (line=5, col=16, len=1)
+                                                                                                                        <plus> (Digitseq) '5' (line=5, col=17, len=1)
+                                                                                                                            <digit> (digit) '5' (line=5, col=17, len=1)
+                                                                                                                        <optional> (optional) (line=5, col=18, len=0)
+                                                                                                                <optional> (optional) 'f' (line=5, col=18, len=1)
+                                                                                                                    <one_of> (Floatsuffix) 'f' (line=5, col=18, len=1)
+                                                                                                        <not> (Idboundary) (line=5, col=19, len=0)
+                                                                                            <many> (many) (line=5, col=19, len=0)
+                                                                        <optional> (optional) (line=5, col=19, len=0)
+                                        <lexeme> (Semicolon) ';
+    ' (line=5, col=19, len=6) ';' (line=5, col=19, len=1)
+                                            <char> (char) ';' (line=5, col=19, len=1)
+                                <or> (Statement) 'float y = 2.5f;
+    ' (line=6, col=5, len=20)
+                                    <and> (Declaration) 'float y = 2.5f;
+    ' (line=6, col=5, len=20)
+                                        <optional> (optional) (line=6, col=5, len=0)
+                                        <memoize> (Declarationspecifiers) 'float ' (line=6, col=5, len=6)
+                                            <or> (Declarationspecifiersraw) 'float ' (line=6, col=5, len=6)
+                                                <plus> (plus) 'float ' (line=6, col=5, len=6)
+                                                    <or> (or) 'float ' (line=6, col=5, len=6)
+                                                        <memoize> (Declarationspecifier) 'float ' (line=6, col=5, len=6)
+                                                            <or> (Declarationspecifierraw) 'float ' (line=6, col=5, len=6)
+                                                                <or> (Nontypedeftypespecifier) 'float ' (line=6, col=5, len=6)
+                                                                    <lexeme> (Kwfloat) 'float ' (line=6, col=5, len=6) 'float' (line=6, col=5, len=5)
+                                                                        <and> (and) 'float' (line=6, col=5, len=5)
+                                                                            <string> (string) 'float' (line=6, col=5, len=5)
+                                                                            <not> (Idboundary) (line=6, col=10, len=0)
+                                        <optional> (optional) 'y = 2.5f' (line=6, col=11, len=8)
+                                            <delimited> (Initdeclaratorlist) 'y = 2.5f' (line=6, col=11, len=8)
+                                                <and> (Initdeclarator) 'y = 2.5f' (line=6, col=11, len=8)
+                                                    <memoize> (Declarator) 'y ' (line=6, col=11, len=2)
+                                                        <and> (Declaratorraw) 'y ' (line=6, col=11, len=2)
+                                                            <many> (many) (line=6, col=11, len=0)
+                                                            <memoize> (Directdeclarator) 'y ' (line=6, col=11, len=2)
+                                                                <or> (Directdeclaratorraw) 'y ' (line=6, col=11, len=2)
+                                                                    <and> (and) 'y ' (line=6, col=11, len=2)
+                                                                        <lexeme> (Identifier) 'y ' (line=6, col=11, len=2) 'y' (line=6, col=11, len=1)
+                                                                            <and> (and) 'y' (line=6, col=11, len=1)
+                                                                                <not> (not) (line=6, col=11, len=0)
+                                                                                <identifier> (identifier) 'y' (line=6, col=11, len=1)
+                                                                        <many> (many) (line=6, col=13, len=0)
+                                                            <many> (many) (line=6, col=13, len=0)
+                                                            <many> (many) (line=6, col=13, len=0)
+                                                    <many> (many) (line=6, col=13, len=0)
+                                                    <optional> (optional) (line=6, col=13, len=0)
+                                                    <many> (many) (line=6, col=13, len=0)
+                                                    <optional> (optional) '= 2.5f' (line=6, col=13, len=6)
+                                                        <and> (and) '= 2.5f' (line=6, col=13, len=6)
+                                                            <lexeme> (Assign) '= ' (line=6, col=13, len=2) '=' (line=6, col=13, len=1)
+                                                                <and> (and) '=' (line=6, col=13, len=1)
+                                                                    <char> (char) '=' (line=6, col=13, len=1)
+                                                                    <not> (not) (line=6, col=14, len=0)
+                                                            <or> (Initializer) '2.5f' (line=6, col=15, len=4)
+                                                                <or> (Assignmentexpression) '2.5f' (line=6, col=15, len=4)
+                                                                    <and> (Conditionalexpression) '2.5f' (line=6, col=15, len=4)
+                                                                        <memoize> (Castexpression) '2.5f' (line=6, col=15, len=4)
+                                                                            <or> (Castexpressionraw) '2.5f' (line=6, col=15, len=4)
+                                                                                <memoize> (Unaryexpression) '2.5f' (line=6, col=15, len=4)
+                                                                                    <or> (Unaryexpressionraw) '2.5f' (line=6, col=15, len=4)
+                                                                                        <and> (Postfixexpression) '2.5f' (line=6, col=15, len=4)
+                                                                                            <or> (Primaryexpression) '2.5f' (line=6, col=15, len=4)
+                                                                                                <lexeme> (Numberliteral) '2.5f' (line=6, col=15, len=4)
+                                                                                                    <and> (and) '2.5f' (line=6, col=15, len=4)
+                                                                                                        <or> (or) '2.5f' (line=6, col=15, len=4)
+                                                                                                            <and> (Floatliteral) '2.5f' (line=6, col=15, len=4)
+                                                                                                                <or> (Floatliteralbase) '2.5' (line=6, col=15, len=3)
+                                                                                                                    <and> (and) '2.5' (line=6, col=15, len=3)
+                                                                                                                        <optional> (optional) '2' (line=6, col=15, len=1)
+                                                                                                                            <plus> (Digitseq) '2' (line=6, col=15, len=1)
+                                                                                                                                <digit> (digit) '2' (line=6, col=15, len=1)
+                                                                                                                        <char> (char) '.' (line=6, col=16, len=1)
+                                                                                                                        <plus> (Digitseq) '5' (line=6, col=17, len=1)
+                                                                                                                            <digit> (digit) '5' (line=6, col=17, len=1)
+                                                                                                                        <optional> (optional) (line=6, col=18, len=0)
+                                                                                                                <optional> (optional) 'f' (line=6, col=18, len=1)
+                                                                                                                    <one_of> (Floatsuffix) 'f' (line=6, col=18, len=1)
+                                                                                                        <not> (Idboundary) (line=6, col=19, len=0)
+                                                                                            <many> (many) (line=6, col=19, len=0)
+                                                                        <optional> (optional) (line=6, col=19, len=0)
+                                        <lexeme> (Semicolon) ';
+    ' (line=6, col=19, len=6) ';' (line=6, col=19, len=1)
+                                            <char> (char) ';' (line=6, col=19, len=1)
+                                <or> (Statement) 'float res = add_floats(x, y);
+    ' (line=7, col=5, len=34)
+                                    <and> (Declaration) 'float res = add_floats(x, y);
+    ' (line=7, col=5, len=34)
+                                        <optional> (optional) (line=7, col=5, len=0)
+                                        <memoize> (Declarationspecifiers) 'float ' (line=7, col=5, len=6)
+                                            <or> (Declarationspecifiersraw) 'float ' (line=7, col=5, len=6)
+                                                <plus> (plus) 'float ' (line=7, col=5, len=6)
+                                                    <or> (or) 'float ' (line=7, col=5, len=6)
+                                                        <memoize> (Declarationspecifier) 'float ' (line=7, col=5, len=6)
+                                                            <or> (Declarationspecifierraw) 'float ' (line=7, col=5, len=6)
+                                                                <or> (Nontypedeftypespecifier) 'float ' (line=7, col=5, len=6)
+                                                                    <lexeme> (Kwfloat) 'float ' (line=7, col=5, len=6) 'float' (line=7, col=5, len=5)
+                                                                        <and> (and) 'float' (line=7, col=5, len=5)
+                                                                            <string> (string) 'float' (line=7, col=5, len=5)
+                                                                            <not> (Idboundary) (line=7, col=10, len=0)
+                                        <optional> (optional) 'res = add_floats(x, y)' (line=7, col=11, len=22)
+                                            <delimited> (Initdeclaratorlist) 'res = add_floats(x, y)' (line=7, col=11, len=22)
+                                                <and> (Initdeclarator) 'res = add_floats(x, y)' (line=7, col=11, len=22)
+                                                    <memoize> (Declarator) 'res ' (line=7, col=11, len=4)
+                                                        <and> (Declaratorraw) 'res ' (line=7, col=11, len=4)
+                                                            <many> (many) (line=7, col=11, len=0)
+                                                            <memoize> (Directdeclarator) 'res ' (line=7, col=11, len=4)
+                                                                <or> (Directdeclaratorraw) 'res ' (line=7, col=11, len=4)
+                                                                    <and> (and) 'res ' (line=7, col=11, len=4)
+                                                                        <lexeme> (Identifier) 'res ' (line=7, col=11, len=4) 'res' (line=7, col=11, len=3)
+                                                                            <and> (and) 'res' (line=7, col=11, len=3)
+                                                                                <not> (not) (line=7, col=11, len=0)
+                                                                                <identifier> (identifier) 'res' (line=7, col=11, len=3)
+                                                                        <many> (many) (line=7, col=15, len=0)
+                                                            <many> (many) (line=7, col=15, len=0)
+                                                            <many> (many) (line=7, col=15, len=0)
+                                                    <many> (many) (line=7, col=15, len=0)
+                                                    <optional> (optional) (line=7, col=15, len=0)
+                                                    <many> (many) (line=7, col=15, len=0)
+                                                    <optional> (optional) '= add_floats(x, y)' (line=7, col=15, len=18)
+                                                        <and> (and) '= add_floats(x, y)' (line=7, col=15, len=18)
+                                                            <lexeme> (Assign) '= ' (line=7, col=15, len=2) '=' (line=7, col=15, len=1)
+                                                                <and> (and) '=' (line=7, col=15, len=1)
+                                                                    <char> (char) '=' (line=7, col=15, len=1)
+                                                                    <not> (not) (line=7, col=16, len=0)
+                                                            <or> (Initializer) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                <or> (Assignmentexpression) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                    <and> (Conditionalexpression) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                        <memoize> (Castexpression) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                            <or> (Castexpressionraw) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                                <memoize> (Unaryexpression) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                                    <or> (Unaryexpressionraw) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                                        <and> (Postfixexpression) 'add_floats(x, y)' (line=7, col=17, len=16)
+                                                                                            <or> (Primaryexpression) 'add_floats' (line=7, col=17, len=10)
+                                                                                                <lexeme> (Identifier) 'add_floats' (line=7, col=17, len=10)
+                                                                                                    <and> (and) 'add_floats' (line=7, col=17, len=10)
+                                                                                                        <not> (not) (line=7, col=17, len=0)
+                                                                                                        <identifier> (identifier) 'add_floats' (line=7, col=17, len=10)
+                                                                                            <many> (many) '(x, y)' (line=7, col=27, len=6)
+                                                                                                <or> (Postfixpart) '(x, y)' (line=7, col=27, len=6)
+                                                                                                    <and> (Functioncallpart) '(x, y)' (line=7, col=27, len=6)
+                                                                                                        <lexeme> (Lparen) '(' (line=7, col=27, len=1)
+                                                                                                            <char> (char) '(' (line=7, col=27, len=1)
+                                                                                                        <optional> (optional) 'x, y' (line=7, col=28, len=4)
+                                                                                                            <delimited> (Argumentlist) 'x, y' (line=7, col=28, len=4)
+                                                                                                                <or> (Assignmentexpression) 'x' (line=7, col=28, len=1)
+                                                                                                                    <and> (Conditionalexpression) 'x' (line=7, col=28, len=1)
+                                                                                                                        <memoize> (Castexpression) 'x' (line=7, col=28, len=1)
+                                                                                                                            <or> (Castexpressionraw) 'x' (line=7, col=28, len=1)
+                                                                                                                                <memoize> (Unaryexpression) 'x' (line=7, col=28, len=1)
+                                                                                                                                    <or> (Unaryexpressionraw) 'x' (line=7, col=28, len=1)
+                                                                                                                                        <and> (Postfixexpression) 'x' (line=7, col=28, len=1)
+                                                                                                                                            <or> (Primaryexpression) 'x' (line=7, col=28, len=1)
+                                                                                                                                                <lexeme> (Identifier) 'x' (line=7, col=28, len=1)
+                                                                                                                                                    <and> (and) 'x' (line=7, col=28, len=1)
+                                                                                                                                                        <not> (not) (line=7, col=28, len=0)
+                                                                                                                                                        <identifier> (identifier) 'x' (line=7, col=28, len=1)
+                                                                                                                                            <many> (many) (line=7, col=29, len=0)
+                                                                                                                        <optional> (optional) (line=7, col=29, len=0)
+                                                                                                                <or> (Assignmentexpression) 'y' (line=7, col=31, len=1)
+                                                                                                                    <and> (Conditionalexpression) 'y' (line=7, col=31, len=1)
+                                                                                                                        <memoize> (Castexpression) 'y' (line=7, col=31, len=1)
+                                                                                                                            <or> (Castexpressionraw) 'y' (line=7, col=31, len=1)
+                                                                                                                                <memoize> (Unaryexpression) 'y' (line=7, col=31, len=1)
+                                                                                                                                    <or> (Unaryexpressionraw) 'y' (line=7, col=31, len=1)
+                                                                                                                                        <and> (Postfixexpression) 'y' (line=7, col=31, len=1)
+                                                                                                                                            <or> (Primaryexpression) 'y' (line=7, col=31, len=1)
+                                                                                                                                                <lexeme> (Identifier) 'y' (line=7, col=31, len=1)
+                                                                                                                                                    <and> (and) 'y' (line=7, col=31, len=1)
+                                                                                                                                                        <not> (not) (line=7, col=31, len=0)
+                                                                                                                                                        <identifier> (identifier) 'y' (line=7, col=31, len=1)
+                                                                                                                                            <many> (many) (line=7, col=32, len=0)
+                                                                                                                        <optional> (optional) (line=7, col=32, len=0)
+                                                                                                        <lexeme> (Rparen) ')' (line=7, col=32, len=1)
+                                                                                                            <char> (char) ')' (line=7, col=32, len=1)
+                                                                        <optional> (optional) (line=7, col=33, len=0)
+                                        <lexeme> (Semicolon) ';
+    ' (line=7, col=33, len=6) ';' (line=7, col=33, len=1)
+                                            <char> (char) ';' (line=7, col=33, len=1)
+                                <or> (Statement) 'if (res == 4.0f) {
+        return 0;
+    }
+    ' (line=8, col=5, len=47)
+                                    <or> (Selectionstatement) 'if (res == 4.0f) {
+        return 0;
+    }
+    ' (line=8, col=5, len=47)
+                                        <and> (Ifstatement) 'if (res == 4.0f) {
+        return 0;
+    }
+    ' (line=8, col=5, len=47)
+                                            <lexeme> (Kwif) 'if ' (line=8, col=5, len=3) 'if' (line=8, col=5, len=2)
+                                                <and> (and) 'if' (line=8, col=5, len=2)
+                                                    <string> (string) 'if' (line=8, col=5, len=2)
+                                                    <not> (Idboundary) (line=8, col=7, len=0)
+                                            <lexeme> (Lparen) '(' (line=8, col=8, len=1)
+                                                <char> (char) '(' (line=8, col=8, len=1)
+                                            <and> (Expression) 'res == 4.0f' (line=8, col=9, len=11)
+                                                <or> (Assignmentexpression) 'res == 4.0f' (line=8, col=9, len=11)
+                                                    <and> (Conditionalexpression) 'res == 4.0f' (line=8, col=9, len=11)
+                                                        <chainl1> (Equalityexpression) 'res == 4.0f' (line=8, col=9, len=11)
+                                                            <chainl1> (Equalityexpression) 'res ' (line=8, col=9, len=4)
+                                                                <memoize> (Castexpression) 'res ' (line=8, col=9, len=4)
+                                                                    <or> (Castexpressionraw) 'res ' (line=8, col=9, len=4)
+                                                                        <memoize> (Unaryexpression) 'res ' (line=8, col=9, len=4)
+                                                                            <or> (Unaryexpressionraw) 'res ' (line=8, col=9, len=4)
+                                                                                <and> (Postfixexpression) 'res ' (line=8, col=9, len=4)
+                                                                                    <or> (Primaryexpression) 'res ' (line=8, col=9, len=4)
+                                                                                        <lexeme> (Identifier) 'res ' (line=8, col=9, len=4) 'res' (line=8, col=9, len=3)
+                                                                                            <and> (and) 'res' (line=8, col=9, len=3)
+                                                                                                <not> (not) (line=8, col=9, len=0)
+                                                                                                <identifier> (identifier) 'res' (line=8, col=9, len=3)
+                                                                                    <many> (many) (line=8, col=13, len=0)
+                                                            <and> (Eqop) '== ' (line=8, col=13, len=3)
+                                                                <or> (Eqopraw) '== ' (line=8, col=13, len=3)
+                                                                    <lexeme> (Eq) '== ' (line=8, col=13, len=3) '==' (line=8, col=13, len=2)
+                                                                        <string> (string) '==' (line=8, col=13, len=2)
+                                                            <memoize> (Castexpression) '4.0f' (line=8, col=16, len=4)
+                                                                <or> (Castexpressionraw) '4.0f' (line=8, col=16, len=4)
+                                                                    <memoize> (Unaryexpression) '4.0f' (line=8, col=16, len=4)
+                                                                        <or> (Unaryexpressionraw) '4.0f' (line=8, col=16, len=4)
+                                                                            <and> (Postfixexpression) '4.0f' (line=8, col=16, len=4)
+                                                                                <or> (Primaryexpression) '4.0f' (line=8, col=16, len=4)
+                                                                                    <lexeme> (Numberliteral) '4.0f' (line=8, col=16, len=4)
+                                                                                        <and> (and) '4.0f' (line=8, col=16, len=4)
+                                                                                            <or> (or) '4.0f' (line=8, col=16, len=4)
+                                                                                                <and> (Floatliteral) '4.0f' (line=8, col=16, len=4)
+                                                                                                    <or> (Floatliteralbase) '4.0' (line=8, col=16, len=3)
+                                                                                                        <and> (and) '4.0' (line=8, col=16, len=3)
+                                                                                                            <optional> (optional) '4' (line=8, col=16, len=1)
+                                                                                                                <plus> (Digitseq) '4' (line=8, col=16, len=1)
+                                                                                                                    <digit> (digit) '4' (line=8, col=16, len=1)
+                                                                                                            <char> (char) '.' (line=8, col=17, len=1)
+                                                                                                            <plus> (Digitseq) '0' (line=8, col=18, len=1)
+                                                                                                                <digit> (digit) '0' (line=8, col=18, len=1)
+                                                                                                            <optional> (optional) (line=8, col=19, len=0)
+                                                                                                    <optional> (optional) 'f' (line=8, col=19, len=1)
+                                                                                                        <one_of> (Floatsuffix) 'f' (line=8, col=19, len=1)
+                                                                                            <not> (Idboundary) (line=8, col=20, len=0)
+                                                                                <many> (many) (line=8, col=20, len=0)
+                                                        <optional> (optional) (line=8, col=20, len=0)
+                                            <lexeme> (Rparen) ') ' (line=8, col=20, len=2) ')' (line=8, col=20, len=1)
+                                                <char> (char) ')' (line=8, col=20, len=1)
+                                            <or> (Statement) '{
+        return 0;
+    }
+    ' (line=8, col=22, len=30)
+                                                <and> (Compoundstatement) '{
+        return 0;
+    }
+    ' (line=8, col=22, len=30)
+                                                    <lexeme> (Lbrace) '{
+        ' (line=8, col=22, len=10) '{' (line=8, col=22, len=1)
+                                                        <char> (char) '{' (line=8, col=22, len=1)
+                                                    <many> (many) 'return 0;
+    ' (line=9, col=9, len=14)
+                                                        <or> (Statement) 'return 0;
+    ' (line=9, col=9, len=14)
+                                                            <or> (Jumpstatement) 'return 0;
+    ' (line=9, col=9, len=14)
+                                                                <and> (Returnstatement) 'return 0;
+    ' (line=9, col=9, len=14)
+                                                                    <lexeme> (Kwreturn) 'return ' (line=9, col=9, len=7) 'return' (line=9, col=9, len=6)
+                                                                        <and> (and) 'return' (line=9, col=9, len=6)
+                                                                            <string> (string) 'return' (line=9, col=9, len=6)
+                                                                            <not> (Idboundary) (line=9, col=15, len=0)
+                                                                    <optional> (optional) '0' (line=9, col=16, len=1)
+                                                                        <and> (Expression) '0' (line=9, col=16, len=1)
+                                                                            <or> (Assignmentexpression) '0' (line=9, col=16, len=1)
+                                                                                <and> (Conditionalexpression) '0' (line=9, col=16, len=1)
+                                                                                    <memoize> (Castexpression) '0' (line=9, col=16, len=1)
+                                                                                        <or> (Castexpressionraw) '0' (line=9, col=16, len=1)
+                                                                                            <memoize> (Unaryexpression) '0' (line=9, col=16, len=1)
+                                                                                                <or> (Unaryexpressionraw) '0' (line=9, col=16, len=1)
+                                                                                                    <and> (Postfixexpression) '0' (line=9, col=16, len=1)
+                                                                                                        <or> (Primaryexpression) '0' (line=9, col=16, len=1)
+                                                                                                            <lexeme> (Numberliteral) '0' (line=9, col=16, len=1)
+                                                                                                                <and> (and) '0' (line=9, col=16, len=1)
+                                                                                                                    <or> (or) '0' (line=9, col=16, len=1)
+                                                                                                                        <and> (Integerliteral) '0' (line=9, col=16, len=1)
+                                                                                                                            <or> (Integerliteralbase) '0' (line=9, col=16, len=1)
+                                                                                                                                <octal> (octal) '0' (line=9, col=16, len=1)
+                                                                                                                            <optional> (optional) (line=9, col=17, len=0)
+                                                                                                                    <not> (Idboundary) (line=9, col=17, len=0)
+                                                                                                        <many> (many) (line=9, col=17, len=0)
+                                                                                    <optional> (optional) (line=9, col=17, len=0)
+                                                                    <lexeme> (Semicolon) ';
+    ' (line=9, col=17, len=6) ';' (line=9, col=17, len=1)
+                                                                        <char> (char) ';' (line=9, col=17, len=1)
+                                                    <lexeme> (Rbrace) '}
+    ' (line=10, col=5, len=6) '}' (line=10, col=5, len=1)
+                                                        <char> (char) '}' (line=10, col=5, len=1)
+                                            <optional> (optional) (line=11, col=5, len=0)
+                                <or> (Statement) 'return 1;
+' (line=11, col=5, len=10)
+                                    <or> (Jumpstatement) 'return 1;
+' (line=11, col=5, len=10)
+                                        <and> (Returnstatement) 'return 1;
+' (line=11, col=5, len=10)
+                                            <lexeme> (Kwreturn) 'return ' (line=11, col=5, len=7) 'return' (line=11, col=5, len=6)
+                                                <and> (and) 'return' (line=11, col=5, len=6)
+                                                    <string> (string) 'return' (line=11, col=5, len=6)
+                                                    <not> (Idboundary) (line=11, col=11, len=0)
+                                            <optional> (optional) '1' (line=11, col=12, len=1)
+                                                <and> (Expression) '1' (line=11, col=12, len=1)
+                                                    <or> (Assignmentexpression) '1' (line=11, col=12, len=1)
+                                                        <and> (Conditionalexpression) '1' (line=11, col=12, len=1)
+                                                            <memoize> (Castexpression) '1' (line=11, col=12, len=1)
+                                                                <or> (Castexpressionraw) '1' (line=11, col=12, len=1)
+                                                                    <memoize> (Unaryexpression) '1' (line=11, col=12, len=1)
+                                                                        <or> (Unaryexpressionraw) '1' (line=11, col=12, len=1)
+                                                                            <and> (Postfixexpression) '1' (line=11, col=12, len=1)
+                                                                                <or> (Primaryexpression) '1' (line=11, col=12, len=1)
+                                                                                    <lexeme> (Numberliteral) '1' (line=11, col=12, len=1)
+                                                                                        <and> (and) '1' (line=11, col=12, len=1)
+                                                                                            <or> (or) '1' (line=11, col=12, len=1)
+                                                                                                <and> (Integerliteral) '1' (line=11, col=12, len=1)
+                                                                                                    <or> (Integerliteralbase) '1' (line=11, col=12, len=1)
+                                                                                                        <or> (Decimalliteral) '1' (line=11, col=12, len=1)
+                                                                                                            <and> (and) '1' (line=11, col=12, len=1)
+                                                                                                                <char_range> (Decdigit) '1' (line=11, col=12, len=1)
+                                                                                                                <many> (many) (line=11, col=13, len=0)
+                                                                                                    <optional> (optional) (line=11, col=13, len=0)
+                                                                                            <not> (Idboundary) (line=11, col=13, len=0)
+                                                                                <many> (many) (line=11, col=13, len=0)
+                                                            <optional> (optional) (line=11, col=13, len=0)
+                                            <lexeme> (Semicolon) ';
+' (line=11, col=13, len=2) ';' (line=11, col=13, len=1)
+                                                <char> (char) ';' (line=11, col=13, len=1)
+                            <lexeme> (Rbrace) '}
+' (line=12, col=1, len=2) '}' (line=12, col=1, len=1)
+                                <char> (char) '}' (line=12, col=1, len=1)
+    <eoi> (eoi) (line=0, col=0, len=0)
+
+TranslationUnit (2 children)
+  FunctionDefinition (3 children)
+    DeclarationSpecifiers (1 children)
+      TypeSpecifier: float 
+    Declarator (2 children)
+      DirectDeclarator (1 children)
+        Identifier: add_floats
+      DeclaratorSuffix (4 children)
+        DeclarationSpecifiers (1 children)
+          TypeSpecifier: float 
+        Declarator (1 children)
+          DirectDeclarator (1 children)
+            Identifier: a
+        DeclarationSpecifiers (1 children)
+          TypeSpecifier: float 
+        Declarator (1 children)
+          DirectDeclarator (1 children)
+            Identifier: b
+    CompoundStatement (1 children)
+      ReturnStatement (1 children)
+        BinaryOp (3 children)
+          BinaryOp (1 children)
+            Identifier: a
+          Operator: + 
+          Identifier: b
+  FunctionDefinition (3 children)
+    DeclarationSpecifiers (1 children)
+      TypeSpecifier: int 
+    Declarator (2 children)
+      DirectDeclarator (1 children)
+        Identifier: main
+      DeclaratorSuffix (0 children)
+    CompoundStatement (5 children)
+      Declaration (2 children)
+        DeclarationSpecifiers (1 children)
+          TypeSpecifier: float 
+        InitDeclarator (2 children)
+          Declarator (1 children)
+            DirectDeclarator (1 children)
+              Identifier: x
+          FloatValue (2 children)
+            FloatBase: 1.5
+            LiteralSuffix: f
+      Declaration (2 children)
+        DeclarationSpecifiers (1 children)
+          TypeSpecifier: float 
+        InitDeclarator (2 children)
+          Declarator (1 children)
+            DirectDeclarator (1 children)
+              Identifier: y
+          FloatValue (2 children)
+            FloatBase: 2.5
+            LiteralSuffix: f
+      Declaration (2 children)
+        DeclarationSpecifiers (1 children)
+          TypeSpecifier: float 
+        InitDeclarator (2 children)
+          Declarator (1 children)
+            DirectDeclarator (1 children)
+              Identifier: res
+          PostfixExpression (2 children)
+            Identifier: add_floats
+            FunctionCall (2 children)
+              Identifier: x
+              Identifier: y
+      IfStatement (2 children)
+        EqualityExpression (3 children)
+          EqualityExpression (1 children)
+            Identifier: res
+          Operator: == 
+          FloatValue (2 children)
+            FloatBase: 4.0
+            LiteralSuffix: f
+        CompoundStatement (1 children)
+          ReturnStatement (1 children)
+            IntegerValue (1 children)
+              IntegerBase: 0
+      ReturnStatement (1 children)
+        IntegerValue (1 children)
+          IntegerBase: 1
+
+Starting LLVM IR Generation...
+process_ast_node node type 0
+process_ast_node node type 1
+IRGen: Added symbol 'a' to table.
+IRGen: Added symbol 'b' to table.
+process_ast_node node type 2
+process_ast_node node type 43
+process_ast_node node type 1
+process_ast_node node type 2
+process_ast_node node type 3
+IRGen: Added symbol 'x' to table.
+process_ast_node node type 3
+IRGen: Added symbol 'y' to table.
+process_ast_node node type 3
+IRGen: Added symbol 'res' to table.
+process_ast_node node type 35
+process_ast_node node type 2
+process_ast_node node type 43
+process_ast_node node type 43
+IRGen: Successfully wrote LLVM IR to test_types.ll
+chris@chris-work:~/projects/c_compiler/build(master)$ clang test_types.ll && ./a.out; echo $?
+test_types.ll:28:6: error: branch condition must have 'i1' type
+   28 |   br float %load_tmp2, label %then, label %if_merge
+      |      ^
+1 error generated.
+1
