@@ -209,6 +209,28 @@ TEST(CombinatorParsersNew, CountRange_FailsNullChildParser)
 }
 
 // --- p_between tests ---
+TEST(CombinatorParsersNew, Between_EmptyStringMatchesZeroLength)
+{
+    // Rule: StringChar
+    epc_parser_t * Stringchar = epc_or(
+        list,
+        "Stringchar",
+        2,
+        epc_and(list, NULL, 2, epc_string(list, NULL, "\\"), epc_any(list, "any")),
+        epc_none_of(list, NULL, "\"\\\n\r")
+    );
+
+    // Rule: StringLiteral
+    epc_parser_t * Stringliteral = epc_between(
+        list, "Stringliteral", epc_char(list, NULL, '"'), epc_many(list, NULL, Stringchar), epc_char(list, NULL, '"')
+    );
+    session = parse(Stringliteral, "\"\"");
+    check_success("between", "\"\"", 2, 1);
+    epc_cpt_node_t * root_node = session.result.data.success;
+
+    check_cpt_node(root_node->children[0], "many", "", 0, 0);
+}
+
 TEST(CombinatorParsersNew, Between_MatchesCorrectly)
 {
     epc_parser_t * p_open = epc_char(list, NULL, '(');
