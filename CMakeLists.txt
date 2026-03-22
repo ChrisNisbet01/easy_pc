@@ -87,13 +87,13 @@ endif()
 # --- Doxygen Documentation ---
 find_package(Doxygen)
 
-if (DOXYGEN_FOUND)
+if (DOXYGEN_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/Doxyfile)
     message(STATUS "Doxygen found, documentation will be generated.")
     file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/docs/help/html)
 
-    # Add a custom target to run Doxygen
+    # Add a custom target to run Doxygen (not ALL to avoid build failures if Doxyfile is missing)
     add_custom_target(
-        docs ALL
+        docs
         COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Generating API documentation with Doxygen"
@@ -109,7 +109,7 @@ if (DOXYGEN_FOUND)
         COMMENT "Re-generating Doxygen documentation due to header change"
         VERBATIM
     )
-    add_custom_target(doxygen_docs ALL DEPENDS ${CMAKE_SOURCE_DIR}/docs/help/html/index.html)
+    add_custom_target(doxygen_docs DEPENDS ${CMAKE_SOURCE_DIR}/docs/help/html/index.html)
 
     install(
         DIRECTORY ${CMAKE_SOURCE_DIR}/docs/help/html/
@@ -117,7 +117,7 @@ if (DOXYGEN_FOUND)
     )
 
 else ()
-    message(STATUS "Doxygen not found, skipping documentation generation.")
+    message(STATUS "Doxygen not found or Doxyfile missing, skipping documentation generation.")
 endif ()
 
 add_subdirectory(tools/gdl_compiler)
