@@ -3876,15 +3876,25 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
 
     if (node == NULL)
     {
+        epc_parser_result_cleanup(&token_result);
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
+
+    node->children = calloc(1, sizeof(*node->children));
+    if (node->children == NULL)
+    {
+        epc_parser_result_cleanup(&token_result);
+        epc_node_free(node);
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    node->children[0] = token_result.data.success;
+    node->children_count = 1;
 
     node->content = token_result.data.success->content;
     node->len = token_result.data.success->len;
     node->semantic_start_offset = token_result.data.success->semantic_start_offset;
     node->semantic_end_offset = token_result.data.success->semantic_end_offset;
-
-    epc_parser_result_cleanup(&token_result);
 
     return epc_parser_success_result(node);
 }
