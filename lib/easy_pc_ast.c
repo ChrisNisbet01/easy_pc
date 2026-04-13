@@ -5,6 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define AST_DEBUG 0
+#if AST_DEBUG
+#define ast_debug(...) fprintf(stderr, "AST_DBG: " __VA_ARGS__)
+#else
+#define ast_debug(...)
+#endif
+
 // --- AST Hook Registry Implementation ---
 
 EASY_PC_API epc_ast_hook_registry_t *
@@ -316,18 +323,26 @@ epc_ast_builder_exit_node_cb(epc_cpt_node_t * node, void * user_data)
 
     if (has_action_assigned && action_cb)
     {
+        ast_debug("exit '%s' ('%.*s'): action=%d, children=%d -> calling action\n",
+            node->name, (int)node->len, node->content,
+            node->ast_config.action, children_count);
         action_cb(ctx, node, children, children_count, ctx->user_data);
+        ast_debug("exit '%s': stack top after action = %d\n", node->name, ctx->top);
     }
     else // Default behavior: if no action, push children back (flatten)
     {
+        ast_debug("exit '%s' ('%.*s'): no action, flattening %d children (stack top=%d)\n",
+            node->name, (int)node->len, node->content,
+            children_count, ctx->top);
         for (int i = 0; i < children_count; ++i)
         {
             epc_ast_push(ctx, children[i]);
             if (ctx->has_error)
             {
-                break; // Stop pushing if an error occurred (e.g. realloc failed)
+                break;
             }
         }
+        ast_debug("exit '%s': stack top after flatten = %d\n", node->name, ctx->top);
     }
 
     free(children);
