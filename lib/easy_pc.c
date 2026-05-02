@@ -225,6 +225,37 @@ error_pool_cleanup(epc_error_pool_t * pool)
     pool->capacity = 0;
 }
 
+static void
+scan_newlines(epc_parser_ctx_t * ctx, char const * input_start, size_t len)
+{
+    if (ctx == NULL || input_start == NULL || len == 0)
+    {
+        return;
+    }
+
+    size_t base_offset = ctx->newline_count > 0 ? ctx->newline_positions[ctx->newline_count - 1] + 1 : 0;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        if (input_start[i] == '\n')
+        {
+            if (ctx->newline_count >= ctx->newline_capacity)
+            {
+                size_t new_capacity = ctx->newline_capacity * 2;
+                size_t * new_positions = realloc(ctx->newline_positions, new_capacity * sizeof(*new_positions));
+                if (new_positions == NULL)
+                {
+                    return;
+                }
+                ctx->newline_positions = new_positions;
+                ctx->newline_capacity = new_capacity;
+            }
+
+            ctx->newline_positions[ctx->newline_count++] = base_offset + i;
+        }
+    }
+}
+
 static bool
 internal_init_parse_ctx(epc_parser_ctx_t * ctx)
 {
@@ -255,6 +286,10 @@ internal_init_parse_ctx(epc_parser_ctx_t * ctx)
         epc_arena_destroy(&ctx->node_arena);
         return false;
     }
+
+    ctx->newline_positions = calloc(128, sizeof(*ctx->newline_positions));
+    ctx->newline_capacity = 128;
+    ctx->newline_count = 0;
 
     return true;
 }
@@ -291,6 +326,8 @@ internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
 
     memcpy(buffer.buffer, buf, len);
     buffer.buffer[len] = '\0'; // Nul-terminate the buffer
+
+    scan_newlines(ctx, buffer.buffer, len);
 
     ctx->mmap_buffer = buffer;
     ctx->input_start = ctx->mmap_buffer.buffer;
@@ -369,6 +406,8 @@ internal_create_parse_ctx_from_fp(FILE * fp)
         free(ctx);
         return NULL;
     }
+
+    scan_newlines(ctx, buffer.buffer, total_read);
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
     pthread_mutex_init(&ctx->streaming.mutex, NULL);
@@ -463,6 +502,8 @@ internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
     {
         munmap((void *)ctx->mmap_buffer.buffer, ctx->mmap_buffer.total_size);
     }
+
+    free(ctx->newline_positions);
 
     epc_arena_destroy(&ctx->node_arena);
     node_pool_cleanup(&ctx->node_pool);
@@ -722,6 +763,7 @@ internal_streaming_consume_available(epc_parse_session_t * session, bool once)
             memcpy((void *)(ctx->input_start + ctx->input_len), read_buf, (size_t)bytes_read);
             /* NUL terminate to help prevent buffer overruns within the parsers. */
             *(uint8_t *)&ctx->input_start[ctx->input_len + bytes_read] = '\0';
+            scan_newlines(ctx, ctx->input_start + ctx->input_len, (size_t)bytes_read);
             ctx->input_len += (size_t)bytes_read;
             pthread_cond_broadcast(&ctx->streaming.cond);
             pthread_mutex_unlock(&ctx->streaming.mutex);

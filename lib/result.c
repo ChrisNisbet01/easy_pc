@@ -1,7 +1,9 @@
-#include "cpt_node.h"
-#include "easy_pc_private.h"
 #include "result.h"
 
+#include "cpt_node.h"
+#include "easy_pc_private.h"
+
+#include <search.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,34 +21,48 @@ epc_parser_error_free(epc_parser_error_t * error)
     parse_ctx_free_error(ctx, error);
 }
 
-EASY_PC_HIDDEN
+EASY_PC_API
 epc_line_col_t
 epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
 {
     epc_line_col_t res = {0};
-    char const * const input_start = parse_ctx_get_input_start(ctx);
-    size_t const input_len = parse_ctx_get_input_len(ctx);
 
-    if (input_start == NULL || offset >= input_len)
+    if (ctx == NULL)
     {
         return res;
     }
 
-    char const * current = input_start + offset;
-    if (current > input_start + input_len)
+    if (ctx->newline_positions == NULL || ctx->newline_count == 0)
     {
+        res.line = 1;
+        res.col = offset;
         return res;
     }
 
+    size_t lo = 0;
+    size_t hi = ctx->newline_count;
+    while (lo < hi)
     {
-        char const * line_start = input_start;
-
-        for (char const * nl = strchr(input_start, '\n'); nl != NULL && nl <= current; nl = strchr(nl + 1, '\n'))
+        size_t mid = lo + (hi - lo) / 2;
+        if (ctx->newline_positions[mid] < offset)
         {
-            res.line++;
-            line_start = nl;
+            lo = mid + 1;
         }
-        res.col = current - line_start;
+        else
+        {
+            hi = mid;
+        }
+    }
+
+    res.line = lo + 1;
+    if (lo == 0)
+    {
+        res.col = offset + 1;
+    }
+    else
+    {
+        size_t prev_newline = ctx->newline_positions[lo - 1];
+        res.col = offset - prev_newline;
     }
 
     return res;

@@ -67,7 +67,7 @@ TEST(CptPrinter, PrintsSingleCharNode)
     char * printed_cpt = parse_and_print(p_a, "abc");
     CHECK_TRUE(printed_cpt != NULL);
 
-    char const * expected_output = "<char> (char) 'a' (line=0, col=0, len=1)\n";
+    char const * expected_output = "<char> (char) 'a' (line=1, col=0, len=1)\n";
     STRCMP_EQUAL(expected_output, printed_cpt);
 
     free(printed_cpt);
@@ -83,10 +83,10 @@ TEST(CptPrinter, PrintsSimpleAndNode)
     char * printed_cpt = parse_and_print(p_and_parser, "abcde");
     CHECK_TRUE(printed_cpt != NULL);
 
-    char const * expected_output = "<and> (and) 'abc' (line=0, col=0, len=3)\n"
-                                   "    <char> (char) 'a' (line=0, col=0, len=1)\n"
-                                   "    <char> (char) 'b' (line=0, col=1, len=1)\n"
-                                   "    <char> (char) 'c' (line=0, col=2, len=1)\n";
+    char const * expected_output = "<and> (and) 'abc' (line=1, col=0, len=3)\n"
+                                   "    <char> (char) 'a' (line=1, col=0, len=1)\n"
+                                   "    <char> (char) 'b' (line=1, col=1, len=1)\n"
+                                   "    <char> (char) 'c' (line=1, col=2, len=1)\n";
     STRCMP_EQUAL(expected_output, printed_cpt);
 
     free(printed_cpt);
@@ -103,11 +103,11 @@ TEST(CptPrinter, PrintsAndNodeWithNestedOr)
     char * printed_cpt = parse_and_print(p_expr, "1+2");
     CHECK_TRUE(printed_cpt != NULL);
 
-    char const * expected_output = "<and> (and) '1+2' (line=0, col=0, len=3)\n"
-                                   "    <digit> (digit) '1' (line=0, col=0, len=1)\n"
-                                   "    <or> (or) '+' (line=0, col=1, len=1)\n"
-                                   "        <char> (char) '+' (line=0, col=1, len=1)\n"
-                                   "    <digit> (digit) '2' (line=0, col=2, len=1)\n";
+    char const * expected_output = "<and> (and) '1+2' (line=1, col=0, len=3)\n"
+                                   "    <digit> (digit) '1' (line=1, col=0, len=1)\n"
+                                   "    <or> (or) '+' (line=1, col=1, len=1)\n"
+                                   "        <char> (char) '+' (line=1, col=1, len=1)\n"
+                                   "    <digit> (digit) '2' (line=1, col=2, len=1)\n";
     STRCMP_EQUAL(expected_output, printed_cpt);
 
     free(printed_cpt);
@@ -120,7 +120,7 @@ TEST(CptPrinter, PrintsSingleSkipNodeWithTwoSpaces)
     char * printed_cpt = parse_and_print(p, "  abc");
     CHECK_TRUE(printed_cpt != NULL);
 
-    char const * expected_output = "<skip> (skip) '  ' (line=0, col=0, len=2)\n";
+    char const * expected_output = "<skip> (skip) '  ' (line=1, col=0, len=2)\n";
     STRCMP_EQUAL(expected_output, printed_cpt);
 
     free(printed_cpt);
@@ -133,7 +133,7 @@ TEST(CptPrinter, PrintsSingleSkipNodeWithSingleSpace)
     char * printed_cpt = parse_and_print(p, " abc");
     CHECK_TRUE(printed_cpt != NULL);
 
-    char const * expected_output = "<skip> (skip) ' ' (line=0, col=0, len=1)\n";
+    char const * expected_output = "<skip> (skip) ' ' (line=1, col=0, len=1)\n";
     STRCMP_EQUAL(expected_output, printed_cpt);
 
     free(printed_cpt);

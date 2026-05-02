@@ -189,3 +189,27 @@ TEST(ErrorHandling, POrReportsErrorWhenAllAlternativesFail)
     STRCMP_EQUAL("x or y", result.data.error->expected);
     STRCMP_EQUAL("abc", result.data.error->found);
 }
+
+TEST(ErrorHandling, ReportsCorrectLineAndColumnSingleLine)
+{
+    char const * input_str = "ab";
+    epc_parser_t * p = epc_char(list, NULL, 'x');
+    result = parse(p, input_str);
+
+    CHECK_TRUE(result.is_error);
+    CHECK_EQUAL(1, result.data.error->position.line);
+    CHECK_EQUAL(0, result.data.error->position.col);
+}
+
+TEST(ErrorHandling, ReportsCorrectLineAndColumnErrorAtOffset1)
+{
+    char const * input_str = "ab";
+    epc_parser_t * p = epc_char(list, NULL, 'a');
+    epc_parser_t * p2 = epc_char(list, NULL, 'x');
+    epc_parser_t * seq = epc_and(list, NULL, 2, p, p2);
+    result = parse(seq, input_str);
+
+    CHECK_TRUE(result.is_error);
+    CHECK_EQUAL(1, result.data.error->position.line);
+    CHECK_EQUAL(1, result.data.error->position.col);
+}

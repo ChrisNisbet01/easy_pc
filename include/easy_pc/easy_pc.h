@@ -1138,6 +1138,9 @@ EASY_PC_API char * epc_cpt_to_string(epc_parser_ctx_t * parse_ctx, epc_cpt_node_
  */
 EASY_PC_API char const * epc_get_version(void);
 
+EASY_PC_API
+epc_line_col_t epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t offset);
+
 #ifdef __cplusplus
 }
 #endif

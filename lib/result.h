@@ -6,9 +6,6 @@
 #include <stddef.h>
 
 EASY_PC_HIDDEN
-epc_line_col_t epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t offset);
-
-EASY_PC_HIDDEN
 epc_parser_error_t * epc_parser_error_alloc(
     epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
 );

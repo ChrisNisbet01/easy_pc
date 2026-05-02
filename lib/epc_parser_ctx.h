@@ -75,6 +75,10 @@ struct epc_parser_ctx_t
     epc_node_pool_t node_pool;
     epc_error_pool_t error_pool;
 
+    size_t * newline_positions;
+    size_t newline_count;
+    size_t newline_capacity;
+
 #ifdef WITH_INPUT_STREAM_SUPPORT
     epc_streaming_state_t streaming;
 #endif
