@@ -1138,11 +1138,26 @@ EASY_PC_API char * epc_cpt_to_string(epc_parser_ctx_t * parse_ctx, epc_cpt_node_
  */
 EASY_PC_API char const * epc_get_version(void);
 
-EASY_PC_API
+/**
+ * @brief Calculate the line and column in the input where the supplied offset is.
+ *
+ * This function takes an offset into the input and returns the line and column that corresponds to that offset.
+ *
+ * @param parse_ctx The parser context associated with the CPT.
+ * @param offset The offset into the input
+ * @return A structure containing the calculated (1-based) line and column.
+ */
 epc_line_col_t epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t offset);
 
+/**
+ * @brief Get the line of input that contains the supplied offset into the parsed input.
+ *
+ * @param parse_ctx The parser context associated with the CPT.
+ * @param offset The offset into the input
+ * @return A heap-allocated string where the offset occurs. NB - The user is responsible for freeing this string.
+ */
 EASY_PC_API
-void epc_print_line_with_marker(FILE * fp, epc_parser_ctx_t * ctx, size_t offset);
+char * epc_get_line_at_offset(epc_parser_ctx_t * ctx, size_t const offset);
 
 #ifdef __cplusplus
 }

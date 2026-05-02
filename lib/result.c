@@ -21,6 +21,67 @@ epc_parser_error_free(epc_parser_error_t * error)
     parse_ctx_free_error(ctx, error);
 }
 
+static size_t
+calculate_next_newline_index(epc_parser_ctx_t * ctx, size_t const offset)
+{
+
+    size_t lo = 0;
+    size_t hi = ctx->newline.count;
+    while (lo < hi)
+    {
+        size_t mid = lo + (hi - lo) / 2;
+        if (ctx->newline.positions[mid] < offset)
+        {
+            lo = mid + 1;
+        }
+        else
+        {
+            hi = mid;
+        }
+    }
+
+    return lo;
+}
+
+EASY_PC_API
+char *
+epc_get_line_at_offset(epc_parser_ctx_t * ctx, size_t const offset)
+{
+    if (ctx == NULL)
+    {
+        return NULL;
+    }
+
+    size_t const next_newline_index = calculate_next_newline_index(ctx, offset);
+    char * line;
+    size_t start_offset;
+
+    if (next_newline_index == 0)
+    {
+        start_offset = 0;
+    }
+    else
+    {
+        start_offset = ctx->newline.positions[next_newline_index - 1] + 1;
+    }
+
+    size_t len_to_copy;
+
+    if (next_newline_index >= ctx->newline.count)
+    {
+        /* Take everything from the previous newline to the end. */
+        len_to_copy = ctx->input_len - start_offset;
+    }
+    else
+    {
+        len_to_copy = ctx->newline.positions[next_newline_index] - start_offset;
+    }
+
+    line = strndup(&ctx->input_start[start_offset], len_to_copy);
+
+    return line;
+}
+
 EASY_PC_API
 epc_line_col_t
 epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
@@ -39,71 +100,21 @@ epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
         return res;
     }
 
-    size_t lo = 0;
-    size_t hi = ctx->newline.count;
-    while (lo < hi)
-    {
-        size_t mid = lo + (hi - lo) / 2;
-        if (ctx->newline.positions[mid] < offset)
-        {
-            lo = mid + 1;
-        }
-        else
-        {
-            hi = mid;
-        }
-    }
+    size_t next_index = calculate_next_newline_index(ctx, offset);
 
-    res.line = lo + 1;
-    if (lo == 0)
+    res.line = next_index + 1;
+    if (next_index == 0)
     {
         res.col = offset + 1;
     }
     else
     {
-        size_t prev_newline = ctx->newline.positions[lo - 1];
-        res.col = offset - prev_newline;
+        size_t prev_newline_offset = ctx->newline.positions[next_index - 1];
+
+        res.col = offset - prev_newline_offset;
     }
 
     return res;
-}
-
-EASY_PC_API
-void
-epc_print_line_with_marker(FILE * fp, epc_parser_ctx_t * ctx, size_t offset)
-{
-    if (ctx == NULL || ctx->input_start == NULL)
-    {
-        return;
-    }
-
-    char const * input_start = ctx->input_start;
-    size_t const input_len = ctx->input_len;
-
-    if (offset >= input_len)
-    {
-        return;
-    }
-
-    epc_line_col_t pos = epc_calculate_line_and_column(ctx, offset);
-    size_t col = pos.col;
-
-    size_t line_start = 0;
-    if (pos.line > 1)
-    {
-        size_t newline_idx = pos.line - 2;
-        line_start = ctx->newline.positions[newline_idx] + 1;
-    }
-
-    size_t line_end = offset;
-    while (line_end < input_len && input_start[line_end] != '\n')
-    {
-        line_end++;
-    }
-
-    size_t line_len = line_end - line_start;
-    fprintf(fp, "%.*s\n", (int)line_len, input_start + line_start);
-    fprintf(fp, "%*s^\n", (int)col - 1, "");
 }
 
 epc_parser_error_t *
