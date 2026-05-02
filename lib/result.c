@@ -68,6 +68,44 @@ epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
     return res;
 }
 
+EASY_PC_API
+void
+epc_print_line_with_marker(FILE * fp, epc_parser_ctx_t * ctx, size_t offset)
+{
+    if (ctx == NULL || ctx->input_start == NULL)
+    {
+        return;
+    }
+
+    char const * input_start = ctx->input_start;
+    size_t const input_len = ctx->input_len;
+
+    if (offset >= input_len)
+    {
+        return;
+    }
+
+    epc_line_col_t pos = epc_calculate_line_and_column(ctx, offset);
+    size_t col = pos.col;
+
+    size_t line_start = 0;
+    if (pos.line > 1)
+    {
+        size_t newline_idx = pos.line - 2;
+        line_start = ctx->newline_positions[newline_idx] + 1;
+    }
+
+    size_t line_end = offset;
+    while (line_end < input_len && input_start[line_end] != '\n')
+    {
+        line_end++;
+    }
+
+    size_t line_len = line_end - line_start;
+    fprintf(fp, "%.*s\n", (int)line_len, input_start + line_start);
+    fprintf(fp, "%*s^\n", (int)col - 1, "");
+}
+
 epc_parser_error_t *
 epc_parser_error_alloc(
     epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found

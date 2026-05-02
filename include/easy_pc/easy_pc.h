@@ -1141,6 +1141,9 @@ EASY_PC_API char const * epc_get_version(void);
 EASY_PC_API
 epc_line_col_t epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t offset);
 
+EASY_PC_API
+void epc_print_line_with_marker(FILE * fp, epc_parser_ctx_t * ctx, size_t offset);
+
 #ifdef __cplusplus
 }
 #endif
