@@ -32,7 +32,7 @@ epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
         return res;
     }
 
-    if (ctx->newline_positions == NULL || ctx->newline_count == 0)
+    if (ctx->newline.positions == NULL || ctx->newline.count == 0)
     {
         res.line = 1;
         res.col = offset;
@@ -40,11 +40,11 @@ epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
     }
 
     size_t lo = 0;
-    size_t hi = ctx->newline_count;
+    size_t hi = ctx->newline.count;
     while (lo < hi)
     {
         size_t mid = lo + (hi - lo) / 2;
-        if (ctx->newline_positions[mid] < offset)
+        if (ctx->newline.positions[mid] < offset)
         {
             lo = mid + 1;
         }
@@ -61,7 +61,7 @@ epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
     }
     else
     {
-        size_t prev_newline = ctx->newline_positions[lo - 1];
+        size_t prev_newline = ctx->newline.positions[lo - 1];
         res.col = offset - prev_newline;
     }
 
@@ -92,7 +92,7 @@ epc_print_line_with_marker(FILE * fp, epc_parser_ctx_t * ctx, size_t offset)
     if (pos.line > 1)
     {
         size_t newline_idx = pos.line - 2;
-        line_start = ctx->newline_positions[newline_idx] + 1;
+        line_start = ctx->newline.positions[newline_idx] + 1;
     }
 
     size_t line_end = offset;

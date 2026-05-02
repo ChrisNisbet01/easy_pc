@@ -57,6 +57,13 @@ typedef struct
     size_t capacity;
 } epc_error_pool_t;
 
+typedef struct
+{
+    size_t * positions;
+    size_t count;
+    size_t capacity;
+} newline_positions_t;
+
 // The Parsing Context (for a single parse operation and its results)
 // This will be internally managed by epc_parse_input
 struct epc_parser_ctx_t
@@ -75,9 +82,7 @@ struct epc_parser_ctx_t
     epc_node_pool_t node_pool;
     epc_error_pool_t error_pool;
 
-    size_t * newline_positions;
-    size_t newline_count;
-    size_t newline_capacity;
+    newline_positions_t newline;
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
     epc_streaming_state_t streaming;

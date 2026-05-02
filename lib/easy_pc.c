@@ -233,25 +233,25 @@ scan_newlines(epc_parser_ctx_t * ctx, char const * input_start, size_t len)
         return;
     }
 
-    size_t base_offset = ctx->newline_count > 0 ? ctx->newline_positions[ctx->newline_count - 1] + 1 : 0;
+    size_t base_offset = ctx->newline.count > 0 ? ctx->newline.positions[ctx->newline.count - 1] + 1 : 0;
 
     for (size_t i = 0; i < len; i++)
     {
         if (input_start[i] == '\n')
         {
-            if (ctx->newline_count >= ctx->newline_capacity)
+            if (ctx->newline.count >= ctx->newline.capacity)
             {
-                size_t new_capacity = ctx->newline_capacity * 2;
-                size_t * new_positions = realloc(ctx->newline_positions, new_capacity * sizeof(*new_positions));
+                size_t new_capacity = ctx->newline.capacity * 2;
+                size_t * new_positions = realloc(ctx->newline.positions, new_capacity * sizeof(*new_positions));
                 if (new_positions == NULL)
                 {
                     return;
                 }
-                ctx->newline_positions = new_positions;
-                ctx->newline_capacity = new_capacity;
+                ctx->newline.positions = new_positions;
+                ctx->newline.capacity = new_capacity;
             }
 
-            ctx->newline_positions[ctx->newline_count++] = base_offset + i;
+            ctx->newline.positions[ctx->newline.count++] = base_offset + i;
         }
     }
 }
@@ -287,9 +287,9 @@ internal_init_parse_ctx(epc_parser_ctx_t * ctx)
         return false;
     }
 
-    ctx->newline_positions = calloc(128, sizeof(*ctx->newline_positions));
-    ctx->newline_capacity = 128;
-    ctx->newline_count = 0;
+    ctx->newline.positions = calloc(128, sizeof(*ctx->newline.positions));
+    ctx->newline.capacity = 128;
+    ctx->newline.count = 0;
 
     return true;
 }
@@ -503,7 +503,7 @@ internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
         munmap((void *)ctx->mmap_buffer.buffer, ctx->mmap_buffer.total_size);
     }
 
-    free(ctx->newline_positions);
+    free(ctx->newline.positions);
 
     epc_arena_destroy(&ctx->node_arena);
     node_pool_cleanup(&ctx->node_pool);
