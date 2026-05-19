@@ -14,7 +14,6 @@ epc_node_alloc(epc_parser_ctx_t * ctx, epc_parser_t * parser, char const * tag)
     {
         return NULL;
     }
-    node->content = ""; /* Make non-NULL. */
     node->tag = tag;
     node->name = epc_parser_get_name(parser);
     node->ast_config = parser->ast_config;
@@ -41,7 +40,7 @@ epc_node_copy(epc_cpt_node_t * node)
 
     copy->tag = node->tag;
     copy->name = node->name;
-    copy->content = node->content;
+    copy->content_offset = node->content_offset;
     copy->len = node->len;
     copy->semantic_start_offset = node->semantic_start_offset;
     copy->semantic_end_offset = node->semantic_end_offset;
@@ -102,35 +101,43 @@ epc_node_free(epc_cpt_node_t * node)
 EASY_PC_API const char *
 epc_cpt_node_get_semantic_content(epc_cpt_node_t const * node)
 {
-    if (node == NULL || node->content == NULL)
+    if (node == NULL)
     {
         return NULL;
     }
+    char const * input_start = parse_ctx_get_input_start(node->ctx);
+
+    if (input_start == NULL)
+    {
+        return NULL;
+    }
+
     // Ensure start offset does not go beyond the actual content.
     // If it does, effectively, there is no semantic content.
     if (node->semantic_start_offset >= node->len)
     {
-        return node->content + node->len; // Point to end of string or null
+        return input_start + node->content_offset + node->len; // Point to end of string or null
     }
 
-    return node->content + node->semantic_start_offset;
+    return input_start + node->content_offset + node->semantic_start_offset;
 }
 
 EASY_PC_API size_t
 epc_cpt_node_get_semantic_content_offset(epc_cpt_node_t const * node)
 {
-    if (node == NULL || node->content == NULL || node->ctx == NULL)
+    if (node == NULL)
     {
         return 0;
     }
+
     // Ensure start offset does not go beyond the actual content.
     // If it does, effectively, there is no semantic content.
     if (node->semantic_start_offset >= node->len)
     {
-        return node->content + node->len - node->ctx->input_start;
+        return node->content_offset + node->len;
     }
 
-    return node->content + node->semantic_start_offset - node->ctx->input_start;
+    return node->content_offset + node->semantic_start_offset;
 }
 
 EASY_PC_API size_t
@@ -161,23 +168,30 @@ epc_cpt_node_get_semantic_len(epc_cpt_node_t const * node)
 EASY_PC_API const char *
 epc_cpt_node_get_content(epc_cpt_node_t const * node)
 {
-    if (node == NULL || node->content == NULL)
+    if (node == NULL)
     {
         return NULL;
     }
 
-    return node->content;
+    char const * input_start = parse_ctx_get_input_start(node->ctx);
+
+    if (input_start == NULL)
+    {
+        return 0;
+    }
+
+    return input_start + node->content_offset;
 }
 
 EASY_PC_API size_t
 epc_cpt_node_get_content_offset(epc_cpt_node_t const * node)
 {
-    if (node == NULL || node->content == NULL || node->ctx == NULL)
+    if (node == NULL)
     {
         return 0;
     }
 
-    return node->content - node->ctx->input_start;
+    return node->content_offset;
 }
 
 EASY_PC_API size_t

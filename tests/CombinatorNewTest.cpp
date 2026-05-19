@@ -31,9 +31,11 @@ TEST_GROUP(CombinatorParsersNew)
         int expected_children_count
     )
     {
+        char const * content = epc_cpt_node_get_content(node);
+
         CHECK_TRUE(node != NULL);
         STRCMP_EQUAL(expected_tag, node->tag);
-        STRNCMP_EQUAL(expected_content, node->content, expected_len);
+        STRNCMP_EQUAL(expected_content, content, expected_len);
         LONGS_EQUAL(expected_len, node->len);
         LONGS_EQUAL(expected_children_count, node->children_count);
     }
@@ -571,9 +573,11 @@ TEST(CombinatorParsersNew, Stripr_FailsWithLeadingSpaces)
 void
 check_chain_node(epc_cpt_node_t * node, char const * expected_tag, char const * expected_content, size_t expected_len)
 {
+    char const * content = epc_cpt_node_get_content(node);
+
     CHECK_TRUE(node != NULL);
     STRCMP_EQUAL(expected_tag, node->tag);
-    STRNCMP_EQUAL(expected_content, node->content, expected_len);
+    STRNCMP_EQUAL(expected_content, content, expected_len);
     LONGS_EQUAL(expected_len, node->len);
     LONGS_EQUAL(3, node->children_count); // item, op, item (or sub-chain)
 }

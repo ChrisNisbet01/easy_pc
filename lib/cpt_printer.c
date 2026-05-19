@@ -1,4 +1,5 @@
 #include "cpt_printer.h"
+
 #include "epc_parser_ctx.h"
 #include "result.h"
 
@@ -68,35 +69,35 @@ static void
 cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
 {
     cpt_printer_data_t * data = (cpt_printer_data_t *)user_data;
+
     // include content and length
-    epc_line_col_t position = epc_calculate_line_and_column(
-        data->parse_ctx, parse_ctx_get_offset_from_input(data->parse_ctx, node->content)
-    );
-    char const * scontent = epc_cpt_node_get_semantic_content(node);
-    size_t scontent_len = epc_cpt_node_get_semantic_len(node);
-    epc_line_col_t sposition
-        = epc_calculate_line_and_column(data->parse_ctx, parse_ctx_get_offset_from_input(data->parse_ctx, scontent));
+    size_t content_offset = epc_cpt_node_get_content_offset(node);
+    epc_line_col_t position = epc_calculate_line_and_column(data->parse_ctx, content_offset);
+
+    size_t semantic_content_offset = epc_cpt_node_get_semantic_content_offset(node);
+    size_t semantic_content_len = epc_cpt_node_get_semantic_len(node);
+
+    epc_line_col_t sposition = epc_calculate_line_and_column(data->parse_ctx, semantic_content_offset);
     int required_len;
     char const * node_id = epc_node_id(node);
     size_t estimated_line_len
-        = data->indent_level * 4 + strlen(node->tag) + strlen(node_id) + 5 +               // <tag> + (<name>) ()
-          (node->content && node->len > 0 ? node->len + 3 : 0) + num_to_str_len(node->len) // 'content'
-          + num_to_str_len(position.line) + num_to_str_len(position.col) + 20 + 1;         // (line=X, col=X, len=X)\n
+        = data->indent_level * 4 + strlen(node->tag) + strlen(node_id) + 5 +       // <tag> + (<name>) ()
+          (node->len > 0 ? node->len + 3 : 0) + num_to_str_len(node->len)          // 'content'
+          + num_to_str_len(position.line) + num_to_str_len(position.col) + 20 + 1; // (line=X, col=X, len=X)\n
 
-    if (scontent == node->content && scontent_len == node->len)
+    if (semantic_content_offset == content_offset && semantic_content_len == node->len)
     {
-        scontent = NULL;
-        scontent_len = 0;
+        semantic_content_len = 0;
     }
-    if (scontent != NULL && scontent_len > 0)
+    if (semantic_content_len > 0)
     {
-        estimated_line_len += scontent_len + 3 + num_to_str_len(scontent_len) // 'content'
+        estimated_line_len += semantic_content_len + 3 + num_to_str_len(semantic_content_len) // 'content'
                               + num_to_str_len(sposition.line) + num_to_str_len(sposition.col) + 20
                               + 1; // (line=X, col=X, len=X)\n
     }
 
     ensure_buffer_capacity(data, estimated_line_len);
-    if (!data->buffer)
+    if (data->buffer == NULL)
     {
         return;
     }
@@ -123,11 +124,13 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
     data->buffer[data->current_offset++] = ')';
 
     // Content: 'content'
-    if (node->content && node->len > 0)
+    if (node->len > 0)
     {
+        char const * content = epc_cpt_node_get_content(node);
+
         data->buffer[data->current_offset++] = ' ';
         data->buffer[data->current_offset++] = '\'';
-        strncpy(data->buffer + data->current_offset, node->content, node->len);
+        strncpy(data->buffer + data->current_offset, content, node->len);
         data->current_offset += node->len;
         data->buffer[data->current_offset++] = '\'';
     }
@@ -149,13 +152,15 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
     }
     data->current_offset += required_len;
 
-    if (scontent != NULL && scontent_len > 0)
+    if (semantic_content_len > 0)
     {
-        // Semantic content: 'scontent'
+        char const * semantic_content = epc_cpt_node_get_semantic_content(node);
+
+        // Semantic content: 'semantic_content'
         data->buffer[data->current_offset++] = ' ';
         data->buffer[data->current_offset++] = '\'';
-        strncpy(data->buffer + data->current_offset, scontent, scontent_len);
-        data->current_offset += scontent_len;
+        strncpy(data->buffer + data->current_offset, semantic_content, semantic_content_len);
+        data->current_offset += semantic_content_len;
         data->buffer[data->current_offset++] = '\'';
 
         // Line/Col/Length: (line=X, col=X, len=X)
@@ -165,7 +170,7 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
             " (line=%zu, col=%zu, len=%zu)",
             sposition.line,
             sposition.col,
-            scontent_len
+            semantic_content_len
         );
         if (required_len < 0 || (size_t)required_len >= (data->buffer_capacity - data->current_offset))
         {

@@ -60,8 +60,10 @@ TEST_GROUP(WrapTest)
     {
         CHECK_FALSE(session.result.is_error);
         CHECK_TRUE(session.result.data.success != NULL);
+        char const * content = epc_cpt_node_get_content(session.result.data.success);
+
         STRCMP_EQUAL(expected_tag, session.result.data.success->tag);
-        STRNCMP_EQUAL(expected_content, session.result.data.success->content, expected_len);
+        STRNCMP_EQUAL(expected_content, content, expected_len);
         LONGS_EQUAL(expected_len, session.result.data.success->len);
         LONGS_EQUAL(expected_children_count, session.result.data.success->children_count);
     }

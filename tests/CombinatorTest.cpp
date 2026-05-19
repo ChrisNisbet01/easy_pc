@@ -44,8 +44,10 @@ TEST(CombinatorTest, SOIMatchesStartOfInput)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("soi", result.data.success->tag);
-    STRNCMP_EQUAL("", result.data.success->content, 0);
+    STRNCMP_EQUAL("", content, 0);
     LONGS_EQUAL(0, result.data.success->len);
     LONGS_EQUAL(0, result.data.success->children_count);
 }
@@ -74,9 +76,11 @@ TEST(CombinatorTest, PStarMatchesZero)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
-    STRNCMP_EQUAL("", result.data.success->content, 0);
+    STRNCMP_EQUAL("", content, 0);
     LONGS_EQUAL(0, result.data.success->len);
     LONGS_EQUAL(0, result.data.success->children_count);
 }
@@ -90,12 +94,14 @@ TEST(CombinatorTest, PStarMatchesOne)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
-    STRNCMP_EQUAL("a", result.data.success->content, 1);
+    STRNCMP_EQUAL("a", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
     LONGS_EQUAL(1, result.data.success->children_count);
-    STRNCMP_EQUAL("a", result.data.success->children[0]->content, 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
 }
 
 TEST(CombinatorTest, PStarMatchesMultiple)
@@ -107,14 +113,16 @@ TEST(CombinatorTest, PStarMatchesMultiple)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
-    STRNCMP_EQUAL("aaa", result.data.success->content, 3);
+    STRNCMP_EQUAL("aaa", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
-    STRNCMP_EQUAL("a", result.data.success->children[0]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[1]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[2]->content, 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[2]), 1);
 }
 
 TEST(CombinatorTest, PStarMatchesMultipleThenFails)
@@ -126,14 +134,16 @@ TEST(CombinatorTest, PStarMatchesMultipleThenFails)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
-    STRNCMP_EQUAL("aaa", result.data.success->content, 3);
+    STRNCMP_EQUAL("aaa", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
-    STRNCMP_EQUAL("a", result.data.success->children[0]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[1]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[2]->content, 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[2]), 1);
 }
 
 TEST(CombinatorTest, PPlusMatchesOne)
@@ -145,12 +155,14 @@ TEST(CombinatorTest, PPlusMatchesOne)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("plus", result.data.success->tag);
     STRCMP_EQUAL("plus", result.data.success->name);
-    STRNCMP_EQUAL("a", result.data.success->content, 1);
+    STRNCMP_EQUAL("a", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
     LONGS_EQUAL(1, result.data.success->children_count);
-    STRNCMP_EQUAL("a", result.data.success->children[0]->content, 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
 }
 
 TEST(CombinatorTest, PPlusMatchesMultiple)
@@ -162,14 +174,16 @@ TEST(CombinatorTest, PPlusMatchesMultiple)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("plus", result.data.success->tag);
     STRCMP_EQUAL("plus", result.data.success->name);
-    STRNCMP_EQUAL("aaa", result.data.success->content, 3);
+    STRNCMP_EQUAL("aaa", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
-    STRNCMP_EQUAL("a", result.data.success->children[0]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[1]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[2]->content, 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[2]), 1);
 }
 
 TEST(CombinatorTest, PPlusFailsOnZeroMatches)
@@ -196,12 +210,14 @@ TEST(CombinatorTest, PPlusMatchesMultipleThenFails)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("plus", result.data.success->tag);
     STRCMP_EQUAL("plus", result.data.success->name);
-    STRNCMP_EQUAL("aaa", result.data.success->content, 3);
+    STRNCMP_EQUAL("aaa", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
-    STRNCMP_EQUAL("a", result.data.success->children[0]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[1]->content, 1);
-    STRNCMP_EQUAL("a", result.data.success->children[2]->content, 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[2]), 1);
 }

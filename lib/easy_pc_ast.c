@@ -321,19 +321,33 @@ epc_ast_builder_exit_node_cb(epc_cpt_node_t * node, void * user_data)
                                && node->ast_config.action < ctx->registry->action_count;
     epc_ast_action_cb action_cb = has_action_assigned ? ctx->registry->callbacks[node->ast_config.action] : NULL;
 
+#if AST_DEBUG
+    char const * content = epc_cpt_node_get_content(node);
+#endif
+
     if (has_action_assigned && action_cb)
     {
-        ast_debug("exit '%s' ('%.*s'): action=%d, children=%d -> calling action\n",
-            node->name, (int)node->len, node->content,
-            node->ast_config.action, children_count);
+        ast_debug(
+            "exit '%s' ('%.*s'): action=%d, children=%d -> calling action\n",
+            node->name,
+            (int)node->len,
+            content,
+            node->ast_config.action,
+            children_count
+        );
         action_cb(ctx, node, children, children_count, ctx->user_data);
         ast_debug("exit '%s': stack top after action = %d\n", node->name, ctx->top);
     }
     else // Default behavior: if no action, push children back (flatten)
     {
-        ast_debug("exit '%s' ('%.*s'): no action, flattening %d children (stack top=%d)\n",
-            node->name, (int)node->len, node->content,
-            children_count, ctx->top);
+        ast_debug(
+            "exit '%s' ('%.*s'): no action, flattening %d children (stack top=%d)\n",
+            node->name,
+            (int)node->len,
+            content,
+            children_count,
+            ctx->top
+        );
         for (int i = 0; i < children_count; ++i)
         {
             epc_ast_push(ctx, children[i]);

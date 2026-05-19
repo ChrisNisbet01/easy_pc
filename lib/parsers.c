@@ -357,7 +357,7 @@ pchar_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
             );
         }
 
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -422,7 +422,7 @@ pbyte_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
             );
         }
 
-        node->content = (char *)input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -472,7 +472,6 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     size_t expected_len = strlen(match_string);
 
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 0);
-    char const * initial_input = input_result.next_input;
 
     for (size_t matched_chars = 0; matched_chars < expected_len; matched_chars++)
     {
@@ -518,7 +517,7 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->content = initial_input;
+    node->content_offset = input_offset;
     node->len = expected_len;
 
     return epc_parser_success_result(node);
@@ -567,9 +566,7 @@ psoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 0);
-
-    node->content = input_result.next_input;
+    node->content_offset = input_offset;
     node->len = 0;
 
     return epc_parser_success_result(node);
@@ -611,7 +608,7 @@ peoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->content = input_result.next_input;
+    node->content_offset = input_offset;
     node->len = 0;
 
     return epc_parser_success_result(node);
@@ -653,7 +650,7 @@ pdigit_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
             );
         }
 
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -761,7 +758,7 @@ pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
             );
         }
 
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = parsed_len;
 
         return epc_parser_success_result(node);
@@ -824,7 +821,7 @@ pspace_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
             );
         }
 
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
         node->semantic_start_offset = 1;
 
@@ -877,7 +874,7 @@ palpha_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
             );
         }
 
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -929,7 +926,7 @@ palphanum_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t in
             );
         }
 
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -1040,7 +1037,7 @@ pdouble_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = parsed_len;
 
     return epc_parser_success_result(node);
@@ -1141,7 +1138,7 @@ phex_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = current_len;
 
     return epc_parser_success_result(node);
@@ -1210,7 +1207,7 @@ poctal_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = current_len;
 
     return epc_parser_success_result(node);
@@ -1279,7 +1276,7 @@ pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = current_len;
 
     return epc_parser_success_result(node);
@@ -1338,7 +1335,7 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_of
                     );
                 }
 
-                or_node->content = child_result.data.success->content;
+                or_node->content_offset = child_result.data.success->content_offset;
                 or_node->len = child_result.data.success->len;
                 or_node->semantic_start_offset = child_result.data.success->semantic_start_offset;
                 or_node->semantic_end_offset = child_result.data.success->semantic_end_offset;
@@ -1490,8 +1487,7 @@ pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    parse_get_input_result_t start_res = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-    node->content = start_res.next_input;
+    node->content_offset = input_offset;
     node->len = current_len;
 
     return epc_parser_success_result(node);
@@ -1568,8 +1564,7 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    parse_get_input_result_t start_res = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-    node->content = start_res.next_input;
+    node->content_offset = input_offset;
     node->len = current_len;
 
     return epc_parser_success_result(node);
@@ -1623,8 +1618,7 @@ pbash_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    parse_get_input_result_t start_res = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-    node->content = start_res.next_input;
+    node->content_offset = input_offset;
     node->len = current_len;
 
     return epc_parser_success_result(node);
@@ -1652,7 +1646,6 @@ epc_bash_comment(epc_parser_list * list, char const * name)
 static epc_parse_result_t
 pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
     parser_list_t * sequence = self->data.parser_list;
 
     if (sequence == NULL || sequence->count == 0)
@@ -1670,8 +1663,6 @@ pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
     }
 
     size_t current_input_offset = input_offset;
-    size_t and_start_offset = current_input_offset;
-    char const * and_start_input = input_result.next_input;
 
     epc_parse_result_t failed_child_result = {0};
     epc_parse_result_t null_child_result = {0};
@@ -1732,8 +1723,8 @@ pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
 
     parent_node->children = children_nodes;
     parent_node->children_count = sequence->count;
-    parent_node->content = and_start_input;
-    parent_node->len = current_input_offset - and_start_offset;
+    parent_node->content_offset = input_offset;
+    parent_node->len = current_input_offset - input_offset;
     parent_node->semantic_start_offset = get_semantic_start_offset(parent_node->children, parent_node->children_count);
     parent_node->semantic_end_offset = get_semantic_end_offset(parent_node->children, parent_node->children_count);
 
@@ -1822,9 +1813,7 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    char const * input = input_result.next_input;
-
-    dummy_node->content = input;
+    dummy_node->content_offset = input_offset;
     dummy_node->len = total_skipped_len;
 
     return epc_parser_success_result(dummy_node);
@@ -1928,11 +1917,9 @@ pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
         );
     }
 
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 0);
-
     child_list_transfer(&children, parent_node);
-    parent_node->content = input_result.next_input;
-    parent_node->len = current_input_offset - plus_start_input_offset;
+    parent_node->content_offset = input_offset;
+    parent_node->len = current_input_offset - input_offset;
     parent_node->semantic_start_offset = get_semantic_start_offset(parent_node->children, parent_node->children_count);
     parent_node->semantic_end_offset = get_semantic_end_offset(parent_node->children, parent_node->children_count);
 
@@ -1984,7 +1971,7 @@ pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
                 ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -2027,14 +2014,12 @@ pany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
         return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "any character", "EOF");
     }
 
-    char const * input = input_result.next_input;
-
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = 1;
 
     return epc_parser_success_result(node);
@@ -2083,7 +2068,7 @@ pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
                 ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -2182,10 +2167,8 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 0);
-
     child_list_transfer(&children, parent_node);
-    parent_node->content = input_result.next_input;
+    parent_node->content_offset = input_offset;
     parent_node->len = current_input_offset - input_offset;
     if (parent_node->children_count > 0)
     {
@@ -2220,8 +2203,6 @@ epc_many(epc_parser_list * list, char const * name, epc_parser_t * p)
 static epc_parse_result_t
 pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-
     count_data_t * count_data = &self->data.count;
     epc_parser_t * parser_to_repeat = count_data->parser;
     size_t min_matches = count_data->count_min;
@@ -2241,8 +2222,6 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
         snprintf(found, sizeof(found), "min: %zu, max: %zu", min_matches, max_matches);
         return epc_parser_error_result(ctx, input_offset, "Max should be >= min", epc_parser_get_name(self), found);
     }
-
-    char const * input = input_result.next_input;
 
     size_t current_input_offset = input_offset;
     child_list_t children = {0};
@@ -2321,7 +2300,7 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     }
 
     child_list_transfer(&children, parent_node);
-    parent_node->content = input;
+    parent_node->content_offset = input_offset;
     parent_node->len = current_input_offset - input_offset;
     if (parent_node->children_count > 0)
     {
@@ -2464,9 +2443,7 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
     parent_node->children[0] = wrapped_result.data.success; // Only the wrapped result is kept as a child
     parent_node->children_count = 1;
 
-    char const * input = input_result.next_input;
-
-    parent_node->content = input;
+    parent_node->content_offset = input_offset;
     parent_node->len = current_input_offset - input_offset;
     parent_node->semantic_start_offset = open_len;
     parent_node->semantic_end_offset = close_len;
@@ -2623,10 +2600,8 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    char const * input = input_result.next_input;
-
     child_list_transfer(&children, parent_node);
-    parent_node->content = input;
+    parent_node->content_offset = input_offset;
     parent_node->len = current_input_offset - input_offset;
     if (parent_node->children_count > 0)
     {
@@ -2698,7 +2673,7 @@ poptional_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t in
             );
         }
 
-        node->content = input_result.next_input;
+        node->content_offset = input_offset;
         node->len = 0;
 
         return epc_parser_success_result(node);
@@ -2743,7 +2718,7 @@ poptional_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t in
 
         parser_furthest_error_restore(ctx, &original_furthest_error);
 
-        parent_node->content = child_result.data.success->content;
+        parent_node->content_offset = child_result.data.success->content_offset;
         parent_node->len = child_result.data.success->len;
         parent_node->semantic_start_offset = child_result.data.success->semantic_start_offset;
         parent_node->semantic_end_offset = child_result.data.success->semantic_end_offset;
@@ -2761,9 +2736,7 @@ poptional_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t in
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    char const * input = input_result.next_input;
-
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = 0;
 
     return epc_parser_success_result(node);
@@ -2829,9 +2802,7 @@ plookahead_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    char const * input = input_result.next_input;
-
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = 0;
 
     return epc_parser_success_result(node);
@@ -2894,9 +2865,7 @@ pnot_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
             );
         }
 
-        char const * input = input_result.next_input;
-
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 0;
 
         return epc_parser_success_result(node);
@@ -2908,9 +2877,17 @@ pnot_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
 
     snprintf(expected_str, sizeof(expected_str), "not %s", parser_get_expected_str(child_parser));
 
-    epc_parse_result_t result = epc_parser_error_result(
-        ctx, input_offset, "Parser unexpectedly matched", expected_str, child_result.data.success->content
+    char found_str[FOUND_BUFFER_SIZE];
+    snprintf(
+        found_str,
+        sizeof(found_str),
+        "'%.*s'",
+        (int)child_result.data.success->len,
+        epc_cpt_node_get_content(child_result.data.success)
     );
+
+    epc_parse_result_t result
+        = epc_parser_error_result(ctx, input_offset, "Parser unexpectedly matched", expected_str, found_str);
     epc_parser_result_cleanup(&child_result);
 
     return result;
@@ -2986,9 +2963,7 @@ psucceed_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
         return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    char const * input = input_result.next_input;
-
-    node->content = input;
+    node->content_offset = input_offset;
     node->len = 0;
 
     return epc_parser_success_result(node);
@@ -3034,7 +3009,7 @@ phex_digit_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
             );
         }
 
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -3089,7 +3064,7 @@ pone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
                 ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
-        node->content = input;
+        node->content_offset = input_offset;
         node->len = 1;
 
         return epc_parser_success_result(node);
@@ -3252,8 +3227,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     parent_node->children[0] = item_result.data.success;
     parent_node->children_count = 1;
 
-    parse_get_input_result_t start_res = parse_ctx_get_input_at_offset(ctx, input_offset, 0);
-    parent_node->content = start_res.next_input;
+    parent_node->content_offset = input_offset;
     parent_node->len = current_input_offset - input_offset;
     parent_node->semantic_start_offset = leading_ws_len;
     parent_node->semantic_end_offset = trailing_ws_len;
@@ -3492,7 +3466,7 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
         new_parent_node->children[2] = right_result.data.success;
         new_parent_node->children_count = 3;
 
-        new_parent_node->content = left_result.data.success->content;
+        new_parent_node->content_offset = left_result.data.success->content_offset;
         new_parent_node->len = current_input_offset - input_offset;
         new_parent_node->semantic_start_offset = left_result.data.success->semantic_start_offset;
         new_parent_node->semantic_end_offset = right_result.data.success->semantic_end_offset;
@@ -3710,9 +3684,9 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
             new_parent_node->children[2] = current_right_operand;
             new_parent_node->children_count = 3;
 
-            new_parent_node->content = left_operand_node->content;
-            new_parent_node->len
-                = current_right_operand->content + current_right_operand->len - left_operand_node->content;
+            new_parent_node->content_offset = left_operand_node->content_offset;
+            new_parent_node->len = current_right_operand->content_offset + current_right_operand->len
+                                   - left_operand_node->content_offset;
             new_parent_node->semantic_start_offset = left_operand_node->semantic_start_offset;
             new_parent_node->semantic_end_offset = current_right_operand->semantic_end_offset;
 
@@ -3861,7 +3835,7 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
             sizeof(found_str),
             "token '%.*s'",
             (int)token_result.data.success->len,
-            token_result.data.success->content
+            epc_cpt_node_get_content(token_result.data.success)
         );
         epc_parser_result_cleanup(&token_result);
 
@@ -3891,7 +3865,7 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     node->children[0] = token_result.data.success;
     node->children_count = 1;
 
-    node->content = token_result.data.success->content;
+    node->content_offset = token_result.data.success->content_offset;
     node->len = token_result.data.success->len;
     node->semantic_start_offset = token_result.data.success->semantic_start_offset;
     node->semantic_end_offset = token_result.data.success->semantic_end_offset;
@@ -3957,7 +3931,11 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
         if (!result.is_error) /* The callback wishes to override the child parse success to be an error. */
         {
             snprintf(
-                found_str, sizeof(found_str), "node '%.*s'", (int)result.data.success->len, result.data.success->content
+                found_str,
+                sizeof(found_str),
+                "node '%.*s'",
+                (int)result.data.success->len,
+                (char *)epc_cpt_node_get_content(result.data.success)
             );
             parser_furthest_error_restore(ctx, &original_furthest_error);
             epc_parser_result_cleanup(&result);
@@ -3995,7 +3973,7 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
     wrap_node->children_count = 1;
 
     // The wrap_node spans the same content as its child.
-    wrap_node->content = result.data.success->content;
+    wrap_node->content_offset = result.data.success->content_offset;
     wrap_node->len = result.data.success->len;
     wrap_node->semantic_start_offset = result.data.success->semantic_start_offset;
     wrap_node->semantic_end_offset = result.data.success->semantic_end_offset;
@@ -4073,7 +4051,7 @@ pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     memoize_node->children_count = 1;
 
     // The memoize_node spans the same content as its child.
-    memoize_node->content = child_result.data.success->content;
+    memoize_node->content_offset = child_result.data.success->content_offset;
     memoize_node->len = child_result.data.success->len;
     memoize_node->semantic_start_offset = child_result.data.success->semantic_start_offset;
     memoize_node->semantic_end_offset = child_result.data.success->semantic_end_offset;

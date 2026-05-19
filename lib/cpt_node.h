@@ -17,16 +17,16 @@
  */
 typedef struct epc_cpt_node_t
 {
-    char const * tag;     /**< @brief A string tag identifying the type of this node (e.g., "char", "string", "and"). */
-    char const * name;    /**< @brief The name assigned to the parser that generated this node, for
-                           *    debugging/identification.
-                           */
-    char const * content; /**< @brief A pointer to the start of the matched substring in the original input (or within
-                             the parser itself in the case of epc_succeed()). */
-    size_t len;           /**< @brief The length of the matched substring. */
-    size_t semantic_start_offset; /**< @brief Offset from `content` to the start of the semantically relevant part. */
-    size_t semantic_end_offset;   /**< @brief Length from the end of `content` to exclude from the semantically relevant
+    char const * tag;  /**< @brief A string tag identifying the type of this node (e.g., "char", "string", "and"). */
+    char const * name; /**< @brief The name assigned to the parser that generated this node, for
+                        *    debugging/identification.
+                        */
+    size_t content_offset;        /**< @brief Offset to the first matched token in the original input token list. */
+    size_t len;                   /**< @brief The length of the matched substring. */
+    size_t semantic_start_offset; /**< @brief Offset from `content_offset` to the start of the semantically relevant
                                      part. */
+    size_t semantic_end_offset;   /**< @brief Length from the end of matched content to exclude from the semantically
+                                     relevant   part. */
     epc_cpt_node_t ** children;   /**< @brief An array of pointers to child `pt_node_t`s, representing sub-matches. */
     int children_count;           /**< @brief The number of children in the `children` array. */
     epc_ast_semantic_action_t ast_config; /**< @brief A copy of the ast action assigned to the associated parser that

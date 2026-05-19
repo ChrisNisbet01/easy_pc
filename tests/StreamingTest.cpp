@@ -143,7 +143,9 @@ TEST(StreamingTest, StreamingBasicCharTest)
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
-    STRNCMP_EQUAL("a", session.result.data.success->content, 1);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("a", content, 1);
     LONGS_EQUAL(1, session.result.data.success->len);
 }
 
@@ -154,7 +156,9 @@ TEST(StreamingTest, StreamingBasicStringTest)
     epc_parser_t * p = epc_string(list, NULL, "hello");
     session = parse_fd(p, fd);
     check_is_success(session.result);
-    STRNCMP_EQUAL("hello", session.result.data.success->content, 5);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("hello", content, 5);
     LONGS_EQUAL(5, session.result.data.success->len);
 }
 
@@ -166,7 +170,9 @@ TEST(StreamingTest, StreamingIntTest)
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
-    STRNCMP_EQUAL("12345", session.result.data.success->content, 5);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("12345", content, 5);
     LONGS_EQUAL(5, session.result.data.success->len);
 }
 
@@ -178,7 +184,9 @@ TEST(StreamingTest, StreamingDoubleTest)
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
-    STRNCMP_EQUAL("3.14159", session.result.data.success->content, 7);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("3.14159", content, 7);
     LONGS_EQUAL(7, session.result.data.success->len);
 }
 
@@ -190,7 +198,9 @@ TEST(StreamingTest, StreamingScientificDoubleTest)
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
-    STRNCMP_EQUAL("1.23e-4", session.result.data.success->content, 7);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("1.23e-4", content, 7);
     LONGS_EQUAL(7, session.result.data.success->len);
 }
 
@@ -204,7 +214,9 @@ TEST(StreamingTest, StreamingAmbiguousDoubleTest)
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
-    STRNCMP_EQUAL("123e-4", session.result.data.success->content, 6);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("123e-4", content, 6);
     LONGS_EQUAL(6, session.result.data.success->len);
 }
 
@@ -221,8 +233,10 @@ TEST(StreamingTest, StreamingSequenceTest)
     session = parse_fd(p_seq, fd);
 
     check_is_success(session.result);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
     LONGS_EQUAL(5, session.result.data.success->children_count);
-    STRNCMP_EQUAL("123 456 789", session.result.data.success->content, 11);
+    STRNCMP_EQUAL("123 456 789", content, 11);
     LONGS_EQUAL(11, session.result.data.success->len);
 }
 
@@ -263,7 +277,9 @@ TEST(StreamingTest, StreamingCppCommentTest)
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
-    STRNCMP_EQUAL("// first part\n", session.result.data.success->content, 14);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("// first part\n", content, 14);
     LONGS_EQUAL(14, session.result.data.success->len);
 }
 
@@ -277,6 +293,8 @@ TEST(StreamingTest, StreamingCCommentTest)
     session = parse_fd(p, fd);
 
     check_is_success(session.result);
-    STRNCMP_EQUAL("/* first part second part*/", session.result.data.success->content, 27);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("/* first part second part*/", content, 27);
     LONGS_EQUAL(27, session.result.data.success->len);
 }

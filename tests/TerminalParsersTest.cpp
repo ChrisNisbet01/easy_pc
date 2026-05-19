@@ -41,9 +41,11 @@ TEST(TerminalParsers, PCharMatchesCorrectCharacter)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("char", result.data.success->tag);
     STRCMP_EQUAL("char", result.data.success->name);
-    STRNCMP_EQUAL("a", result.data.success->content, 1);
+    STRNCMP_EQUAL("a", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -81,9 +83,11 @@ TEST(TerminalParsers, PStringMatchesCorrectString)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("string", result.data.success->tag);
     STRCMP_EQUAL("string", result.data.success->name);
-    STRNCMP_EQUAL("hello", result.data.success->content, 5);
+    STRNCMP_EQUAL("hello", content, 5);
     LONGS_EQUAL(5, result.data.success->len);
 }
 
@@ -130,9 +134,11 @@ TEST(TerminalParsers, PDigitMatchesCorrectDigit)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("digit", result.data.success->tag);
     STRCMP_EQUAL("digit", result.data.success->name);
-    STRNCMP_EQUAL("1", result.data.success->content, 1);
+    STRNCMP_EQUAL("1", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -172,9 +178,11 @@ TEST(TerminalParsers, POrMatchesFirstAlternative)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("or", result.data.success->tag);
     STRCMP_EQUAL("or", result.data.success->name);
-    STRNCMP_EQUAL("a", result.data.success->content, 1);
+    STRNCMP_EQUAL("a", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -187,9 +195,11 @@ TEST(TerminalParsers, POrMatchesLaterAlternative)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("or", result.data.success->tag);
     STRCMP_EQUAL("or", result.data.success->name);
-    STRNCMP_EQUAL("b", result.data.success->content, 1);
+    STRNCMP_EQUAL("b", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -226,17 +236,19 @@ TEST(TerminalParsers, PAndMatchesSequenceOfParsers)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("and", result.data.success->tag);
     STRCMP_EQUAL("and", result.data.success->name);
-    STRNCMP_EQUAL("abc", result.data.success->content, 3);
+    STRNCMP_EQUAL("abc", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
     LONGS_EQUAL(3, result.data.success->children_count);
     CHECK_TRUE(result.data.success->children[0] != NULL);
     CHECK_TRUE(result.data.success->children[1] != NULL);
     CHECK_TRUE(result.data.success->children[2] != NULL);
-    STRNCMP_EQUAL("a", result.data.success->children[0]->content, 1);
-    STRNCMP_EQUAL("b", result.data.success->children[1]->content, 1);
-    STRNCMP_EQUAL("c", result.data.success->children[2]->content, 1);
+    STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
+    STRNCMP_EQUAL("b", epc_cpt_node_get_content(result.data.success->children[1]), 1);
+    STRNCMP_EQUAL("c", epc_cpt_node_get_content(result.data.success->children[2]), 1);
 }
 
 TEST(TerminalParsers, PAndFailsIfFirstChildFails)
@@ -296,9 +308,11 @@ TEST(TerminalParsers, PSpaceMatchesSpace)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("space", result.data.success->tag);
     STRCMP_EQUAL("space", result.data.success->name);
-    STRNCMP_EQUAL(" ", result.data.success->content, 1);
+    STRNCMP_EQUAL(" ", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -309,9 +323,11 @@ TEST(TerminalParsers, PSpaceMatchesTab)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("space", result.data.success->tag);
     STRCMP_EQUAL("space", result.data.success->name);
-    STRNCMP_EQUAL("\t", result.data.success->content, 1);
+    STRNCMP_EQUAL("\t", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -322,9 +338,11 @@ TEST(TerminalParsers, PSpaceMatchesNewline)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("space", result.data.success->tag);
     STRCMP_EQUAL("space", result.data.success->name);
-    STRNCMP_EQUAL("\n", result.data.success->content, 1);
+    STRNCMP_EQUAL("\n", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -365,9 +383,11 @@ TEST(TerminalParsers, PSkipSkipsMultipleSpaces)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("skip", result.data.success->tag);
     STRCMP_EQUAL("skip", result.data.success->name);
-    STRCMP_EQUAL(input_str, result.data.success->content);
+    STRCMP_EQUAL(input_str, content);
     LONGS_EQUAL(3, result.data.success->len); // Skipped 3 spaces
 }
 
@@ -381,9 +401,11 @@ TEST(TerminalParsers, PSkipSkipsZeroSpaces)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("skip", result.data.success->tag);
     STRCMP_EQUAL("skip", result.data.success->name);
-    STRCMP_EQUAL(input_str, result.data.success->content);
+    STRCMP_EQUAL(input_str, content);
     LONGS_EQUAL(0, result.data.success->len); // Skipped 0 spaces
 }
 
@@ -397,10 +419,12 @@ TEST(TerminalParsers, PSkipSkipsMixedWhitespace)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("skip", result.data.success->tag);
     STRCMP_EQUAL("skip", result.data.success->name);
-    STRNCMP_EQUAL(input_str, result.data.success->content, 5); // Should be at the start of the input string
-    LONGS_EQUAL(5, result.data.success->len);                  // Skipped 5 chars
+    STRNCMP_EQUAL(input_str, content, 5);     // Should be at the start of the input string
+    LONGS_EQUAL(5, result.data.success->len); // Skipped 5 chars
 }
 
 TEST(TerminalParsers, PSkipHandlesNullChildParser)
@@ -453,9 +477,11 @@ TEST(DoubleParser, PDoubleMatchesInteger)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("123", result.data.success->content, 3);
+    STRNCMP_EQUAL("123", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
 }
 
@@ -466,9 +492,11 @@ TEST(DoubleParser, PDoubleMatchesSimpleDecimal)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("123.45", result.data.success->content, 6);
+    STRNCMP_EQUAL("123.45", content, 6);
     LONGS_EQUAL(6, result.data.success->len);
 }
 
@@ -479,9 +507,11 @@ TEST(DoubleParser, PDoubleMatchesLeadingDecimal)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL(".45", result.data.success->content, 3);
+    STRNCMP_EQUAL(".45", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
 }
 
@@ -492,9 +522,11 @@ TEST(DoubleParser, PDoubleMatchesTrailingDecimal)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("123.", result.data.success->content, 4);
+    STRNCMP_EQUAL("123.", content, 4);
     LONGS_EQUAL(4, result.data.success->len);
 }
 
@@ -505,9 +537,11 @@ TEST(DoubleParser, PDoubleMatchesPositiveSign)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("+123.45", result.data.success->content, 7);
+    STRNCMP_EQUAL("+123.45", content, 7);
     LONGS_EQUAL(7, result.data.success->len);
 }
 
@@ -518,9 +552,11 @@ TEST(DoubleParser, PDoubleMatchesNegativeSign)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("-123", result.data.success->content, 4);
+    STRNCMP_EQUAL("-123", content, 4);
     LONGS_EQUAL(4, result.data.success->len);
 }
 
@@ -531,9 +567,11 @@ TEST(DoubleParser, PDoubleMatchesExponentPositive)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("1.23e5", result.data.success->content, 6);
+    STRNCMP_EQUAL("1.23e5", content, 6);
     LONGS_EQUAL(6, result.data.success->len);
 }
 
@@ -544,9 +582,11 @@ TEST(DoubleParser, PDoubleMatchesExponentNegative)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("1.23E-5", result.data.success->content, 7);
+    STRNCMP_EQUAL("1.23E-5", content, 7);
     LONGS_EQUAL(7, result.data.success->len);
 }
 
@@ -557,9 +597,11 @@ TEST(DoubleParser, PDoubleMatchesExponentWithSign)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("-1e+2", result.data.success->content, 5);
+    STRNCMP_EQUAL("-1e+2", content, 5);
     LONGS_EQUAL(5, result.data.success->len);
 }
 
@@ -570,9 +612,11 @@ TEST(DoubleParser, PDoubleMatchesZero)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("0", result.data.success->content, 1);
+    STRNCMP_EQUAL("0", content, 1);
     LONGS_EQUAL(1, result.data.success->len);
 }
 
@@ -583,9 +627,11 @@ TEST(DoubleParser, PDoubleMatchesZeroDecimal)
 
     CHECK_FALSE(result.is_error);
     CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
-    STRNCMP_EQUAL("0.0", result.data.success->content, 3);
+    STRNCMP_EQUAL("0.0", content, 3);
     LONGS_EQUAL(3, result.data.success->len);
 }
 
