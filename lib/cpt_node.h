@@ -21,18 +21,22 @@ typedef struct epc_cpt_node_t
     char const * name; /**< @brief The name assigned to the parser that generated this node, for
                         *    debugging/identification.
                         */
-    size_t content_offset;        /**< @brief Offset to the first matched token in the original input token list. */
-    size_t len;                   /**< @brief The length of the matched substring. */
+    size_t content_offset; /**< @brief Offset to the first matched token in the original input token list. */
+    size_t len;            /**< @brief The length of the matched substring. */
+
     size_t semantic_start_offset; /**< @brief Offset from `content_offset` to the start of the semantically relevant
-                                     part. */
+                                      part. */
     size_t semantic_end_offset;   /**< @brief Length from the end of matched content to exclude from the semantically
-                                     relevant   part. */
-    epc_cpt_node_t ** children;   /**< @brief An array of pointers to child `pt_node_t`s, representing sub-matches. */
-    int children_count;           /**< @brief The number of children in the `children` array. */
+                                      relevant   part. */
+
+    epc_cpt_node_t ** children; /**< @brief An array of pointers to child `pt_node_t`s, representing sub-matches. */
+    int children_count;         /**< @brief The number of children in the `children` array. */
+
     epc_ast_semantic_action_t ast_config; /**< @brief A copy of the ast action assigned to the associated parser that
                                            *    created the node.
                                            */
-    epc_parser_ctx_t * ctx;
+
+    epc_parser_ctx_t * ctx; /**< @brief The parser context associated with this node. */
 } epc_cpt_node_t;
 
 ATTR_NONNULL(2)
