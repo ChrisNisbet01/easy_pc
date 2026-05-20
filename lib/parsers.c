@@ -471,11 +471,9 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     char const * match_string = self->data.string;
     size_t expected_len = strlen(match_string);
 
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 0);
-
     for (size_t matched_chars = 0; matched_chars < expected_len; matched_chars++)
     {
-        input_result = parse_ctx_get_input_at_offset(ctx, input_offset + matched_chars, 1);
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset + matched_chars, 1);
         char const * input = input_result.next_input;
 
         if (input_result.is_eof)
@@ -966,7 +964,7 @@ pdouble_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         size_t current_len = 0;
         while (1)
         {
-            parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset, current_len + 1);
+            parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
             if (res.is_eof)
             {
                 break;
@@ -992,8 +990,7 @@ pdouble_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
         }
     }
 
-    parse_get_input_result_t input_result
-        = parse_ctx_get_input_at_offset(ctx, input_offset, parsed_len > 0 ? parsed_len : 1);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset + parsed_len, 1);
 
     if (input_result.is_eof && parsed_len == 0)
     {
@@ -1064,47 +1061,47 @@ epc_double(epc_parser_list * list, char const * name)
 static epc_parse_result_t
 phex_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    parse_get_input_result_t input_result;
-    char const * input;
-
-    input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
-
-    if (input_result.is_eof)
     {
-        return epc_parser_error_result(
-            ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
-        );
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+
+        if (input_result.is_eof)
+        {
+            return epc_parser_error_result(
+                ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
+            );
+        }
+
+        char const * input = input_result.next_input;
+
+        // Must start with '0'
+        if (input[0] != '0')
+        {
+            char found_str[2] = {input[0], '\0'};
+            return epc_parser_error_result(
+                ctx, input_offset, "Expected hex literal", parser_get_expected_str(self), found_str
+            );
+        }
     }
-
-    input = input_result.next_input;
-
-    // Must start with '0'
-    if (input[0] != '0')
     {
-        char found_str[2] = {input[0], '\0'};
-        return epc_parser_error_result(
-            ctx, input_offset, "Expected hex literal", parser_get_expected_str(self), found_str
-        );
-    }
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset + 1, 1);
 
-    input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 2);
+        if (input_result.is_eof)
+        {
+            return epc_parser_error_result(
+                ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
+            );
+        }
 
-    if (input_result.is_eof)
-    {
-        return epc_parser_error_result(
-            ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
-        );
-    }
+        char const * input = input_result.next_input;
 
-    input = input_result.next_input;
-
-    // Must start with '0x' or '0X'
-    if (input[1] != 'x' && input[1] != 'X')
-    {
-        char found_str[3] = {input[0], input[1], '\0'};
-        return epc_parser_error_result(
-            ctx, input_offset, "Expected hex literal", parser_get_expected_str(self), found_str
-        );
+        // Next char must be either '0x' or '0X'
+        if (input[0] != 'x' && input[0] != 'X')
+        {
+            char found_str[3] = {'0', input[1], '\0'};
+            return epc_parser_error_result(
+                ctx, input_offset, "Expected hex literal", parser_get_expected_str(self), found_str
+            );
+        }
     }
 
     // Must have at least one hex digit after the prefix
