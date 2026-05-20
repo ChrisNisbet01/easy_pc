@@ -621,10 +621,11 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
         };
     }
 
-    bool const is_streaming = ctx->streaming.is_streaming;
     bool had_error = false;
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
+    bool const is_streaming = ctx->streaming.is_streaming;
+
     if (is_streaming)
     {
         /* Wait for the input to arrive from the main thread. */
