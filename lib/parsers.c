@@ -3830,18 +3830,28 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     if (!self->data.predicate.predicate_fn(token_result.data.success, ctx, self->data.predicate.parser_data))
     {
         char found_str[FOUND_BUFFER_SIZE];
-        snprintf(
-            found_str,
-            sizeof(found_str),
-            "token '%.*s'",
-            (int)token_result.data.success->len,
-            epc_cpt_node_get_content(token_result.data.success)
-        );
-        epc_parser_result_cleanup(&token_result);
+        char const * error_message = token_result.data.success->error_message;
+
+        if (error_message == NULL)
+        {
+            snprintf(
+                found_str,
+                sizeof(found_str),
+                "token '%.*s'",
+                (int)token_result.data.success->len,
+                epc_cpt_node_get_content(token_result.data.success)
+            );
+            error_message = found_str;
+        }
 
         epc_parse_result_t result = epc_parser_error_result(
-            ctx, input_offset, "Predicate function returned false", parser_get_expected_str(self), found_str
+            ctx, input_offset, "Predicate failed", parser_get_expected_str(self), error_message
         );
+        /*
+         *  Result cleanup must be done after the error result is created in case the error_message refers to the
+         *  error message in the result node.
+         */
+        epc_parser_result_cleanup(&token_result);
 
         return result;
     }

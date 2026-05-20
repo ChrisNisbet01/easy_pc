@@ -43,7 +43,7 @@ TEST_GROUP(SatisfyTest)
         (void)user_ctx;
         char const * content = epc_cpt_node_get_content(node);
 
-                return node->len == 1 && content[0] == 'a';
+        return node->len == 1 && content[0] == 'a';
     }
 
     static bool is_length_3(epc_cpt_node_t * node, epc_parser_ctx_t * parse_ctx, void * user_ctx)
@@ -79,7 +79,7 @@ TEST(SatisfyTest, PSatisfyFailsOnPredicateFalse)
 
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
-    STRCMP_EQUAL("Predicate function returned false", result.data.error->message);
+    STRCMP_EQUAL("Predicate failed", result.data.error->message);
     STRCMP_EQUAL("expected 'a'", result.data.error->expected);
     STRCMP_EQUAL("token 'b'", result.data.error->found);
 }

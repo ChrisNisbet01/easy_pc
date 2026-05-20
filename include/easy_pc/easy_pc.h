@@ -739,6 +739,14 @@ EASY_PC_API epc_parser_t * epc_c_comment(epc_parser_list * list, char const * na
 typedef bool (*epc_satisfy_parser_predicate_fn)(epc_cpt_node_t * token, epc_parser_ctx_t * parse_ctx, void * user_ctx);
 
 /**
+ * @brief Assigns an error message to a CPT node. Intended to be used by satisfy predicet functions when they want to
+ * attach an error message to a CPT node to indicate a reason for the predicate failure.
+ * @param node The node to attach the message to.
+ * @param fmt A printf-like format string, followed by the appropriate format values.
+ */
+void epc_cpt_node_assign_error_message(epc_cpt_node_t * node, char const * fmt, ...);
+
+/**
  * @brief Creates a parser that matches if the provided predicate function returns true for the current input position.
  *
  * The predicate function is called with the parser instance and a user-defined context pointer. It should

@@ -37,6 +37,9 @@ typedef struct epc_cpt_node_t
                                            */
 
     epc_parser_ctx_t * ctx; /**< @brief The parser context associated with this node. */
+
+    char const * error_message; /**< an optional error message assigned by 'satisfy' predicate functions when the
+                                   predicate fails.  */
 } epc_cpt_node_t;
 
 ATTR_NONNULL(2)

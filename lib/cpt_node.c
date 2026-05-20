@@ -85,6 +85,9 @@ epc_node_free(epc_cpt_node_t * node)
     {
         return;
     }
+    free((char *)node->error_message);
+    node->error_message = NULL;
+
     if (node->children != NULL)
     {
         for (int i = 0; i < node->children_count; i++)
@@ -219,4 +222,26 @@ epc_node_id(epc_cpt_node_t const * node)
     }
 
     return node->tag;
+}
+
+void
+epc_cpt_node_assign_error_message(epc_cpt_node_t * node, char const * fmt, ...)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    free((char *)node->error_message);
+    node->error_message = NULL;
+    char * message = NULL;
+    va_list args;
+    va_start(args, fmt);
+    if (vasprintf(&message, fmt, args) < 0 || message == NULL)
+    {
+        return;
+    }
+    va_end(args);
+
+    node->error_message = message;
 }
