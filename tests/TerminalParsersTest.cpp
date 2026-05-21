@@ -700,3 +700,234 @@ TEST(DoubleParser, PDoubleFailsOnSignDecimal)
     STRCMP_EQUAL("Expected a double", result.data.error->message);
     STRNCMP_EQUAL("+", result.data.error->found, 1); // Only '+' is reported as found
 }
+
+TEST(DoubleParser, PLongDoubleMatchesInteger)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "123abc");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("123", content, 3);
+    LONGS_EQUAL(3, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesSimpleDecimal)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "123.45xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("123.45", content, 6);
+    LONGS_EQUAL(6, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesLeadingDecimal)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, ".45xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL(".45", content, 3);
+    LONGS_EQUAL(3, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesTrailingDecimal)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "123.xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("123.", content, 4);
+    LONGS_EQUAL(4, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesPositiveSign)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "+123.45xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("+123.45", content, 7);
+    LONGS_EQUAL(7, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesNegativeSign)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "-123xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("-123", content, 4);
+    LONGS_EQUAL(4, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesExponentPositive)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "1.23e5xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("1.23e5", content, 6);
+    LONGS_EQUAL(6, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesExponentNegative)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "1.23E-5xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("1.23E-5", content, 7);
+    LONGS_EQUAL(7, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesExponentWithSign)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "-1e+2xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("-1e+2", content, 5);
+    LONGS_EQUAL(5, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesZero)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "0xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("0", content, 1);
+    LONGS_EQUAL(1, result.data.success->len);
+}
+
+TEST(DoubleParser, PLongDoubleMatchesZeroDecimal)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "0.0xyz");
+
+    CHECK_FALSE(result.is_error);
+    CHECK_TRUE(result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(result.data.success);
+
+    STRCMP_EQUAL("long_double", result.data.success->tag);
+    STRCMP_EQUAL("long_double", result.data.success->name);
+    STRNCMP_EQUAL("0.0", content, 3);
+    LONGS_EQUAL(3, result.data.success->len);
+}
+
+// Invalid Double Tests
+TEST(DoubleParser, PLongDoubleFailsOnNonNumeric)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    char const * input = "abc";
+    result = parse(p, input);
+
+    CHECK_TRUE(result.is_error);
+    CHECK_TRUE(result.data.error != NULL);
+    STRCMP_EQUAL("Expected a long double", result.data.error->message);
+    STRNCMP_EQUAL("a", result.data.error->found, 1);
+}
+
+TEST(DoubleParser, PLongDoubleFailsOnEmptyInput)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "");
+
+    CHECK_TRUE(result.is_error);
+    CHECK_TRUE(result.data.error != NULL);
+    STRCMP_EQUAL("Unexpected end of input", result.data.error->message);
+    STRCMP_EQUAL("EOF", result.data.error->found);
+}
+
+TEST(DoubleParser, PLongDoubleFailsOnNullInput)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, NULL);
+
+    CHECK_TRUE(result.is_error);
+    CHECK_TRUE(result.data.error != NULL);
+}
+
+TEST(DoubleParser, PLongDoubleFailsOnJustDecimalPoint)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, ".");
+
+    CHECK_TRUE(result.is_error);
+    CHECK_TRUE(result.data.error != NULL);
+    STRCMP_EQUAL("Expected a long double", result.data.error->message);
+    STRNCMP_EQUAL(".", result.data.error->found, 1);
+}
+
+TEST(DoubleParser, PLongDoubleFailsOnJustSign)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "+");
+
+    CHECK_TRUE(result.is_error);
+    CHECK_TRUE(result.data.error != NULL);
+    STRCMP_EQUAL("Expected a long double", result.data.error->message);
+    STRNCMP_EQUAL("+", result.data.error->found, 1);
+}
+
+TEST(DoubleParser, PLongDoubleFailsOnSignDecimal)
+{
+    epc_parser_t * p = epc_long_double(list, NULL);
+    result = parse(p, "+.");
+
+    CHECK_TRUE(result.is_error);
+    CHECK_TRUE(result.data.error != NULL);
+    STRCMP_EQUAL("Expected a long double", result.data.error->message);
+    STRNCMP_EQUAL("+", result.data.error->found, 1); // Only '+' is reported as found
+}
