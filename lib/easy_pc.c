@@ -646,7 +646,6 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
 
     parse_get_input_result_t result = {
         .next_input = &ctx->input_start[input_offset],
-        .available = ctx->input_len - input_offset,
         .is_eof = is_eof,
         .had_error = had_error,
     };

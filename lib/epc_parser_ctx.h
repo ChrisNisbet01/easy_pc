@@ -94,7 +94,6 @@ struct epc_parser_ctx_t
 typedef struct parse_get_input_result_t
 {
     char const * next_input;
-    size_t available;
     bool is_eof;
     bool had_error;
 } parse_get_input_result_t;
