@@ -958,11 +958,12 @@ static epc_parse_result_t
 pdouble_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
     size_t parsed_len = 0;
-    char const * input = NULL;
 
     {
+        char * double_buf = ctx->temp_parse_buffer;
         size_t current_len = 0;
-        while (1)
+
+        while (current_len < TEMP_PARSE_BUFFER_SIZE)
         {
             parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
             if (res.is_eof)
@@ -970,60 +971,49 @@ pdouble_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
                 break;
             }
 
-            input = res.next_input;
-            current_len = res.available;
+            double_buf[current_len++] = res.next_input[0];
+            double_buf[current_len] = '\0';
 
             char * endptr;
             errno = 0;
-            (void)strtod(input, &endptr);
-            parsed_len = (size_t)(endptr - input);
+            (void)strtod(double_buf, &endptr);
+            if (errno == ERANGE)
+            {
+                char found_str[FOUND_BUFFER_SIZE];
+                snprintf(found_str, sizeof(found_str), "%.*s", (int)sizeof(found_str) - 1, double_buf);
+                return epc_parser_error_result(ctx, input_offset, "Double out of range", "double", found_str);
+            }
+
+            parsed_len = (size_t)(endptr - double_buf);
 
             if (parsed_len < current_len)
             {
                 // Check if the suffix is a potential numeric prefix
-                if (!is_double_prefix(input + parsed_len, current_len - parsed_len))
+                if (!is_double_prefix(double_buf + parsed_len, current_len - parsed_len))
                 {
                     break;
                 }
                 // Continue loop and wait for more or EOF
             }
         }
-    }
-
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset + parsed_len, 1);
-
-    if (input_result.is_eof && parsed_len == 0)
-    {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "double", "EOF");
-    }
-
-    input = input_result.next_input;
-    if (parsed_len == 0)
-    {
-        char * endptr;
-        errno = 0;
-        (void)strtod(input, &endptr);
-        parsed_len = (size_t)(endptr - input);
-    }
-
-    if (errno == ERANGE)
-    {
-        char found_str[FOUND_BUFFER_SIZE];
-        snprintf(found_str, sizeof(found_str), "%.*s", (int)sizeof(found_str) - 1, input);
-        return epc_parser_error_result(ctx, input_offset, "Double out of range", "double", found_str);
+        if (current_len == TEMP_PARSE_BUFFER_SIZE)
+        {
+            char found_str[FOUND_BUFFER_SIZE];
+            snprintf(found_str, sizeof(found_str), "%.*s", (int)sizeof(found_str) - 1, double_buf);
+            return epc_parser_error_result(ctx, input_offset, "Double is too large", "double", found_str);
+        }
     }
 
     if (parsed_len == 0)
     {
-        char found_str[FOUND_BUFFER_SIZE];
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+
         if (input_result.is_eof)
         {
-            strncpy(found_str, "EOF", sizeof(found_str) - 1);
+            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "double", "EOF");
         }
-        else
-        {
-            snprintf(found_str, sizeof(found_str), "%.*s", 1, input);
-        }
+        char found_str[FOUND_BUFFER_SIZE];
+        snprintf(found_str, sizeof(found_str), "%.*s", 1, input_result.next_input);
         found_str[sizeof(found_str) - 1] = '\0';
         return epc_parser_error_result(ctx, input_offset, "Expected a double", "double", found_str);
     }

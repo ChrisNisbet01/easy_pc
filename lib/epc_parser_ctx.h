@@ -64,6 +64,7 @@ typedef struct
     size_t capacity;
 } newline_positions_t;
 
+#define TEMP_PARSE_BUFFER_SIZE 8192
 // The Parsing Context (for a single parse operation and its results)
 // This will be internally managed by epc_parse_input
 struct epc_parser_ctx_t
@@ -87,6 +88,7 @@ struct epc_parser_ctx_t
 #ifdef WITH_INPUT_STREAM_SUPPORT
     epc_streaming_state_t streaming;
 #endif
+    char temp_parse_buffer[TEMP_PARSE_BUFFER_SIZE + 1];
 };
 
 typedef struct parse_get_input_result_t
