@@ -120,6 +120,8 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_hex_raw = epc_string(l, "hex", "hex");
     epc_parser_t * p_double_raw = epc_string(l, "double", "double");
     epc_parser_t * p_double = epc_lexeme_ex(l, "double", p_double_raw, EPC_CONSUME_ALL_STYLES);
+    epc_parser_t * p_long_double_raw = epc_string(l, "long_double", "long_double");
+    epc_parser_t * p_long_double = epc_lexeme_ex(l, "long_double", p_long_double_raw, EPC_CONSUME_ALL_STYLES);
     epc_parser_t * p_space_raw = epc_string(l, "space", "space");
     epc_parser_t * p_any_raw = epc_string(l, "any", "any");
     epc_parser_t * p_succeed_raw = epc_string(l, "succeed", "succeed");
@@ -212,6 +214,7 @@ create_gdl_parser(epc_parser_list * l)
         p_int_raw,
         p_octal_raw,
         p_double_raw,
+        p_long_double_raw,
         p_space_raw,
         p_any_raw,
         p_succeed_raw,
@@ -325,13 +328,14 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_terminal = epc_or(
         l,
         "Terminal",
-        6,
+        7,
         gdl_string_literal,
         gdl_char_literal,
         terminal_keyword,
         fail_call,
         gdl_actual_identifier,
-        p_double
+        p_double,
+        p_long_double
     );
     epc_parser_set_ast_action(gdl_terminal, GDL_AST_ACTION_CREATE_TERMINAL);
 

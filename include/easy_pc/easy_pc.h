@@ -312,6 +312,15 @@ EASY_PC_API epc_parser_t * epc_int(epc_parser_list * list, char const * name);
 EASY_PC_API epc_parser_t * epc_double(epc_parser_list * list, char const * name);
 
 /**
+ * @brief Creates a parser that matches a floating-point number (e.g., "3.14", "-.5", "1e-3") and adds it to the list.
+ *        Use this parser when epc_double doesn't cover the expected range of the input.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_long_double(epc_parser_list * list, char const * name);
+
+/**
  * @brief Creates a parser that matches a single whitespace character and adds it to the list.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.

@@ -1,5 +1,6 @@
-#include "CppUTest/TestHarness.h"
 #include "easy_pc/easy_pc.h"
+
+#include "CppUTest/TestHarness.h"
 
 extern "C" {
 #include "gdl_code_generator.h"
@@ -94,6 +95,21 @@ TEST(GeneratedParserTest, GeneratesFilesWithFwdRefSuccessfully)
                              "SimpleRule = SeqGreeting | SeqChar;\n"
                              "EOI = eoi;\n"
                              "Program = SimpleRule EOI @EPC_AST_SEMANTIC_ACTION_PROGRAM_RULE;\n";
+
+    generate_ast(gdl_input);
+
+    CHECK_TRUE(gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir, NULL));
+}
+
+TEST(GeneratedParserTest, GeneratesFilesWithLongDoubleSuccessfully)
+{
+    // Output directory for generated files in the test environment
+    char const * output_dir = ".";
+    char const * base_name = "long_double_test";
+    // Create AST for the simple test language
+    char const * gdl_input = "MyLongDouble = long_double;\n"
+                             "EOI = eoi;\n"
+                             "Program = MyLongDouble EOI @EPC_AST_SEMANTIC_ACTION_PROGRAM_RULE;\n";
 
     generate_ast(gdl_input);
 

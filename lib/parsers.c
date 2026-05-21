@@ -1049,6 +1049,110 @@ epc_double(epc_parser_list * list, char const * name)
 }
 
 static epc_parse_result_t
+plong_double_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+{
+    size_t parsed_len = 0;
+    char const * input = NULL;
+
+    {
+        size_t current_len = 0;
+        while (1)
+        {
+            parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
+            if (res.is_eof)
+            {
+                break;
+            }
+
+            input = res.next_input;
+            current_len = res.available;
+
+            char * endptr;
+            errno = 0;
+            (void)strtold(input, &endptr);
+            parsed_len = (size_t)(endptr - input);
+
+            if (parsed_len < current_len)
+            {
+                // Check if the suffix is a potential numeric prefix
+                if (!is_double_prefix(input + parsed_len, current_len - parsed_len))
+                {
+                    break;
+                }
+                // Continue loop and wait for more or EOF
+            }
+        }
+    }
+
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset + parsed_len, 1);
+
+    if (input_result.is_eof && parsed_len == 0)
+    {
+        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "long double", "EOF");
+    }
+
+    input = input_result.next_input;
+    if (parsed_len == 0)
+    {
+        char * endptr;
+        errno = 0;
+        (void)strtold(input, &endptr);
+        parsed_len = (size_t)(endptr - input);
+    }
+
+    if (errno == ERANGE)
+    {
+        char found_str[FOUND_BUFFER_SIZE];
+        snprintf(found_str, sizeof(found_str), "%.*s", (int)sizeof(found_str) - 1, input);
+        return epc_parser_error_result(ctx, input_offset, "Long double out of range", "double", found_str);
+    }
+
+    if (parsed_len == 0)
+    {
+        char found_str[FOUND_BUFFER_SIZE];
+        if (input_result.is_eof)
+        {
+            strncpy(found_str, "EOF", sizeof(found_str) - 1);
+        }
+        else
+        {
+            snprintf(found_str, sizeof(found_str), "%.*s", 1, input);
+        }
+        found_str[sizeof(found_str) - 1] = '\0';
+        return epc_parser_error_result(ctx, input_offset, "Expected a long double", "long double", found_str);
+    }
+
+    epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    node->content_offset = input_offset;
+    node->len = parsed_len;
+
+    return epc_parser_success_result(node);
+}
+
+static epc_parser_t *
+_epc_long_double(char const * name)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "long_double", plong_double_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_long_double(epc_parser_list * list, char const * name)
+{
+    return epc_parser_list_add(list, _epc_long_double(name));
+}
+
+static epc_parse_result_t
 phex_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
     {
