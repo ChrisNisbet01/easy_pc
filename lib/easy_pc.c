@@ -661,6 +661,18 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
 }
 
 EASY_PC_HIDDEN
+char const *
+parse_ctx_get_input_start(epc_parser_ctx_t * ctx)
+{
+    if (ctx == NULL)
+    {
+        return NULL;
+    }
+
+    return ctx->input_start;
+}
+
+EASY_PC_HIDDEN
 size_t
 parse_ctx_get_input_len(epc_parser_ctx_t * const ctx)
 {
