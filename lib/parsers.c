@@ -698,11 +698,11 @@ static epc_parse_result_t
 pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
     size_t parsed_len = 0;
-    char const * input = NULL;
 
     {
+        char * temp_buffer = ctx->temp_parse_buffer;
         size_t current_len = 0;
-        while (1)
+        while (current_len < TEMP_PARSE_BUFFER_SIZE)
         {
             parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
             if (res.is_eof)
@@ -710,71 +710,57 @@ pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
                 break;
             }
 
-            input = res.next_input;
-            current_len = res.available;
+            temp_buffer[current_len++] = res.next_input[0];
+            temp_buffer[current_len] = '\0';
 
             char * endptr;
-            (void)strtoll(input, &endptr, 10);
-            parsed_len = (size_t)(endptr - input);
+
+            (void)strtoll(temp_buffer, &endptr, 10);
+
+            parsed_len = (size_t)(endptr - temp_buffer);
 
             if (parsed_len < current_len)
             {
                 // If it parsed 0 but the first char is a minus sign, we wait for more digits.
-                if (parsed_len > 0 || input[0] != '-')
+                if (parsed_len > 0 || temp_buffer[0] != '-')
                 {
                     break;
                 }
                 // Continue loop to wait for more data or EOF
             }
         }
+        if (current_len == TEMP_PARSE_BUFFER_SIZE)
+        {
+            return epc_parser_error_result(ctx, input_offset, "Integer literal too long", "integer", "<too long>");
+        }
     }
 
-    parse_get_input_result_t input_result
-        = parse_ctx_get_input_at_offset(ctx, input_offset, parsed_len > 0 ? parsed_len : 1);
-
-    if (input_result.is_eof && parsed_len == 0)
-    {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "integer", "EOF");
-    }
-
-    input = input_result.next_input;
     if (parsed_len == 0)
     {
-        char * endptr;
-        (void)strtoll(input, &endptr, 10);
-        parsed_len = (size_t)(endptr - input);
-    }
-
-    // A valid integer must parse at least one digit
-    if (parsed_len > 0 && (isdigit(input[0]) || (input[0] == '-' && parsed_len > 1 && isdigit(input[1]))))
-    {
-        epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
-        if (node == NULL)
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+        if (input_result.is_eof)
         {
-            return epc_parser_error_result(
-                ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
-            );
+            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "integer", "EOF");
         }
 
-        node->content_offset = input_offset;
-        node->len = parsed_len;
+        /* No match to an integer. */
+        char found_buffer[FOUND_BUFFER_SIZE];
+        snprintf(found_buffer, sizeof(found_buffer), "%.*s", 1, input_result.next_input);
+        found_buffer[sizeof(found_buffer) - 1] = '\0';
 
-        return epc_parser_success_result(node);
+        return epc_parser_error_result(ctx, input_offset, "Expected an integer", "integer", found_buffer);
     }
 
-    /* No match to an integer. */
-    char found_buffer[FOUND_BUFFER_SIZE];
-    if (input_result.is_eof)
+    epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
+    if (node == NULL)
     {
-        strncpy(found_buffer, "EOF", sizeof(found_buffer) - 1);
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
-    else
-    {
-        snprintf(found_buffer, sizeof(found_buffer), "%.*s", 1, input);
-    }
-    found_buffer[sizeof(found_buffer) - 1] = '\0';
 
-    return epc_parser_error_result(ctx, input_offset, "Expected an integer", "integer", found_buffer);
+    node->content_offset = input_offset;
+    node->len = parsed_len;
+
+    return epc_parser_success_result(node);
 }
 
 static epc_parser_t *
@@ -1052,11 +1038,12 @@ static epc_parse_result_t
 plong_double_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
     size_t parsed_len = 0;
-    char const * input = NULL;
 
     {
+        char * double_buf = ctx->temp_parse_buffer;
         size_t current_len = 0;
-        while (1)
+
+        while (current_len < TEMP_PARSE_BUFFER_SIZE)
         {
             parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len, 1);
             if (res.is_eof)
@@ -1064,62 +1051,53 @@ plong_double_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t
                 break;
             }
 
-            input = res.next_input;
-            current_len = res.available;
+            double_buf[current_len++] = res.next_input[0];
+            double_buf[current_len] = '\0';
 
             char * endptr;
             errno = 0;
-            (void)strtold(input, &endptr);
-            parsed_len = (size_t)(endptr - input);
+
+            (void)strtold(double_buf, &endptr);
+
+            if (errno == ERANGE)
+            {
+                char found_str[FOUND_BUFFER_SIZE];
+                snprintf(found_str, sizeof(found_str), "%.*s", (int)sizeof(found_str) - 1, double_buf);
+                return epc_parser_error_result(ctx, input_offset, "Double out of range", "double", found_str);
+            }
+
+            parsed_len = (size_t)(endptr - double_buf);
 
             if (parsed_len < current_len)
             {
                 // Check if the suffix is a potential numeric prefix
-                if (!is_double_prefix(input + parsed_len, current_len - parsed_len))
+                if (!is_double_prefix(double_buf + parsed_len, current_len - parsed_len))
                 {
                     break;
                 }
                 // Continue loop and wait for more or EOF
             }
         }
-    }
-
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset + parsed_len, 1);
-
-    if (input_result.is_eof && parsed_len == 0)
-    {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "long double", "EOF");
-    }
-
-    input = input_result.next_input;
-    if (parsed_len == 0)
-    {
-        char * endptr;
-        errno = 0;
-        (void)strtold(input, &endptr);
-        parsed_len = (size_t)(endptr - input);
-    }
-
-    if (errno == ERANGE)
-    {
-        char found_str[FOUND_BUFFER_SIZE];
-        snprintf(found_str, sizeof(found_str), "%.*s", (int)sizeof(found_str) - 1, input);
-        return epc_parser_error_result(ctx, input_offset, "Long double out of range", "double", found_str);
+        if (current_len == TEMP_PARSE_BUFFER_SIZE)
+        {
+            char found_str[FOUND_BUFFER_SIZE];
+            snprintf(found_str, sizeof(found_str), "%.*s", (int)sizeof(found_str) - 1, double_buf);
+            return epc_parser_error_result(ctx, input_offset, "Double is too large", "double", found_str);
+        }
     }
 
     if (parsed_len == 0)
     {
-        char found_str[FOUND_BUFFER_SIZE];
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset, 1);
+
         if (input_result.is_eof)
         {
-            strncpy(found_str, "EOF", sizeof(found_str) - 1);
+            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "double", "EOF");
         }
-        else
-        {
-            snprintf(found_str, sizeof(found_str), "%.*s", 1, input);
-        }
+        char found_str[FOUND_BUFFER_SIZE];
+        snprintf(found_str, sizeof(found_str), "%.*s", 1, input_result.next_input);
         found_str[sizeof(found_str) - 1] = '\0';
-        return epc_parser_error_result(ctx, input_offset, "Expected a long double", "long double", found_str);
+        return epc_parser_error_result(ctx, input_offset, "Expected a long double", "double", found_str);
     }
 
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
