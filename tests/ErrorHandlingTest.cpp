@@ -99,7 +99,7 @@ TEST(ErrorHandling, PStringReportsTooShortInputError)
     STRCMP_EQUAL("Unexpected end of input", result.data.error->message);
     STRCMP_EQUAL("ab", result.data.error->input_position);
     STRCMP_EQUAL("abc", result.data.error->expected);
-    STRCMP_EQUAL("", result.data.error->found);
+    STRCMP_EQUAL("EOF", result.data.error->found);
 }
 
 TEST(ErrorHandling, PStringReportsMismatchError)
@@ -113,7 +113,7 @@ TEST(ErrorHandling, PStringReportsMismatchError)
     STRCMP_EQUAL("Unexpected string", result.data.error->message);
     STRCMP_EQUAL("axc", result.data.error->input_position);
     STRCMP_EQUAL("abc", result.data.error->expected);
-    STRCMP_EQUAL("xc (pos: 1)", result.data.error->found);
+    STRCMP_EQUAL("x (pos: 1)", result.data.error->found);
 }
 
 TEST(ErrorHandling, PDigitReportsNullInputError)
@@ -187,7 +187,7 @@ TEST(ErrorHandling, POrReportsErrorWhenAllAlternativesFail)
 
     STRCMP_EQUAL(input_str, result.data.error->input_position);
     STRCMP_EQUAL("x or y", result.data.error->expected);
-    STRCMP_EQUAL("abc", result.data.error->found);
+    STRCMP_EQUAL("a", result.data.error->found);
 }
 
 TEST(ErrorHandling, ReportsCorrectLineAndColumnSingleLine)

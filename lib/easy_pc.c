@@ -611,8 +611,10 @@ parse_ctx_free_error(epc_parser_ctx_t * ctx, epc_parser_error_t * error)
 
 EASY_PC_HIDDEN
 parse_get_input_result_t
-parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_offset, size_t const count)
+parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_offset)
 {
+    size_t const count = 1;
+
     if (ctx == NULL || ctx->input_start == NULL)
     {
         return (parse_get_input_result_t){
@@ -645,7 +647,7 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
     bool const is_eof = input_offset + count > ctx->input_len;
 
     parse_get_input_result_t result = {
-        .next_input = &ctx->input_start[input_offset],
+        .token.ch = ctx->input_start[input_offset],
         .is_eof = is_eof,
         .had_error = had_error,
     };

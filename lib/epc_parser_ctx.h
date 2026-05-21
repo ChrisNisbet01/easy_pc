@@ -91,9 +91,14 @@ struct epc_parser_ctx_t
     char temp_parse_buffer[TEMP_PARSE_BUFFER_SIZE + 1];
 };
 
+typedef struct
+{
+    char ch;
+} epc_parser_token_t;
+
 typedef struct parse_get_input_result_t
 {
-    char const * next_input;
+    epc_parser_token_t token;
     bool is_eof;
     bool had_error;
 } parse_get_input_result_t;
@@ -111,7 +116,7 @@ EASY_PC_HIDDEN
 void parse_ctx_free_error(epc_parser_ctx_t * ctx, epc_parser_error_t * error);
 
 EASY_PC_HIDDEN
-parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t input_offset, size_t count);
+parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t input_offset);
 
 EASY_PC_HIDDEN
 char const * parse_ctx_get_input_start(epc_parser_ctx_t * ctx);
