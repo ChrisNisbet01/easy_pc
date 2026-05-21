@@ -23,7 +23,8 @@ TEST_GROUP(GeneratedParserTest)
     void setup() override
     {
         // Clean up generated files
-        system("rm -f simple_test_language.h simple_test_language.c simple_test_language_actions.h");
+        int cmd_res = system("rm -f simple_test_language.h simple_test_language.c simple_test_language_actions.h");
+        (void)cmd_res;
         parser_list = epc_parser_list_create();
         gdl_grammar = create_gdl_parser(parser_list);
         ast_registry = epc_ast_hook_registry_create(GDL_AST_ACTION_MAX);

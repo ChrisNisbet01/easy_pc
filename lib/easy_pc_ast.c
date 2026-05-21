@@ -441,7 +441,7 @@ epc_parse_and_build_ast(
         {
             input = ""; // Fallback to empty string if we can't get input position
         }
-        size_t input_len = strlen(input);
+        size_t input_len = parse_ctx_get_input_len(parse_session.internal_parse_ctx);
         result.success = false;
         char * msg = NULL;
         // The error structure from the parser has all the necessary details.
@@ -450,8 +450,8 @@ epc_parse_and_build_ast(
             &msg,
             "Parse error: %s at '%.*s' (expected '%s', found '%s')Error err: line: %zu, col: %zu",
             err->message,
-            (int)(input + input_len - err->input_position),
-            err->input_position,
+            (int)(input_len - err->input_offset),
+            input + err->input_offset,
             err->expected,
             err->found,
             err->position.line,

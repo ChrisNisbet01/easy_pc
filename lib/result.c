@@ -142,10 +142,7 @@ epc_parser_error_alloc(
         return error;
     }
 
-    char const * input_start = parse_ctx_get_input_start(ctx);
-    char const * current = input_start + input_offset;
-
-    error->input_position = current;
+    error->input_offset = input_offset;
     error->position = epc_calculate_line_and_column(ctx, input_offset);
 
     strncpy(error->message, message, sizeof(error->message));
@@ -239,7 +236,7 @@ update_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t * new_error)
 
     epc_parser_error_t const * furthest_error = parse_ctx_get_furthest_error(ctx);
 
-    if (furthest_error == NULL || (new_error->input_position >= furthest_error->input_position))
+    if (furthest_error == NULL || (new_error->input_offset >= furthest_error->input_offset))
     {
         epc_parser_error_t * e_copy = epc_parser_error_copy(ctx, new_error);
         parser_furthest_error_restore(ctx, &e_copy);

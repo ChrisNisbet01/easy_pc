@@ -32,10 +32,10 @@ TEST_GROUP(GdlParserTest)
         snprintf(
             error_msg_buffer,
             sizeof(error_msg_buffer),
-            "GDL Parsing Error: %s at input position '%.10s' (line %zu, col %zu)"
+            "GDL Parsing Error: %s at input offset %zu (line %zu, col %zu)"
             " expected: '%s', found: '%s'\n",
             error->message,
-            error->input_position,
+            error->input_offset,
             error->position.line,
             error->position.col,
             error->expected,

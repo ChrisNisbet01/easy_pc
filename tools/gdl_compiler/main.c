@@ -143,9 +143,9 @@ main(int argc, char ** argv)
     {
         fprintf(
             stderr,
-            "GDL Parsing Error: %s at input position '%.10s...'\n",
+            "GDL Parsing Error: %s at input offset %zu'\n",
             session.result.data.error->message,
-            session.result.data.error->input_position
+            session.result.data.error->input_offset
         );
         fprintf(
             stderr,

@@ -41,12 +41,15 @@ TEST_GROUP(CptPrinter)
 
         if (result.is_error)
         {
+            char const * input
+                = epc_cpt_get_content_at_offset(session.internal_parse_ctx, result.data.error->input_offset);
+            if (input == NULL)
+            {
+                input = "NULL";
+            }
             std::cerr << "Parse Error: " << (result.data.error ? result.data.error->message : "Unknown error")
-                      << " at '"
-                      << (result.data.error && result.data.error->input_position ? result.data.error->input_position
-                                                                                 : "NULL")
-                      << "', expected '" << result.data.error->expected << "', found '" << result.data.error->found
-                      << "'" << std::endl;
+                      << " at '" << input << "', expected '" << result.data.error->expected << "', found '"
+                      << result.data.error->found << "'" << std::endl;
             return NULL;
         }
         char * printed_cpt = epc_cpt_to_string(session.internal_parse_ctx, result.data.success);

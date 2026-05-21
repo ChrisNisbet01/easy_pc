@@ -647,7 +647,9 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
     bool const is_eof = input_offset + count > ctx->input_len;
 
     parse_get_input_result_t result = {
-        .token.ch = ctx->input_start[input_offset],
+        .token.id = ctx->input_start[input_offset],
+        .token.input_offset = input_offset,
+        .token.input_len = 1,
         .is_eof = is_eof,
         .had_error = had_error,
     };
@@ -664,7 +666,7 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
 
 EASY_PC_HIDDEN
 char const *
-parse_ctx_get_input_start(epc_parser_ctx_t * ctx)
+parse_ctx_get_input_start(epc_parser_ctx_t const * ctx)
 {
     if (ctx == NULL)
     {
@@ -676,7 +678,7 @@ parse_ctx_get_input_start(epc_parser_ctx_t * ctx)
 
 EASY_PC_HIDDEN
 size_t
-parse_ctx_get_input_len(epc_parser_ctx_t * const ctx)
+parse_ctx_get_input_len(epc_parser_ctx_t const * ctx)
 {
     if (ctx == NULL || ctx->input_start == NULL)
     {
@@ -730,7 +732,7 @@ choose_best_error(epc_parse_session_t * session)
         // A `furthest_error` is more informative if it parsed further into the input string.
         if (furthest_error != NULL
             && (session->result.data.error == NULL
-                || furthest_error->input_position > session->result.data.error->input_position))
+                || furthest_error->input_offset > session->result.data.error->input_offset))
         {
             // If it is, replace the result's error with the furthest one.
             epc_parser_error_free(session->result.data.error);

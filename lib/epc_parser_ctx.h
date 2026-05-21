@@ -88,12 +88,15 @@ struct epc_parser_ctx_t
 #ifdef WITH_INPUT_STREAM_SUPPORT
     epc_streaming_state_t streaming;
 #endif
+    int depth;
     char temp_parse_buffer[TEMP_PARSE_BUFFER_SIZE + 1];
 };
 
 typedef struct
 {
-    char ch;
+    unsigned id;
+    size_t input_offset;
+    size_t input_len;
 } epc_parser_token_t;
 
 typedef struct parse_get_input_result_t
@@ -119,10 +122,10 @@ EASY_PC_HIDDEN
 parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t input_offset);
 
 EASY_PC_HIDDEN
-char const * parse_ctx_get_input_start(epc_parser_ctx_t * ctx);
+char const * parse_ctx_get_input_start(epc_parser_ctx_t const * ctx);
 
 EASY_PC_HIDDEN
-size_t parse_ctx_get_input_len(epc_parser_ctx_t * const ctx);
+size_t parse_ctx_get_input_len(epc_parser_ctx_t const * ctx);
 
 EASY_PC_HIDDEN
 ATTR_NONNULL(1)

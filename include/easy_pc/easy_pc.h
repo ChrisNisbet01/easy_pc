@@ -48,6 +48,8 @@ typedef enum
     EPC_ERROR_EXPECTED_MAX_LEN = 40,
 } EPC_ERROR_MAX_MESSAGE_LENGTHS;
 
+#define EPC_TOKEN_ID_FIRST_USER 300
+
 // Forward declarations of structs
 typedef struct epc_parser_t epc_parser_t;
 typedef struct epc_cpt_node_t epc_cpt_node_t;
@@ -55,6 +57,7 @@ typedef struct epc_parser_ctx_t epc_parser_ctx_t;
 typedef struct epc_parser_list epc_parser_list;
 typedef struct epc_parse_session_t epc_parse_session_t;
 typedef struct epc_parse_result_t epc_parse_result_t;
+
 // line and column information.
 typedef struct epc_line_col_t
 {
@@ -122,8 +125,8 @@ typedef struct epc_parse_input_t
  */
 typedef struct
 {
-    char const * input_position; /**< @brief Pointer to the exact position in the input where the error occurred. */
-    epc_line_col_t position;     /**< @brief Line and column coordinates of the error position. */
+    size_t input_offset;     /**< @brief Offset to the exact position in the input where the error occurred. */
+    epc_line_col_t position; /**< @brief Line and column coordinates of the error position. */
     /**< @brief A descriptive message explaining the nature of the error. */
     char message[EPC_ERROR_MESSAGE_MAX_LEN + 1];
     /**< @brief A string describing what the parser was expecting at the error position. */
@@ -1133,6 +1136,16 @@ EASY_PC_API size_t epc_cpt_node_get_content_offset(epc_cpt_node_t const * node);
  * @return A `size_t` representing the length of the content.
  */
 EASY_PC_API size_t epc_cpt_node_get_len(epc_cpt_node_t const * node);
+
+/**
+ * @brief Return a pointer to the input at the specified offset from the start of input.
+ *
+ * This function returns a pointer to the start of the node's full `content`.
+
+ * @param offset The offset from the start of input.
+ * @return A `const char*` pointer to the content.
+ */
+EASY_PC_API const char * epc_cpt_get_content_at_offset(epc_parser_ctx_t const * ctx, size_t offset);
 
 /**
  * @brief Prints a Concrete Parse Tree (CPT) to a dynamically allocated string.
