@@ -3033,14 +3033,6 @@ epc_fail(epc_parser_list * list, char const * name, char const * message)
 static epc_parse_result_t
 psucceed_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    /* We'll say that succeed will succeed even if exactly at end of input. */
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
-
-    if (input_result.is_eof)
-    {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "succeed", "EOF");
-    }
-
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
