@@ -648,8 +648,8 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
 
     parse_get_input_result_t result = {
         .token.id = ctx->input_start[input_offset],
-        .token.input_offset = input_offset,
-        .token.input_len = 1,
+        .token.view.offset = input_offset,
+        .token.view.len = 1,
         .is_eof = is_eof,
         .had_error = had_error,
     };

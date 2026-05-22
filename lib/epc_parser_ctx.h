@@ -94,9 +94,14 @@ struct epc_parser_ctx_t
 
 typedef struct
 {
+    size_t offset;
+    size_t len;
+} epc_parser_input_view_t;
+
+typedef struct
+{
     unsigned id;
-    size_t input_offset;
-    size_t input_len;
+    epc_parser_input_view_t view;
 } epc_parser_token_t;
 
 typedef struct parse_get_input_result_t
