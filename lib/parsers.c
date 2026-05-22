@@ -2036,35 +2036,36 @@ pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
     char_range_data_t * range = &self->data.range;
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
 
-    char expected_str[32]; // e.g., "character in range [a-z]"
-    snprintf(expected_str, sizeof(expected_str), "character in range [%c-%c]", range->start, range->end);
-
-    if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
-    }
+        char expected_str[32]; // e.g., "character in range [a-z]"
+        snprintf(expected_str, sizeof(expected_str), "character in range [%c-%c]", range->start, range->end);
 
-    char const input = input_result.token.id;
-
-    if (input >= range->start && input <= range->end)
-    {
-        epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
-        if (node == NULL)
+        if (input_result.is_eof)
         {
-            return epc_parser_error_result(
-                ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
-            );
+            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
         }
-        node->content_offset = input_offset;
-        node->len = 1;
 
-        return epc_parser_success_result(node);
+        char const input = input_result.token.id;
+
+        if (input < range->start || input > range->end)
+        {
+            /* Not in range. */
+            char found_str[2] = {input, '\0'};
+
+            return epc_parser_error_result(ctx, input_offset, "Unexpected character", expected_str, found_str);
+        }
     }
 
-    /* else not in range. */
-    char found_str[2] = {input, '\0'};
+    epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
 
-    return epc_parser_error_result(ctx, input_offset, "Unexpected character", expected_str, found_str);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+    node->content_offset = input_offset;
+    node->len = 1;
+
+    return epc_parser_success_result(node);
 }
 
 static epc_parser_t *
@@ -2132,35 +2133,38 @@ pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inp
 {
     char const * chars_to_avoid = self->data.string;
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
-    char expected_str[ERROR_MSG_BUFFER_SIZE];
 
-    snprintf(expected_str, sizeof(expected_str), "character not in set '%s'", chars_to_avoid);
-
-    if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
-    }
+        char expected_str[ERROR_MSG_BUFFER_SIZE];
 
-    char const input = input_result.token.id;
+        snprintf(expected_str, sizeof(expected_str), "character not in set '%s'", chars_to_avoid);
 
-    if (strchr(chars_to_avoid, input) == NULL)
-    {
-        epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
-        if (node == NULL)
+        if (input_result.is_eof)
         {
+            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
+        }
+
+        char const input = input_result.token.id;
+
+        if (strchr(chars_to_avoid, input) != NULL)
+        {
+            char found_str[2] = {input, '\0'};
+
             return epc_parser_error_result(
-                ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                ctx, input_offset, "Character found in forbidden set", expected_str, found_str
             );
         }
-        node->content_offset = input_offset;
-        node->len = 1;
-
-        return epc_parser_success_result(node);
     }
 
-    char found_str[2] = {input, '\0'};
+    epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+    node->content_offset = input_offset;
+    node->len = 1;
 
-    return epc_parser_error_result(ctx, input_offset, "Character found in forbidden set", expected_str, found_str);
+    return epc_parser_success_result(node);
 }
 
 static epc_parser_t *
