@@ -36,7 +36,7 @@ TEST_GROUP(CombinatorParsersNew)
         CHECK_TRUE(node != NULL);
         STRCMP_EQUAL(expected_tag, node->tag);
         STRNCMP_EQUAL(expected_content, content, expected_len);
-        LONGS_EQUAL(expected_len, node->len);
+        LONGS_EQUAL(expected_len, node->token_count);
         LONGS_EQUAL(expected_children_count, node->children_count);
     }
 
@@ -578,7 +578,7 @@ check_chain_node(epc_cpt_node_t * node, char const * expected_tag, char const * 
     CHECK_TRUE(node != NULL);
     STRCMP_EQUAL(expected_tag, node->tag);
     STRNCMP_EQUAL(expected_content, content, expected_len);
-    LONGS_EQUAL(expected_len, node->len);
+    LONGS_EQUAL(expected_len, node->token_count);
     LONGS_EQUAL(3, node->children_count); // item, op, item (or sub-chain)
 }
 

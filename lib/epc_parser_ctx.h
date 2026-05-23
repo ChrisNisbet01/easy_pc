@@ -127,6 +127,9 @@ EASY_PC_HIDDEN
 parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t input_offset);
 
 EASY_PC_HIDDEN
+epc_parser_token_t const * parse_ctx_get_token_at_offset(epc_parser_ctx_t const * ctx, size_t offset);
+
+EASY_PC_HIDDEN
 char const * parse_ctx_get_input_start(epc_parser_ctx_t const * ctx);
 
 EASY_PC_HIDDEN

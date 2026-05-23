@@ -41,7 +41,7 @@ epc_node_copy(epc_cpt_node_t * node)
     copy->tag = node->tag;
     copy->name = node->name;
     copy->content_offset = node->content_offset;
-    copy->len = node->len;
+    copy->token_count = node->token_count;
     copy->semantic_start_offset = node->semantic_start_offset;
     copy->semantic_end_offset = node->semantic_end_offset;
     copy->ast_config = node->ast_config;
@@ -117,9 +117,9 @@ epc_cpt_node_get_semantic_content(epc_cpt_node_t const * node)
 
     // Ensure start offset does not go beyond the actual content.
     // If it does, effectively, there is no semantic content.
-    if (node->semantic_start_offset >= node->len)
+    if (node->semantic_start_offset >= node->token_count)
     {
-        return input_start + node->content_offset + node->len; // Point to end of string or null
+        return input_start + node->content_offset + node->token_count; // Point to end of string or null
     }
 
     return input_start + node->content_offset + node->semantic_start_offset;
@@ -135,9 +135,9 @@ epc_cpt_node_get_semantic_content_offset(epc_cpt_node_t const * node)
 
     // Ensure start offset does not go beyond the actual content.
     // If it does, effectively, there is no semantic content.
-    if (node->semantic_start_offset >= node->len)
+    if (node->semantic_start_offset >= node->token_count)
     {
-        return node->content_offset + node->len;
+        return node->content_offset + node->token_count;
     }
 
     return node->content_offset + node->semantic_start_offset;
@@ -152,11 +152,11 @@ epc_cpt_node_get_semantic_len(epc_cpt_node_t const * node)
     }
     // Calculate the total trimmed length.
     // Ensure start offset is not beyond actual length
-    if (node->semantic_start_offset >= node->len)
+    if (node->semantic_start_offset >= node->token_count)
     {
         return 0;
     }
-    size_t effective_len = node->len - node->semantic_start_offset;
+    size_t effective_len = node->token_count - node->semantic_start_offset;
 
     // Ensure end offset is not beyond the remaining effective length
     if (node->semantic_end_offset >= effective_len)
@@ -193,7 +193,14 @@ epc_cpt_node_get_content(epc_cpt_node_t const * node)
         return NULL;
     }
 
-    return epc_cpt_get_content_at_offset(node->ctx, node->content_offset);
+    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
+
+    if (token == NULL)
+    {
+        return NULL;
+    }
+
+    return epc_cpt_get_content_at_offset(node->ctx, token->view.offset);
 }
 
 EASY_PC_API size_t
@@ -215,7 +222,7 @@ epc_cpt_node_get_len(epc_cpt_node_t const * node)
         return 0;
     }
 
-    return node->len;
+    return node->token_count;
 }
 
 EASY_PC_HIDDEN

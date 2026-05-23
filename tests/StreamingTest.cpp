@@ -146,7 +146,7 @@ TEST(StreamingTest, StreamingBasicCharTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("a", content, 1);
-    LONGS_EQUAL(1, session.result.data.success->len);
+    LONGS_EQUAL(1, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingBasicStringTest)
@@ -159,7 +159,7 @@ TEST(StreamingTest, StreamingBasicStringTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("hello", content, 5);
-    LONGS_EQUAL(5, session.result.data.success->len);
+    LONGS_EQUAL(5, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingIntTest)
@@ -173,7 +173,7 @@ TEST(StreamingTest, StreamingIntTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("12345", content, 5);
-    LONGS_EQUAL(5, session.result.data.success->len);
+    LONGS_EQUAL(5, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingDoubleTest)
@@ -187,7 +187,7 @@ TEST(StreamingTest, StreamingDoubleTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("3.14159", content, 7);
-    LONGS_EQUAL(7, session.result.data.success->len);
+    LONGS_EQUAL(7, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingScientificDoubleTest)
@@ -201,7 +201,7 @@ TEST(StreamingTest, StreamingScientificDoubleTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("1.23e-4", content, 7);
-    LONGS_EQUAL(7, session.result.data.success->len);
+    LONGS_EQUAL(7, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingAmbiguousDoubleTest)
@@ -217,7 +217,7 @@ TEST(StreamingTest, StreamingAmbiguousDoubleTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("123e-4", content, 6);
-    LONGS_EQUAL(6, session.result.data.success->len);
+    LONGS_EQUAL(6, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingSequenceTest)
@@ -237,7 +237,7 @@ TEST(StreamingTest, StreamingSequenceTest)
 
     LONGS_EQUAL(5, session.result.data.success->children_count);
     STRNCMP_EQUAL("123 456 789", content, 11);
-    LONGS_EQUAL(11, session.result.data.success->len);
+    LONGS_EQUAL(11, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingEOFErrorTest)
@@ -280,7 +280,7 @@ TEST(StreamingTest, StreamingCppCommentTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("// first part\n", content, 14);
-    LONGS_EQUAL(14, session.result.data.success->len);
+    LONGS_EQUAL(14, session.result.data.success->token_count);
 }
 
 TEST(StreamingTest, StreamingCCommentTest)
@@ -296,5 +296,5 @@ TEST(StreamingTest, StreamingCCommentTest)
     char const * content = epc_cpt_node_get_content(session.result.data.success);
 
     STRNCMP_EQUAL("/* first part second part*/", content, 27);
-    LONGS_EQUAL(27, session.result.data.success->len);
+    LONGS_EQUAL(27, session.result.data.success->token_count);
 }

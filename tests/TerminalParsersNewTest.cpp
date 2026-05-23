@@ -32,7 +32,7 @@ TEST_GROUP(TerminalParsersNew)
 
         STRCMP_EQUAL(expected_tag, session.result.data.success->tag);
         STRNCMP_EQUAL(expected_content, content, expected_len);
-        LONGS_EQUAL(expected_len, session.result.data.success->len);
+        LONGS_EQUAL(expected_len, session.result.data.success->token_count);
     }
 
     void check_failure(char const * expected_message_substring)

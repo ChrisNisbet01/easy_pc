@@ -22,7 +22,7 @@ typedef struct epc_cpt_node_t
                         *    debugging/identification.
                         */
     size_t content_offset; /**< @brief Offset to the first matched token in the original input token list. */
-    size_t len;            /**< @brief The length of the matched substring. */
+    size_t token_count;    /**< @brief The number of matched tokens. */
 
     size_t semantic_start_offset; /**< @brief Offset from `content_offset` to the start of the semantically relevant
                                       part. */

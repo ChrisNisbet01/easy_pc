@@ -81,11 +81,11 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
     int required_len;
     char const * node_id = epc_node_id(node);
     size_t estimated_line_len
-        = data->indent_level * 4 + strlen(node->tag) + strlen(node_id) + 5 +       // <tag> + (<name>) ()
-          (node->len > 0 ? node->len + 3 : 0) + num_to_str_len(node->len)          // 'content'
+        = data->indent_level * 4 + strlen(node->tag) + strlen(node_id) + 5 +                      // <tag> + (<name>) ()
+          (node->token_count > 0 ? node->token_count + 3 : 0) + num_to_str_len(node->token_count) // 'content'
           + num_to_str_len(position.line) + num_to_str_len(position.col) + 20 + 1; // (line=X, col=X, len=X)\n
 
-    if (semantic_content_offset == content_offset && semantic_content_len == node->len)
+    if (semantic_content_offset == content_offset && semantic_content_len == node->token_count)
     {
         semantic_content_len = 0;
     }
@@ -124,14 +124,14 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
     data->buffer[data->current_offset++] = ')';
 
     // Content: 'content'
-    if (node->len > 0)
+    if (node->token_count > 0)
     {
         char const * content = epc_cpt_node_get_content(node);
 
         data->buffer[data->current_offset++] = ' ';
         data->buffer[data->current_offset++] = '\'';
-        strncpy(data->buffer + data->current_offset, content, node->len);
-        data->current_offset += node->len;
+        strncpy(data->buffer + data->current_offset, content, node->token_count);
+        data->current_offset += node->token_count;
         data->buffer[data->current_offset++] = '\'';
     }
 
@@ -142,7 +142,7 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
         " (line=%zu, col=%zu, len=%zu)",
         position.line,
         position.col,
-        node->len
+        node->token_count
     );
     if (required_len < 0 || (size_t)required_len >= (data->buffer_capacity - data->current_offset))
     {

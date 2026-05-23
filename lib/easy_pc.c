@@ -239,6 +239,15 @@ epc_add_input_token(
             .column_number = column_number,
         },
     };
+
+    /* This is a bit cumbersome, but add a 'Nul' token at the end of the list. */
+    new_token[1] = (epc_parser_token_t){
+        .id = '\0',
+        .view = {
+            .offset = input_offset + len,
+            .len = 0,
+        },
+    };
 }
 
 static void
@@ -682,6 +691,37 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
 #endif
 
     return result;
+}
+
+static epc_parser_token_t const *
+parse_ctx_get_input_token_start(epc_parser_ctx_t const * ctx)
+{
+    if (ctx == NULL)
+    {
+        return NULL;
+    }
+
+    return ctx->input_tokens.start;
+}
+
+EASY_PC_HIDDEN
+epc_parser_token_t const *
+parse_ctx_get_token_at_offset(epc_parser_ctx_t const * ctx, size_t offset)
+{
+    epc_parser_token_t const * token_start = parse_ctx_get_input_token_start(ctx);
+
+    if (token_start == NULL)
+    {
+        return NULL;
+    }
+
+    /* Would normally be >=, but this presumes that there will always be a 'Nul" token at the end of the token list. */
+    if (offset > ctx->input_tokens.count)
+    {
+        return NULL;
+    }
+
+    return token_start + offset;
 }
 
 EASY_PC_HIDDEN

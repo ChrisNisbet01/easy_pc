@@ -330,7 +330,7 @@ epc_ast_builder_exit_node_cb(epc_cpt_node_t * node, void * user_data)
         ast_debug(
             "exit '%s' ('%.*s'): action=%d, children=%d -> calling action\n",
             node->name,
-            (int)node->len,
+            (int)node->token_count,
             content,
             node->ast_config.action,
             children_count
@@ -343,7 +343,7 @@ epc_ast_builder_exit_node_cb(epc_cpt_node_t * node, void * user_data)
         ast_debug(
             "exit '%s' ('%.*s'): no action, flattening %d children (stack top=%d)\n",
             node->name,
-            (int)node->len,
+            (int)node->token_count,
             content,
             children_count,
             ctx->top
