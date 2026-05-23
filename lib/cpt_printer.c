@@ -72,30 +72,27 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
 
     // include content and length
     epc_parser_input_view_t node_view = epc_cpt_node_get_input_view(node);
-
     size_t content_offset = node_view.offset;
-
-    size_t semantic_content_offset = epc_cpt_node_get_semantic_content_offset(node);
-    size_t semantic_content_len = epc_cpt_node_get_semantic_len(node);
-
-    epc_line_col_t sposition = epc_calculate_line_and_column(data->parse_ctx, semantic_content_offset);
+    epc_parser_input_view_t semantic_view = epc_cpt_node_get_input_semantic_view(node);
+    size_t semantic_content_offset = semantic_view.offset;
+    size_t semantic_content_len = semantic_view.len;
     int required_len;
     char const * node_id = epc_node_id(node);
-    size_t estimated_line_len
-        = data->indent_level * 4 + strlen(node->tag) + strlen(node_id) + 5 +                      // <tag> + (<name>) ()
-          (node->token_count > 0 ? node->token_count + 3 : 0) + num_to_str_len(node->token_count) // 'content'
-          + num_to_str_len(node_view.line_number) + num_to_str_len(node_view.column_number) + 20
-          + 1; // (line=X, col=X, len=X)\n
+    size_t estimated_line_len = data->indent_level * 4 + strlen(node->tag) + strlen(node_id) + 5
+                                + // <tag> + (<name>) ()
+                                (node_view.len > 0 ? node_view.len + 3 : 0) + num_to_str_len(node_view.len) // 'content'
+                                + num_to_str_len(node_view.line_number) + num_to_str_len(node_view.column_number) + 20
+                                + 1; // (line=X, col=X, len=X)\n
 
-    if (semantic_content_offset == content_offset && semantic_content_len == node->token_count)
+    if (semantic_content_offset == content_offset && semantic_content_len == node_view.len)
     {
         semantic_content_len = 0;
     }
     if (semantic_content_len > 0)
     {
         estimated_line_len += semantic_content_len + 3 + num_to_str_len(semantic_content_len) // 'content'
-                              + num_to_str_len(sposition.line) + num_to_str_len(sposition.col) + 20
-                              + 1; // (line=X, col=X, len=X)\n
+                              + num_to_str_len(semantic_view.line_number) + num_to_str_len(semantic_view.column_number)
+                              + 20 + 1; // (line=X, col=X, len=X)\n
     }
 
     ensure_buffer_capacity(data, estimated_line_len);
@@ -126,14 +123,14 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
     data->buffer[data->current_offset++] = ')';
 
     // Content: 'content'
-    if (node->token_count > 0)
+    if (node_view.len > 0)
     {
         char const * content = epc_cpt_node_get_content(node);
 
         data->buffer[data->current_offset++] = ' ';
         data->buffer[data->current_offset++] = '\'';
-        strncpy(data->buffer + data->current_offset, content, node->token_count);
-        data->current_offset += node->token_count;
+        strncpy(data->buffer + data->current_offset, content, node_view.len);
+        data->current_offset += node_view.len;
         data->buffer[data->current_offset++] = '\'';
     }
 
@@ -144,7 +141,7 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
         " (line=%zu, col=%zu, len=%zu)",
         node_view.line_number,
         node_view.column_number,
-        node->token_count
+        node_view.len
     );
     if (required_len < 0 || (size_t)required_len >= (data->buffer_capacity - data->current_offset))
     {
@@ -170,8 +167,8 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
             data->buffer + data->current_offset,
             data->buffer_capacity - data->current_offset,
             " (line=%zu, col=%zu, len=%zu)",
-            sposition.line,
-            sposition.col,
+            semantic_view.line_number,
+            semantic_view.column_number,
             semantic_content_len
         );
         if (required_len < 0 || (size_t)required_len >= (data->buffer_capacity - data->current_offset))

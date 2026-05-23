@@ -7,6 +7,12 @@
 #include <easy_pc/easy_pc_ast.h>
 #include <stddef.h>
 
+typedef struct
+{
+    size_t offset; /**< @brief Offset to the first matched token in the original input token list. */
+    size_t count;  /**< @brief The number of matched tokens. */
+} token_metadata_t;
+
 // The Parse Tree Node
 /**
  * @brief Represents a node in the Concrete Parse Tree (CPT).
@@ -21,8 +27,8 @@ typedef struct epc_cpt_node_t
     char const * name; /**< @brief The name assigned to the parser that generated this node, for
                         *    debugging/identification.
                         */
-    size_t content_offset; /**< @brief Offset to the first matched token in the original input token list. */
-    size_t token_count;    /**< @brief The number of matched tokens. */
+
+    token_metadata_t token; /* Token metadata. */
 
     size_t semantic_start_offset; /**< @brief Offset from `content_offset` to the start of the semantically relevant
                                       part. */

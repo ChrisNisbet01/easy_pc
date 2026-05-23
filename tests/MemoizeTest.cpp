@@ -56,7 +56,7 @@ TEST_GROUP(MemoizeTest)
 
         STRCMP_EQUAL(expected_tag, session.result.data.success->tag);
         STRNCMP_EQUAL(expected_content, content, expected_len);
-        LONGS_EQUAL(expected_len, session.result.data.success->token_count);
+        LONGS_EQUAL(expected_len, session.result.data.success->token.count);
         LONGS_EQUAL(expected_children_count, session.result.data.success->children_count);
     }
 };

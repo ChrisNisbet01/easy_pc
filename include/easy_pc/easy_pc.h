@@ -1165,6 +1165,15 @@ EASY_PC_API const char * epc_cpt_get_content_at_offset(epc_parser_ctx_t const * 
 EASY_PC_API epc_parser_input_view_t epc_cpt_node_get_input_view(epc_cpt_node_t const * node);
 
 /**
+ * @brief Return the semantic 'view' metadata about the node. Contains offsets and length of the input data, along with
+ *        line and column number.
+ *
+ * @param node The node to get the metadata for.
+ * @return The semantic view data.
+ */
+EASY_PC_API epc_parser_input_view_t epc_cpt_node_get_input_semantic_view(epc_cpt_node_t const * node);
+
+/**
  * @brief Prints a Concrete Parse Tree (CPT) to a dynamically allocated string.
  *
  * This utility function generates a human-readable string representation of

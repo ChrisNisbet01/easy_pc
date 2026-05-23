@@ -40,8 +40,8 @@ epc_node_copy(epc_cpt_node_t * node)
 
     copy->tag = node->tag;
     copy->name = node->name;
-    copy->content_offset = node->content_offset;
-    copy->token_count = node->token_count;
+    copy->token.offset = node->token.offset;
+    copy->token.count = node->token.count;
     copy->semantic_start_offset = node->semantic_start_offset;
     copy->semantic_end_offset = node->semantic_end_offset;
     copy->ast_config = node->ast_config;
@@ -108,64 +108,98 @@ epc_cpt_node_get_semantic_content(epc_cpt_node_t const * node)
     {
         return NULL;
     }
-    char const * input_start = parse_ctx_get_input_start(node->ctx);
 
-    if (input_start == NULL)
+    size_t token_offset;
+    // Ensure start offset does not go beyond the actual content.
+    // If it does, effectively, there is no semantic content.
+    if (node->semantic_start_offset >= node->token.count)
     {
+        token_offset = node->token.offset + node->token.count; // Point to end of string or null
+    }
+    else
+    {
+        token_offset = node->token.offset + node->semantic_start_offset;
+    }
+
+    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, token_offset);
+
+    if (token == NULL)
+    {
+        /* Shouldn't happen unless there is some kind of data/logic error. */
         return NULL;
     }
 
-    // Ensure start offset does not go beyond the actual content.
-    // If it does, effectively, there is no semantic content.
-    if (node->semantic_start_offset >= node->token_count)
+    return epc_cpt_get_content_at_offset(node->ctx, token->view.offset);
+}
+
+EASY_PC_API epc_parser_input_view_t
+epc_cpt_node_get_input_semantic_view(epc_cpt_node_t const * node)
+{
+    if (node == NULL)
     {
-        return input_start + node->content_offset + node->token_count; // Point to end of string or null
+        return (epc_parser_input_view_t){0};
     }
 
-    return input_start + node->content_offset + node->semantic_start_offset;
+    size_t first_token_offset;
+    // Ensure start offset does not go beyond the actual content.
+    // If it does, effectively, there is no semantic content.
+    if (node->semantic_start_offset >= node->token.count)
+    {
+        first_token_offset = node->token.offset + node->token.count;
+    }
+    else
+    {
+        first_token_offset = node->token.offset + node->semantic_start_offset;
+    }
+
+    epc_parser_token_t const * first_token = parse_ctx_get_token_at_offset(node->ctx, first_token_offset);
+
+    if (first_token == NULL)
+    {
+        /* Shouldn't happen unless there is some kind of data/logic error. */
+        return (epc_parser_input_view_t){0};
+    }
+
+    size_t last_token_offset;
+    if (node->semantic_end_offset >= node->token.count)
+    {
+        last_token_offset = node->token.offset;
+    }
+    else
+    {
+        last_token_offset = node->token.offset + node->token.count - node->semantic_end_offset - 1;
+    }
+
+    if (last_token_offset <= first_token_offset)
+    {
+        return first_token->view;
+    }
+
+    epc_parser_token_t const * last_token = parse_ctx_get_token_at_offset(node->ctx, last_token_offset);
+
+    if (last_token == NULL)
+    {
+        /* Shouldn't happen unless there is some kind of data/logic error. */
+        return (epc_parser_input_view_t){0};
+    }
+
+    epc_parser_input_view_t view = first_token->view;
+
+    view.len = last_token->view.offset - first_token->view.offset + last_token->view.len;
+
+    return view;
 }
 
 EASY_PC_API size_t
 epc_cpt_node_get_semantic_content_offset(epc_cpt_node_t const * node)
 {
-    if (node == NULL)
-    {
-        return 0;
-    }
-
-    // Ensure start offset does not go beyond the actual content.
-    // If it does, effectively, there is no semantic content.
-    if (node->semantic_start_offset >= node->token_count)
-    {
-        return node->content_offset + node->token_count;
-    }
-
-    return node->content_offset + node->semantic_start_offset;
+    return epc_cpt_node_get_input_semantic_view(node).offset;
 }
 
 EASY_PC_API size_t
 epc_cpt_node_get_semantic_len(epc_cpt_node_t const * node)
 {
-    if (node == NULL)
-    {
-        return 0;
-    }
-    // Calculate the total trimmed length.
-    // Ensure start offset is not beyond actual length
-    if (node->semantic_start_offset >= node->token_count)
-    {
-        return 0;
-    }
-    size_t effective_len = node->token_count - node->semantic_start_offset;
-
-    // Ensure end offset is not beyond the remaining effective length
-    if (node->semantic_end_offset >= effective_len)
-    {
-        return 0;
-    }
-    effective_len -= node->semantic_end_offset;
-
-    return effective_len;
+    return epc_cpt_node_get_input_semantic_view(node).len;
 }
 
 EASY_PC_API const char *
@@ -193,14 +227,31 @@ epc_cpt_node_get_input_view(epc_cpt_node_t const * node)
         return (epc_parser_input_view_t){0};
     }
 
-    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
+    epc_parser_token_t const * first_token = parse_ctx_get_token_at_offset(node->ctx, node->token.offset);
 
-    if (token == NULL)
+    if (first_token == NULL)
     {
         return (epc_parser_input_view_t){0};
     }
 
-    return token->view;
+    if (node->token.count < 2)
+    {
+        return first_token->view;
+    }
+
+    epc_parser_token_t const * last_token
+        = parse_ctx_get_token_at_offset(node->ctx, node->token.offset + node->token.count - 1);
+
+    if (last_token == NULL)
+    {
+        return (epc_parser_input_view_t){0};
+    }
+
+    epc_parser_input_view_t view = first_token->view;
+
+    view.len = last_token->view.offset - first_token->view.offset + last_token->view.len;
+
+    return view;
 }
 
 EASY_PC_API const char *
@@ -211,7 +262,7 @@ epc_cpt_node_get_content(epc_cpt_node_t const * node)
         return NULL;
     }
 
-    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
+    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, node->token.offset);
 
     if (token == NULL)
     {
@@ -224,42 +275,13 @@ epc_cpt_node_get_content(epc_cpt_node_t const * node)
 EASY_PC_API size_t
 epc_cpt_node_get_content_offset(epc_cpt_node_t const * node)
 {
-    if (node == NULL)
-    {
-        return 0;
-    }
-    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
-
-    if (token == NULL)
-    {
-        return 0;
-    }
-
-    return token->view.offset;
+    return epc_cpt_node_get_input_view(node).offset;
 }
 
 EASY_PC_API size_t
 epc_cpt_node_get_content_len(epc_cpt_node_t const * node)
 {
-    if (node == NULL)
-    {
-        return 0;
-    }
-    epc_parser_token_t const * first_token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
-
-    if (first_token == NULL)
-    {
-        return 0;
-    }
-    epc_parser_token_t const * last_token
-        = parse_ctx_get_token_at_offset(node->ctx, node->content_offset + node->token_count - 1);
-
-    if (last_token == NULL)
-    {
-        return 0;
-    }
-
-    return last_token->view.offset + last_token->view.len - first_token->view.offset;
+    return epc_cpt_node_get_input_view(node).len;
 }
 
 EASY_PC_HIDDEN

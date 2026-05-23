@@ -43,14 +43,14 @@ TEST_GROUP(SatisfyTest)
         (void)user_ctx;
         char const * content = epc_cpt_node_get_content(node);
 
-        return node->token_count == 1 && content[0] == 'a';
+        return node->token.count == 1 && content[0] == 'a';
     }
 
     static bool is_length_3(epc_cpt_node_t * node, epc_parser_ctx_t * parse_ctx, void * user_ctx)
     {
         (void)parse_ctx;
         (void)user_ctx;
-        return node->token_count == 3;
+        return node->token.count == 3;
     }
 };
 
@@ -67,7 +67,7 @@ TEST(SatisfyTest, PSatisfyMatchesCorrectToken)
 
     STRCMP_EQUAL("satisfy", result.data.success->tag);
     STRNCMP_EQUAL("a", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(SatisfyTest, PSatisfyFailsOnPredicateFalse)
@@ -111,7 +111,7 @@ TEST(SatisfyTest, PSatisfyWithComplexToken)
     char const * content = epc_cpt_node_get_content(result.data.success);
 
     STRNCMP_EQUAL("123", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
 
     // Failure case (only 2 digits)
     result = parse(p_satisfy, "12");
@@ -142,7 +142,7 @@ TEST(SatisfyTest, PSatisfyPreservesSemanticOffsets)
     char const * content = epc_cpt_node_get_content(result.data.success);
 
     STRNCMP_EQUAL("  1  ", content, 5);
-    LONGS_EQUAL(5, result.data.success->token_count);
+    LONGS_EQUAL(5, result.data.success->token.count);
     LONGS_EQUAL(2, result.data.success->semantic_start_offset);
     LONGS_EQUAL(2, result.data.success->semantic_end_offset);
 }

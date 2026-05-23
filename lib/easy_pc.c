@@ -269,7 +269,7 @@ add_tokens_from_character_input(epc_parser_ctx_t * ctx, char const * input, size
     {
         char ch = input[i];
 
-        epc_add_input_token(ctx, ch, i, 1);
+        epc_add_input_token(ctx, ch, ctx->input_len + i, 1);
     }
 }
 
@@ -435,12 +435,13 @@ internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
     {
         memcpy((void *)ctx->input_start, buf, len);
     }
-    ctx->input_len = len;
     *(char *)&ctx->input_start[len] = '\0';
 
     add_tokens_from_character_input(ctx, ctx->input_start, len);
 
     scan_newlines(ctx, ctx->input_start, len);
+
+    ctx->input_len = len;
 
     return ctx;
 }
@@ -499,12 +500,13 @@ internal_create_parse_ctx_from_fp(FILE * fp)
         return NULL;
     }
 
+    *(char *)&ctx->input_start[total_read] = '\0';
+
+    add_tokens_from_character_input(ctx, ctx->input_start, total_read);
+
+    scan_newlines(ctx, (char *)ctx->input_start, total_read);
+
     ctx->input_len = total_read;
-    *(char *)&ctx->input_start[ctx->input_len] = '\0';
-
-    add_tokens_from_character_input(ctx, ctx->input_start, ctx->input_len);
-
-    scan_newlines(ctx, (char *)ctx->input_start, ctx->input_len);
 
     return ctx;
 }
@@ -963,15 +965,19 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
         {
             memmove((void *)ctx->input_start, ctx->input_start + consumed, leftover);
         }
-        ctx->input_len = leftover;
         *(char *)&ctx->input_start[leftover] = '\0';
 
+        /* Reset input data. (Put into a helper?) */
+        ctx->input_len = 0;
         ctx->newline.count = 0;
         ctx->input_tokens.count = 0;
         ctx->input_tokens.current_line_number = 1;
         ctx->input_tokens.current_column_number = 1;
+
         add_tokens_from_character_input(ctx, ctx->input_start, leftover);
         scan_newlines(ctx, ctx->input_start, leftover);
+
+        ctx->input_len = leftover;
     }
 
     /* 4. Reset internal state. */

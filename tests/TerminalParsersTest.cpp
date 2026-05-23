@@ -46,7 +46,7 @@ TEST(TerminalParsers, PCharMatchesCorrectCharacter)
     STRCMP_EQUAL("char", result.data.success->tag);
     STRCMP_EQUAL("char", result.data.success->name);
     STRNCMP_EQUAL("a", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, PCharDoesNotMatchIncorrectCharacter)
@@ -88,7 +88,7 @@ TEST(TerminalParsers, PStringMatchesCorrectString)
     STRCMP_EQUAL("string", result.data.success->tag);
     STRCMP_EQUAL("string", result.data.success->name);
     STRNCMP_EQUAL("hello", content, 5);
-    LONGS_EQUAL(5, result.data.success->token_count);
+    LONGS_EQUAL(5, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, PStringDoesNotMatchIncorrectString)
@@ -139,7 +139,7 @@ TEST(TerminalParsers, PDigitMatchesCorrectDigit)
     STRCMP_EQUAL("digit", result.data.success->tag);
     STRCMP_EQUAL("digit", result.data.success->name);
     STRNCMP_EQUAL("1", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, PDigitDoesNotMatchNonDigit)
@@ -183,7 +183,7 @@ TEST(TerminalParsers, POrMatchesFirstAlternative)
     STRCMP_EQUAL("or", result.data.success->tag);
     STRCMP_EQUAL("or", result.data.success->name);
     STRNCMP_EQUAL("a", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, POrMatchesLaterAlternative)
@@ -200,7 +200,7 @@ TEST(TerminalParsers, POrMatchesLaterAlternative)
     STRCMP_EQUAL("or", result.data.success->tag);
     STRCMP_EQUAL("or", result.data.success->name);
     STRNCMP_EQUAL("b", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, POrFailsWhenAllAlternativesFail)
@@ -241,7 +241,7 @@ TEST(TerminalParsers, PAndMatchesSequenceOfParsers)
     STRCMP_EQUAL("and", result.data.success->tag);
     STRCMP_EQUAL("and", result.data.success->name);
     STRNCMP_EQUAL("abc", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
     LONGS_EQUAL(3, result.data.success->children_count);
     CHECK_TRUE(result.data.success->children[0] != NULL);
     CHECK_TRUE(result.data.success->children[1] != NULL);
@@ -313,7 +313,7 @@ TEST(TerminalParsers, PSpaceMatchesSpace)
     STRCMP_EQUAL("space", result.data.success->tag);
     STRCMP_EQUAL("space", result.data.success->name);
     STRNCMP_EQUAL(" ", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, PSpaceMatchesTab)
@@ -328,7 +328,7 @@ TEST(TerminalParsers, PSpaceMatchesTab)
     STRCMP_EQUAL("space", result.data.success->tag);
     STRCMP_EQUAL("space", result.data.success->name);
     STRNCMP_EQUAL("\t", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, PSpaceMatchesNewline)
@@ -343,7 +343,7 @@ TEST(TerminalParsers, PSpaceMatchesNewline)
     STRCMP_EQUAL("space", result.data.success->tag);
     STRCMP_EQUAL("space", result.data.success->name);
     STRNCMP_EQUAL("\n", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(TerminalParsers, PSpaceDoesNotMatchNonWhitespace)
@@ -388,7 +388,7 @@ TEST(TerminalParsers, PSkipSkipsMultipleSpaces)
     STRCMP_EQUAL("skip", result.data.success->tag);
     STRCMP_EQUAL("skip", result.data.success->name);
     STRCMP_EQUAL(input_str, content);
-    LONGS_EQUAL(3, result.data.success->token_count); // Skipped 3 spaces
+    LONGS_EQUAL(3, result.data.success->token.count); // Skipped 3 spaces
 }
 
 TEST(TerminalParsers, PSkipSkipsZeroSpaces)
@@ -406,7 +406,7 @@ TEST(TerminalParsers, PSkipSkipsZeroSpaces)
     STRCMP_EQUAL("skip", result.data.success->tag);
     STRCMP_EQUAL("skip", result.data.success->name);
     STRCMP_EQUAL(input_str, content);
-    LONGS_EQUAL(0, result.data.success->token_count); // Skipped 0 spaces
+    LONGS_EQUAL(0, result.data.success->token.count); // Skipped 0 spaces
 }
 
 TEST(TerminalParsers, PSkipSkipsMixedWhitespace)
@@ -424,7 +424,7 @@ TEST(TerminalParsers, PSkipSkipsMixedWhitespace)
     STRCMP_EQUAL("skip", result.data.success->tag);
     STRCMP_EQUAL("skip", result.data.success->name);
     STRNCMP_EQUAL(input_str, content, 5);             // Should be at the start of the input string
-    LONGS_EQUAL(5, result.data.success->token_count); // Skipped 5 chars
+    LONGS_EQUAL(5, result.data.success->token.count); // Skipped 5 chars
 }
 
 TEST(TerminalParsers, PSkipHandlesNullChildParser)
@@ -482,7 +482,7 @@ TEST(DoubleParser, PDoubleMatchesInteger)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("123", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesSimpleDecimal)
@@ -497,7 +497,7 @@ TEST(DoubleParser, PDoubleMatchesSimpleDecimal)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("123.45", content, 6);
-    LONGS_EQUAL(6, result.data.success->token_count);
+    LONGS_EQUAL(6, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesLeadingDecimal)
@@ -512,7 +512,7 @@ TEST(DoubleParser, PDoubleMatchesLeadingDecimal)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL(".45", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesTrailingDecimal)
@@ -527,7 +527,7 @@ TEST(DoubleParser, PDoubleMatchesTrailingDecimal)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("123.", content, 4);
-    LONGS_EQUAL(4, result.data.success->token_count);
+    LONGS_EQUAL(4, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesPositiveSign)
@@ -542,7 +542,7 @@ TEST(DoubleParser, PDoubleMatchesPositiveSign)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("+123.45", content, 7);
-    LONGS_EQUAL(7, result.data.success->token_count);
+    LONGS_EQUAL(7, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesNegativeSign)
@@ -557,7 +557,7 @@ TEST(DoubleParser, PDoubleMatchesNegativeSign)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("-123", content, 4);
-    LONGS_EQUAL(4, result.data.success->token_count);
+    LONGS_EQUAL(4, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesExponentPositive)
@@ -572,7 +572,7 @@ TEST(DoubleParser, PDoubleMatchesExponentPositive)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("1.23e5", content, 6);
-    LONGS_EQUAL(6, result.data.success->token_count);
+    LONGS_EQUAL(6, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesExponentNegative)
@@ -587,7 +587,7 @@ TEST(DoubleParser, PDoubleMatchesExponentNegative)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("1.23E-5", content, 7);
-    LONGS_EQUAL(7, result.data.success->token_count);
+    LONGS_EQUAL(7, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesExponentWithSign)
@@ -602,7 +602,7 @@ TEST(DoubleParser, PDoubleMatchesExponentWithSign)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("-1e+2", content, 5);
-    LONGS_EQUAL(5, result.data.success->token_count);
+    LONGS_EQUAL(5, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesZero)
@@ -617,7 +617,7 @@ TEST(DoubleParser, PDoubleMatchesZero)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("0", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PDoubleMatchesZeroDecimal)
@@ -632,7 +632,7 @@ TEST(DoubleParser, PDoubleMatchesZeroDecimal)
     STRCMP_EQUAL("double", result.data.success->tag);
     STRCMP_EQUAL("double", result.data.success->name);
     STRNCMP_EQUAL("0.0", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
 }
 
 // Invalid Double Tests
@@ -713,7 +713,7 @@ TEST(DoubleParser, PLongDoubleMatchesInteger)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("123", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesSimpleDecimal)
@@ -728,7 +728,7 @@ TEST(DoubleParser, PLongDoubleMatchesSimpleDecimal)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("123.45", content, 6);
-    LONGS_EQUAL(6, result.data.success->token_count);
+    LONGS_EQUAL(6, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesLeadingDecimal)
@@ -743,7 +743,7 @@ TEST(DoubleParser, PLongDoubleMatchesLeadingDecimal)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL(".45", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesTrailingDecimal)
@@ -758,7 +758,7 @@ TEST(DoubleParser, PLongDoubleMatchesTrailingDecimal)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("123.", content, 4);
-    LONGS_EQUAL(4, result.data.success->token_count);
+    LONGS_EQUAL(4, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesPositiveSign)
@@ -773,7 +773,7 @@ TEST(DoubleParser, PLongDoubleMatchesPositiveSign)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("+123.45", content, 7);
-    LONGS_EQUAL(7, result.data.success->token_count);
+    LONGS_EQUAL(7, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesNegativeSign)
@@ -788,7 +788,7 @@ TEST(DoubleParser, PLongDoubleMatchesNegativeSign)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("-123", content, 4);
-    LONGS_EQUAL(4, result.data.success->token_count);
+    LONGS_EQUAL(4, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesExponentPositive)
@@ -803,7 +803,7 @@ TEST(DoubleParser, PLongDoubleMatchesExponentPositive)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("1.23e5", content, 6);
-    LONGS_EQUAL(6, result.data.success->token_count);
+    LONGS_EQUAL(6, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesExponentNegative)
@@ -818,7 +818,7 @@ TEST(DoubleParser, PLongDoubleMatchesExponentNegative)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("1.23E-5", content, 7);
-    LONGS_EQUAL(7, result.data.success->token_count);
+    LONGS_EQUAL(7, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesExponentWithSign)
@@ -833,7 +833,7 @@ TEST(DoubleParser, PLongDoubleMatchesExponentWithSign)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("-1e+2", content, 5);
-    LONGS_EQUAL(5, result.data.success->token_count);
+    LONGS_EQUAL(5, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesZero)
@@ -848,7 +848,7 @@ TEST(DoubleParser, PLongDoubleMatchesZero)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("0", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
 }
 
 TEST(DoubleParser, PLongDoubleMatchesZeroDecimal)
@@ -863,7 +863,7 @@ TEST(DoubleParser, PLongDoubleMatchesZeroDecimal)
     STRCMP_EQUAL("long_double", result.data.success->tag);
     STRCMP_EQUAL("long_double", result.data.success->name);
     STRNCMP_EQUAL("0.0", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
 }
 
 // Invalid Double Tests

@@ -48,7 +48,7 @@ TEST(CombinatorTest, SOIMatchesStartOfInput)
 
     STRCMP_EQUAL("soi", result.data.success->tag);
     STRNCMP_EQUAL("", content, 0);
-    LONGS_EQUAL(0, result.data.success->token_count);
+    LONGS_EQUAL(0, result.data.success->token.count);
     LONGS_EQUAL(0, result.data.success->children_count);
 }
 
@@ -81,7 +81,7 @@ TEST(CombinatorTest, PStarMatchesZero)
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("", content, 0);
-    LONGS_EQUAL(0, result.data.success->token_count);
+    LONGS_EQUAL(0, result.data.success->token.count);
     LONGS_EQUAL(0, result.data.success->children_count);
 }
 
@@ -99,7 +99,7 @@ TEST(CombinatorTest, PStarMatchesOne)
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("a", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
     LONGS_EQUAL(1, result.data.success->children_count);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
 }
@@ -118,7 +118,7 @@ TEST(CombinatorTest, PStarMatchesMultiple)
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("aaa", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
     LONGS_EQUAL(3, result.data.success->children_count);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
@@ -139,7 +139,7 @@ TEST(CombinatorTest, PStarMatchesMultipleThenFails)
     STRCMP_EQUAL("many", result.data.success->tag);
     STRCMP_EQUAL("many", result.data.success->name);
     STRNCMP_EQUAL("aaa", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
     LONGS_EQUAL(3, result.data.success->children_count);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
@@ -160,7 +160,7 @@ TEST(CombinatorTest, PPlusMatchesOne)
     STRCMP_EQUAL("plus", result.data.success->tag);
     STRCMP_EQUAL("plus", result.data.success->name);
     STRNCMP_EQUAL("a", content, 1);
-    LONGS_EQUAL(1, result.data.success->token_count);
+    LONGS_EQUAL(1, result.data.success->token.count);
     LONGS_EQUAL(1, result.data.success->children_count);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
 }
@@ -179,7 +179,7 @@ TEST(CombinatorTest, PPlusMatchesMultiple)
     STRCMP_EQUAL("plus", result.data.success->tag);
     STRCMP_EQUAL("plus", result.data.success->name);
     STRNCMP_EQUAL("aaa", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
     LONGS_EQUAL(3, result.data.success->children_count);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
@@ -215,7 +215,7 @@ TEST(CombinatorTest, PPlusMatchesMultipleThenFails)
     STRCMP_EQUAL("plus", result.data.success->tag);
     STRCMP_EQUAL("plus", result.data.success->name);
     STRNCMP_EQUAL("aaa", content, 3);
-    LONGS_EQUAL(3, result.data.success->token_count);
+    LONGS_EQUAL(3, result.data.success->token.count);
     LONGS_EQUAL(3, result.data.success->children_count);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[0]), 1);
     STRNCMP_EQUAL("a", epc_cpt_node_get_content(result.data.success->children[1]), 1);
