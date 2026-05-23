@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parsers.h"
+#include "token.h"
 
 #include <easy_pc/easy_pc.h>
 #include <stddef.h>
@@ -25,6 +26,15 @@ void update_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t * new_erro
 EASY_PC_HIDDEN
 epc_parse_result_t epc_parser_error_result(
     epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
+);
+
+EASY_PC_HIDDEN
+epc_parse_result_t epc_parser_error_result_token_list(
+    epc_parser_ctx_t * ctx,
+    size_t input_offset,
+    char const * message,
+    char const * expected,
+    epc_parser_token_t const * found_tokens
 );
 
 EASY_PC_HIDDEN

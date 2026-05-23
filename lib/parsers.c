@@ -26,11 +26,6 @@ typedef enum
     MATCH_MISMATCH
 } match_status_t;
 
-typedef struct
-{
-    size_t len;
-} consume_ws_result_t;
-
 static size_t
 get_semantic_end_offset(epc_cpt_node_t ** children, size_t const count)
 {
@@ -82,50 +77,50 @@ get_semantic_start_offset(epc_cpt_node_t ** children, size_t const count)
 }
 
 static match_status_t
-try_match_char(epc_parser_ctx_t * ctx, size_t offset, char expected, char * found_out)
+try_match_token(epc_parser_ctx_t * ctx, size_t offset, char expected, epc_parser_token_t * found_out)
 {
     parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset);
     if (res.is_eof)
     {
         return MATCH_EOF;
     }
-    *found_out = res.token.id;
+    *found_out = res.token;
     return (res.token.id == (unsigned)expected) ? MATCH_OK : MATCH_MISMATCH;
 }
 
-static consume_ws_result_t
+static size_t
 consume_until_newline(epc_parser_ctx_t * ctx, size_t offset)
 {
-    size_t len = 0;
+    size_t token_count = 0;
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + len);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + token_count);
         if (res.is_eof)
         {
-            return (consume_ws_result_t){len};
+            return token_count;
         }
-        len++;
+        token_count++;
         if (res.token.id == '\n')
         {
             break;
         }
     }
-    return (consume_ws_result_t){len};
+    return token_count;
 }
 
-static consume_ws_result_t
+static size_t
 consume_c_comment_content(epc_parser_ctx_t * ctx, size_t offset)
 {
-    size_t len = 0;
+    size_t token_count = 0;
     bool prev_was_star = false;
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + len);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + token_count);
         if (res.is_eof)
         {
-            return (consume_ws_result_t){len};
+            return token_count;
         }
-        len++;
+        token_count++;
         char const c = res.token.id;
         if (prev_was_star && c == '/')
         {
@@ -133,7 +128,7 @@ consume_c_comment_content(epc_parser_ctx_t * ctx, size_t offset)
         }
         prev_was_star = (c == '*');
     }
-    return (consume_ws_result_t){len};
+    return token_count;
 }
 
 // --- Parser List free. ---
@@ -1542,27 +1537,27 @@ epc_or(epc_parser_list * list, char const * name, int count, ...)
 static epc_parse_result_t
 pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    char found[3] = {0};
+    epc_parser_token_t found_tokens[3] = {0};
     match_status_t status;
-    size_t current_len;
+    size_t token_count;
 
     // 1. Match the opening double slashes.
-    for (current_len = 0; current_len < 2; current_len++)
+    for (token_count = 0; token_count < 2; token_count++)
     {
-        status = try_match_char(ctx, input_offset + current_len, '/', &found[current_len]);
+        status = try_match_token(ctx, input_offset + token_count, '/', &found_tokens[token_count]);
         if (status == MATCH_EOF)
         {
             return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "//", "EOF");
         }
         if (status == MATCH_MISMATCH)
         {
-            return epc_parser_error_result(ctx, input_offset, "Expected '//'", "//", found);
+            return epc_parser_error_result_token_list(ctx, input_offset, "Expected '//'", "//", found_tokens);
         }
     }
 
     // 2. Match content until newline or EOF
-    consume_ws_result_t const res = consume_until_newline(ctx, input_offset + current_len);
-    current_len += res.len;
+    size_t const res = consume_until_newline(ctx, input_offset + token_count);
+    token_count += res;
 
     // Success - create a CPT node for the whole comment
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
@@ -1572,7 +1567,7 @@ pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t
     }
 
     node->content_offset = input_offset;
-    node->len = current_len;
+    node->len = token_count;
 
     return epc_parser_success_result(node);
 }
@@ -1601,22 +1596,24 @@ epc_cpp_comment(epc_parser_list * list, char const * name)
 static epc_parse_result_t
 pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    char found[3] = {0};
+    epc_parser_token_t found_tokens[3] = {0};
     match_status_t status;
-    size_t current_len;
+    size_t token_count;
     char c_comment_prefix[] = "/*";
 
     // 1. Match the C comment prefix.
-    for (current_len = 0; current_len < 2; current_len++)
+    for (token_count = 0; token_count < 2; token_count++)
     {
-        status = try_match_char(ctx, input_offset + current_len, c_comment_prefix[current_len], &found[current_len]);
+        status = try_match_token(
+            ctx, input_offset + token_count, c_comment_prefix[token_count], &found_tokens[token_count]
+        );
         if (status == MATCH_EOF)
         {
             return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "/*", "EOF");
         }
         if (status == MATCH_MISMATCH)
         {
-            return epc_parser_error_result(ctx, input_offset, "Expected '/*'", "/*", found);
+            return epc_parser_error_result_token_list(ctx, input_offset, "Expected '/*'", "/*", found_tokens);
         }
     }
 
@@ -1625,14 +1622,14 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     // 2. Match content until "*/"
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + token_count);
         if (res.is_eof)
         {
             return epc_parser_error_result(ctx, input_offset, "Unterminated C-style comment", "*/", "EOF");
         }
 
         char const c = res.token.id;
-        current_len++;
+        token_count++;
 
         if (prev_was_star && c == '/')
         {
@@ -1649,7 +1646,7 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     }
 
     node->content_offset = input_offset;
-    node->len = current_len;
+    node->len = token_count;
 
     return epc_parser_success_result(node);
 }
@@ -1678,22 +1675,22 @@ epc_c_comment(epc_parser_list * list, char const * name)
 static epc_parse_result_t
 pbash_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
 {
-    char found[2] = {0};
-    match_status_t status = try_match_char(ctx, input_offset, '#', &found[0]);
+    epc_parser_token_t found_tokens[2] = {0};
+    match_status_t status = try_match_token(ctx, input_offset, '#', &found_tokens[0]);
     if (status == MATCH_EOF)
     {
         return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "#", "EOF");
     }
     if (status == MATCH_MISMATCH)
     {
-        return epc_parser_error_result(ctx, input_offset, "Expected '#'", "#", found);
+        return epc_parser_error_result_token_list(ctx, input_offset, "Expected '#'", "#", found_tokens);
     }
 
-    size_t current_len = 1;
+    size_t token_count = 1;
 
     // 2. Match content until newline or EOF
-    consume_ws_result_t const res = consume_until_newline(ctx, input_offset + current_len);
-    current_len += res.len;
+    size_t const res = consume_until_newline(ctx, input_offset + token_count);
+    token_count += res;
 
     // Success - create a CPT node for the whole comment
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
@@ -1703,7 +1700,7 @@ pbash_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_
     }
 
     node->content_offset = input_offset;
-    node->len = current_len;
+    node->len = token_count;
 
     return epc_parser_success_result(node);
 }
@@ -3181,7 +3178,7 @@ epc_one_of(epc_parser_list * list, char const * name, char const * chars_to_matc
     return epc_parser_list_add(list, _epc_one_of(name, chars_to_match));
 }
 
-static consume_ws_result_t
+static size_t
 consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t flags)
 {
     size_t len = 0;
@@ -3201,7 +3198,7 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t fl
                 {
                     break;
                 }
-                if (!isspace((unsigned char)res.token.id))
+                if (res.token.id >= 256 || !isspace((unsigned char)res.token.id))
                 {
                     break;
                 }
@@ -3213,43 +3210,43 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t fl
         /* 2. Consume comments. */
         if (flags & EPC_CONSUME_ALL_COMMENTS)
         {
-            char c0;
-            match_status_t const s0 = try_match_char(ctx, offset + len, '\0', &c0);
+            epc_parser_token_t c0;
+            match_status_t const s0 = try_match_token(ctx, offset + len, '\0', &c0);
             if (s0 == MATCH_EOF)
             {
                 break;
             }
 
-            if ((flags & (EPC_CONSUME_CPP_COMMENT | EPC_CONSUME_C_COMMENT)) && c0 == '/')
+            if ((flags & (EPC_CONSUME_CPP_COMMENT | EPC_CONSUME_C_COMMENT)) && c0.id == '/')
             {
-                char c1;
-                match_status_t const s1 = try_match_char(ctx, offset + len + 1, '\0', &c1);
+                epc_parser_token_t c1;
+                match_status_t const s1 = try_match_token(ctx, offset + len + 1, '\0', &c1);
                 if (s1 != MATCH_EOF)
                 {
-                    if ((flags & EPC_CONSUME_CPP_COMMENT) && c1 == '/')
+                    if ((flags & EPC_CONSUME_CPP_COMMENT) && c1.id == '/')
                     {
-                        consume_ws_result_t const res = consume_until_newline(ctx, offset + len + 2);
-                        len += 2 + res.len;
+                        size_t const res = consume_until_newline(ctx, offset + len + 2);
+                        len += 2 + res;
                         consumed_something = true;
                     }
-                    else if ((flags & EPC_CONSUME_C_COMMENT) && c1 == '*')
+                    else if ((flags & EPC_CONSUME_C_COMMENT) && c1.id == '*')
                     {
-                        consume_ws_result_t const res = consume_c_comment_content(ctx, offset + len + 2);
-                        len += 2 + res.len;
+                        size_t const res = consume_c_comment_content(ctx, offset + len + 2);
+                        len += 2 + res;
                         consumed_something = true;
                     }
                 }
             }
-            else if ((flags & EPC_CONSUME_BASH_COMMENT) && c0 == '#')
+            else if ((flags & EPC_CONSUME_BASH_COMMENT) && c0.id == '#')
             {
-                consume_ws_result_t const res = consume_until_newline(ctx, offset + len + 1);
-                len += 1 + res.len;
+                size_t const res = consume_until_newline(ctx, offset + len + 1);
+                len += 1 + res;
                 consumed_something = true;
             }
         }
     } while (consumed_something);
 
-    return (consume_ws_result_t){len};
+    return len;
 }
 
 static epc_parse_result_t
@@ -3269,7 +3266,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
 
     /* 1. Consume leading whitespace/comments. */
-    size_t const leading_ws_len = data->strip_leading ? consume_whitespace(ctx, input_offset, flags).len : 0;
+    size_t const leading_ws_len = data->strip_leading ? consume_whitespace(ctx, input_offset, flags) : 0;
     size_t current_input_offset = input_offset + leading_ws_len;
 
     /* 2. Parse the actual item. */
@@ -3282,7 +3279,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     current_input_offset += item_result.data.success->len;
 
     /* 3. Consume trailing whitespace/comments. */
-    size_t const trailing_ws_len = data->strip_trailing ? consume_whitespace(ctx, current_input_offset, flags).len : 0;
+    size_t const trailing_ws_len = data->strip_trailing ? consume_whitespace(ctx, current_input_offset, flags) : 0;
     current_input_offset += trailing_ws_len;
 
     /* Success - create a node for 'lexeme' or 'strip'. */

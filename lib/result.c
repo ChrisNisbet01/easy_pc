@@ -259,6 +259,35 @@ epc_parser_error_result(
 
 EASY_PC_HIDDEN
 epc_parse_result_t
+epc_parser_error_result_token_list(
+    epc_parser_ctx_t * ctx,
+    size_t token_offset,
+    char const * message,
+    char const * expected,
+    epc_parser_token_t const * found_tokens
+)
+{
+    size_t found_offset = found_tokens->view.offset;
+    size_t input_length = 0;
+    for (epc_parser_token_t const * token = found_tokens; token->id != 0; token++)
+    {
+        input_length += token->view.len;
+    }
+    char found_buf[EPC_ERROR_FOUND_MAX_LEN];
+
+    snprintf(found_buf, sizeof(found_buf), "%.*s", (int)input_length, ctx->input_start + found_offset);
+    found_buf[sizeof(found_buf) - 1] = '\0';
+
+    epc_parse_result_t result = {
+        .is_error = true,
+        .data.error = epc_parser_error_alloc(ctx, token_offset, message, expected, found_buf),
+    };
+    update_furthest_error(ctx, result.data.error);
+    return result;
+}
+
+EASY_PC_HIDDEN
+epc_parse_result_t
 epc_parser_success_result(epc_cpt_node_t * success_node)
 {
     epc_parse_result_t result = {

@@ -3,6 +3,7 @@
 #include "arena.h"
 #include "cpt_node.h"
 #include "memo.h"
+#include "token.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -35,20 +36,6 @@ typedef struct
 
 #define MAX_MMAP_INPUT_SIZE (100 * 1024 * 1024) /* 100 MB */
 #define MAX_NODE_ARENA_SIZE (256 * 1024 * 1024) /* 256 MB for CPT nodes */
-
-typedef struct
-{
-    size_t offset;
-    size_t len;
-    size_t line_number;
-    size_t column_number;
-} epc_parser_input_view_t;
-
-typedef struct
-{
-    unsigned id;
-    epc_parser_input_view_t view;
-} epc_parser_token_t;
 
 typedef struct mmap_input_buffer_t
 {

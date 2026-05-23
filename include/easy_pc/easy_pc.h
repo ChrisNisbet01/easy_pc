@@ -86,6 +86,14 @@ typedef enum epc_parse_type_t
 typedef void (*epc_streaming_complete_cb)(void * user_data);
 #endif
 
+typedef struct
+{
+    size_t offset;
+    size_t len;
+    size_t line_number;
+    size_t column_number;
+} epc_parser_input_view_t;
+
 /**
  * @brief A union type that encapsulates the different forms of input that can be parsed.
  *
