@@ -102,6 +102,23 @@ epc_node_free(epc_cpt_node_t * node)
 }
 
 EASY_PC_API const char *
+epc_cpt_get_content_at_offset(epc_parser_ctx_t const * ctx, size_t offset)
+{
+    char const * input_start = parse_ctx_get_input_start(ctx);
+
+    if (input_start == NULL)
+    {
+        return NULL;
+    }
+    if (offset > parse_ctx_get_input_len(ctx))
+    {
+        return NULL;
+    }
+
+    return input_start + offset;
+}
+
+EASY_PC_API const char *
 epc_cpt_node_get_semantic_content(epc_cpt_node_t const * node)
 {
     if (node == NULL)
@@ -200,23 +217,6 @@ EASY_PC_API size_t
 epc_cpt_node_get_semantic_len(epc_cpt_node_t const * node)
 {
     return epc_cpt_node_get_input_semantic_view(node).len;
-}
-
-EASY_PC_API const char *
-epc_cpt_get_content_at_offset(epc_parser_ctx_t const * ctx, size_t offset)
-{
-    char const * input_start = parse_ctx_get_input_start(ctx);
-
-    if (input_start == NULL)
-    {
-        return NULL;
-    }
-    if (offset > parse_ctx_get_input_len(ctx))
-    {
-        return NULL;
-    }
-
-    return input_start + offset;
 }
 
 EASY_PC_API epc_parser_input_view_t
