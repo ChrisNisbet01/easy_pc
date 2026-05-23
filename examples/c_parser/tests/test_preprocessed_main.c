@@ -641,7 +641,7 @@ __attribute__((visibility("default"))) void epc_parse_session_print_cpt(FILE * f
 __attribute__((visibility("default"))) const char * epc_cpt_node_get_semantic_content(epc_cpt_node_t * node);
 __attribute__((visibility("default"))) size_t epc_cpt_node_get_semantic_len(epc_cpt_node_t * node);
 __attribute__((visibility("default"))) const char * epc_cpt_node_get_content(epc_cpt_node_t * node);
-__attribute__((visibility("default"))) size_t epc_cpt_node_get_len(epc_cpt_node_t * node);
+__attribute__((visibility("default"))) size_t epc_cpt_node_get_content_len(epc_cpt_node_t * node);
 __attribute__((visibility("default"))) char * epc_cpt_to_string(epc_parser_ctx_t * parse_ctx, epc_cpt_node_t * node);
 void epc_parsers_free(size_t const count, ...);
 __attribute__((visibility("default"))) char const * epc_get_version(void);

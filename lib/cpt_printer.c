@@ -71,8 +71,9 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
     cpt_printer_data_t * data = (cpt_printer_data_t *)user_data;
 
     // include content and length
-    size_t content_offset = epc_cpt_node_get_content_offset(node);
-    epc_line_col_t position = epc_calculate_line_and_column(data->parse_ctx, content_offset);
+    epc_parser_input_view_t node_view = epc_cpt_node_get_input_view(node);
+
+    size_t content_offset = node_view.offset;
 
     size_t semantic_content_offset = epc_cpt_node_get_semantic_content_offset(node);
     size_t semantic_content_len = epc_cpt_node_get_semantic_len(node);
@@ -83,7 +84,8 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
     size_t estimated_line_len
         = data->indent_level * 4 + strlen(node->tag) + strlen(node_id) + 5 +                      // <tag> + (<name>) ()
           (node->token_count > 0 ? node->token_count + 3 : 0) + num_to_str_len(node->token_count) // 'content'
-          + num_to_str_len(position.line) + num_to_str_len(position.col) + 20 + 1; // (line=X, col=X, len=X)\n
+          + num_to_str_len(node_view.line_number) + num_to_str_len(node_view.column_number) + 20
+          + 1; // (line=X, col=X, len=X)\n
 
     if (semantic_content_offset == content_offset && semantic_content_len == node->token_count)
     {
@@ -140,8 +142,8 @@ cpt_printer_enter_node(epc_cpt_node_t * node, void * user_data)
         data->buffer + data->current_offset,
         data->buffer_capacity - data->current_offset,
         " (line=%zu, col=%zu, len=%zu)",
-        position.line,
-        position.col,
+        node_view.line_number,
+        node_view.column_number,
         node->token_count
     );
     if (required_len < 0 || (size_t)required_len >= (data->buffer_capacity - data->current_offset))

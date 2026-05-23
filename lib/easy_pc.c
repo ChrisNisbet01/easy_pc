@@ -225,9 +225,7 @@ error_pool_cleanup(epc_error_pool_t * pool)
 }
 
 static void
-epc_add_input_token(
-    epc_parser_ctx_t * ctx, unsigned token_id, size_t input_offset, size_t len, size_t line_number, size_t column_number
-)
+epc_add_input_token(epc_parser_ctx_t * ctx, unsigned token_id, size_t input_offset, size_t len)
 {
     epc_parser_token_t * new_token = &ctx->input_tokens.start[ctx->input_tokens.count++];
     *new_token = (epc_parser_token_t){
@@ -235,10 +233,24 @@ epc_add_input_token(
         .view = {
             .offset = input_offset,
             .len = len,
-            .line_number = line_number,
-            .column_number = column_number,
+            .line_number = ctx->input_tokens.current_line_number,
+            .column_number = ctx->input_tokens.current_column_number,
         },
     };
+
+    for (size_t i = 0; i < len; i++)
+    {
+        char ch = ctx->input_start[input_offset + i];
+        if (ch == '\n')
+        {
+            ctx->input_tokens.current_line_number++;
+            ctx->input_tokens.current_column_number = 1;
+        }
+        else
+        {
+            ctx->input_tokens.current_column_number++;
+        }
+    }
 
     /* This is a bit cumbersome, but add a 'Nul' token at the end of the list. */
     new_token[1] = (epc_parser_token_t){
@@ -257,18 +269,7 @@ add_tokens_from_character_input(epc_parser_ctx_t * ctx, char const * input, size
     {
         char ch = input[i];
 
-        if (ch == '\n')
-        {
-            ctx->input_tokens.current_line_number++;
-            ctx->input_tokens.current_column_number = 1;
-        }
-        else
-        {
-            ctx->input_tokens.current_column_number++;
-        }
-        epc_add_input_token(
-            ctx, ch, i, 1, ctx->input_tokens.current_line_number, ctx->input_tokens.current_column_number
-        );
+        epc_add_input_token(ctx, ch, i, 1);
     }
 }
 
@@ -944,7 +945,7 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
     {
         if (session->result.data.success != NULL)
         {
-            consumed = epc_cpt_node_get_len(session->result.data.success);
+            consumed = epc_cpt_node_get_content_len(session->result.data.success);
         }
     }
     else

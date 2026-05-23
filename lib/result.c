@@ -119,7 +119,7 @@ epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
 
 epc_parser_error_t *
 epc_parser_error_alloc(
-    epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
+    epc_parser_ctx_t * ctx, size_t token_offset, char const * message, char const * expected, char const * found
 )
 {
     if (message == NULL)
@@ -142,8 +142,13 @@ epc_parser_error_alloc(
         return error;
     }
 
-    error->input_offset = input_offset;
-    error->position = epc_calculate_line_and_column(ctx, input_offset);
+    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(ctx, token_offset);
+    if (token != NULL)
+    {
+        error->input_offset = token->view.offset;
+        error->position.line = token->view.line_number;
+        error->position.col = token->view.column_number;
+    }
 
     strncpy(error->message, message, sizeof(error->message));
     error->message[sizeof(error->message) - 1] = '\0';
@@ -246,12 +251,12 @@ update_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t * new_error)
 EASY_PC_HIDDEN
 epc_parse_result_t
 epc_parser_error_result(
-    epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
+    epc_parser_ctx_t * ctx, size_t token_offset, char const * message, char const * expected, char const * found
 )
 {
     epc_parse_result_t result = {
         .is_error = true,
-        .data.error = epc_parser_error_alloc(ctx, input_offset, message, expected, found),
+        .data.error = epc_parser_error_alloc(ctx, token_offset, message, expected, found),
     };
     update_furthest_error(ctx, result.data.error);
     return result;

@@ -198,7 +198,7 @@ TEST(ErrorHandling, ReportsCorrectLineAndColumnSingleLine)
 
     CHECK_TRUE(result.is_error);
     CHECK_EQUAL(1, result.data.error->position.line);
-    CHECK_EQUAL(0, result.data.error->position.col);
+    CHECK_EQUAL(1, result.data.error->position.col);
 }
 
 TEST(ErrorHandling, ReportsCorrectLineAndColumnErrorAtOffset1)
@@ -211,5 +211,5 @@ TEST(ErrorHandling, ReportsCorrectLineAndColumnErrorAtOffset1)
 
     CHECK_TRUE(result.is_error);
     CHECK_EQUAL(1, result.data.error->position.line);
-    CHECK_EQUAL(1, result.data.error->position.col);
+    CHECK_EQUAL(2, result.data.error->position.col);
 }

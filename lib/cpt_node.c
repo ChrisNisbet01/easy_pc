@@ -185,6 +185,24 @@ epc_cpt_get_content_at_offset(epc_parser_ctx_t const * ctx, size_t offset)
     return input_start + offset;
 }
 
+EASY_PC_API epc_parser_input_view_t
+epc_cpt_node_get_input_view(epc_cpt_node_t const * node)
+{
+    if (node == NULL)
+    {
+        return (epc_parser_input_view_t){0};
+    }
+
+    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
+
+    if (token == NULL)
+    {
+        return (epc_parser_input_view_t){0};
+    }
+
+    return token->view;
+}
+
 EASY_PC_API const char *
 epc_cpt_node_get_content(epc_cpt_node_t const * node)
 {
@@ -210,19 +228,38 @@ epc_cpt_node_get_content_offset(epc_cpt_node_t const * node)
     {
         return 0;
     }
+    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
 
-    return node->content_offset;
+    if (token == NULL)
+    {
+        return 0;
+    }
+
+    return token->view.offset;
 }
 
 EASY_PC_API size_t
-epc_cpt_node_get_len(epc_cpt_node_t const * node)
+epc_cpt_node_get_content_len(epc_cpt_node_t const * node)
 {
     if (node == NULL)
     {
         return 0;
     }
+    epc_parser_token_t const * first_token = parse_ctx_get_token_at_offset(node->ctx, node->content_offset);
 
-    return node->token_count;
+    if (first_token == NULL)
+    {
+        return 0;
+    }
+    epc_parser_token_t const * last_token
+        = parse_ctx_get_token_at_offset(node->ctx, node->content_offset + node->token_count - 1);
+
+    if (last_token == NULL)
+    {
+        return 0;
+    }
+
+    return last_token->view.offset + last_token->view.len - first_token->view.offset;
 }
 
 EASY_PC_HIDDEN

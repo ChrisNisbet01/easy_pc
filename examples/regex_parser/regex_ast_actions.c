@@ -24,7 +24,7 @@ copy_cpt_node_content(regex_node_t * const node, epc_cpt_node_t * const cpt_node
         {
             content = "";
         }
-        node->len = epc_cpt_node_get_len(cpt_node);
+        node->len = epc_cpt_node_get_content_len(cpt_node);
         node->content = strndup(epc_cpt_node_get_content(cpt_node), node->len);
         node->content_offset = epc_cpt_node_get_content_offset(cpt_node);
     }
@@ -757,7 +757,7 @@ handle_range_quantifier_action(
     {
         /* Check if there was a comma in the source text */
         char const * content = epc_cpt_node_get_content(cpt_node);
-        size_t const len = epc_cpt_node_get_len(cpt_node);
+        size_t const len = epc_cpt_node_get_content_len(cpt_node);
         bool has_comma = false;
 
         for (size_t i = 0; i < len; i++)

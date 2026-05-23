@@ -25,7 +25,7 @@ void update_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t * new_erro
 
 EASY_PC_HIDDEN
 epc_parse_result_t epc_parser_error_result(
-    epc_parser_ctx_t * ctx, size_t input_offset, char const * message, char const * expected, char const * found
+    epc_parser_ctx_t * ctx, size_t token_offset, char const * message, char const * expected, char const * found
 );
 
 EASY_PC_HIDDEN

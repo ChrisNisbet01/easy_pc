@@ -1143,7 +1143,7 @@ EASY_PC_API size_t epc_cpt_node_get_content_offset(epc_cpt_node_t const * node);
  * @param node A pointer to the `epc_cpt_node_t`.
  * @return A `size_t` representing the length of the content.
  */
-EASY_PC_API size_t epc_cpt_node_get_len(epc_cpt_node_t const * node);
+EASY_PC_API size_t epc_cpt_node_get_content_len(epc_cpt_node_t const * node);
 
 /**
  * @brief Return a pointer to the input at the specified offset from the start of input.
@@ -1154,6 +1154,15 @@ EASY_PC_API size_t epc_cpt_node_get_len(epc_cpt_node_t const * node);
  * @return A `const char*` pointer to the content.
  */
 EASY_PC_API const char * epc_cpt_get_content_at_offset(epc_parser_ctx_t const * ctx, size_t offset);
+
+/**
+ * @brief Return the 'view' metadata about the node. Contains offsets and length of the input data, along with
+ *        line and column number.
+ *
+ * @param node The node to get the metadata for.
+ * @return The view data.
+ */
+EASY_PC_API epc_parser_input_view_t epc_cpt_node_get_input_view(epc_cpt_node_t const * node);
 
 /**
  * @brief Prints a Concrete Parse Tree (CPT) to a dynamically allocated string.

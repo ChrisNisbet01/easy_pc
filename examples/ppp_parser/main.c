@@ -51,7 +51,7 @@ ppp_unstuff_payload_action(
 {
     // Get the raw (stuffed) content from the CPT node
     char const * stuffed_raw_content = epc_cpt_node_get_content(node);
-    size_t stuffed_raw_len = epc_cpt_node_get_len(node);
+    size_t stuffed_raw_len = epc_cpt_node_get_content_len(node);
 
     // This node covers both payload and FCS (6 bytes total in test)
     // Payload part is the first 4 bytes of this node's content
