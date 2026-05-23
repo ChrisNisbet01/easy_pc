@@ -36,11 +36,24 @@ typedef struct
 #define MAX_MMAP_INPUT_SIZE (100 * 1024 * 1024) /* 100 MB */
 #define MAX_NODE_ARENA_SIZE (256 * 1024 * 1024) /* 256 MB for CPT nodes */
 
+typedef struct
+{
+    size_t offset;
+    size_t len;
+    size_t line_number;
+    size_t column_number;
+} epc_parser_input_view_t;
+
+typedef struct
+{
+    unsigned id;
+    epc_parser_input_view_t view;
+} epc_parser_token_t;
+
 typedef struct mmap_input_buffer_t
 {
-    char * buffer;     /**< Pointer to the start of the memory-mapped input buffer. */
+    void * buffer;     /**< Pointer to the start of the memory-mapped input buffer. */
     size_t total_size; /**< Total size of the memory-mapped region (including guard page). */
-    size_t input_size; /**< Actual size of the input string stored in the buffer. */
 } mmap_input_buffer_t;
 
 typedef struct
@@ -64,6 +77,14 @@ typedef struct
     size_t capacity;
 } newline_positions_t;
 
+typedef struct
+{
+    size_t current_line_number;
+    size_t current_column_number;
+    epc_parser_token_t * start;
+    size_t count;
+} input_token_st;
+
 #define TEMP_PARSE_BUFFER_SIZE 8192
 // The Parsing Context (for a single parse operation and its results)
 // This will be internally managed by epc_parse_input
@@ -72,7 +93,11 @@ struct epc_parser_ctx_t
     char const * input_start;
     size_t input_len;
 
-    mmap_input_buffer_t mmap_buffer; /* Internal buffer management for input data, using mmap for large inputs. */
+    input_token_st input_tokens;
+
+    mmap_input_buffer_t mmap_buffer;       /* Internal buffer management for input data. */
+    mmap_input_buffer_t mmap_token_buffer; /* Internal buffer management for input token data. */
+
     epc_parser_error_t * furthest_error;
 
     void * user_ctx; /* User-defined context that can be used in predicates (e.g. epc_wrap()). */
@@ -91,18 +116,6 @@ struct epc_parser_ctx_t
     int depth;
     char temp_parse_buffer[TEMP_PARSE_BUFFER_SIZE + 1];
 };
-
-typedef struct
-{
-    size_t offset;
-    size_t len;
-} epc_parser_input_view_t;
-
-typedef struct
-{
-    unsigned id;
-    epc_parser_input_view_t view;
-} epc_parser_token_t;
 
 typedef struct parse_get_input_result_t
 {
