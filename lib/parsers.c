@@ -85,16 +85,18 @@ try_match_token(epc_parser_ctx_t * ctx, size_t offset, char expected, epc_parser
         return MATCH_EOF;
     }
     *found_out = res.token;
+
     return (res.token.id == (unsigned)expected) ? MATCH_OK : MATCH_MISMATCH;
 }
 
 static size_t
-consume_until_newline(epc_parser_ctx_t * ctx, size_t offset)
+consume_until_newline(epc_parser_ctx_t * ctx, size_t token_offset)
 {
     size_t token_count = 0;
+
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + token_count);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, token_offset + token_count);
         if (res.is_eof)
         {
             return token_count;
@@ -105,17 +107,19 @@ consume_until_newline(epc_parser_ctx_t * ctx, size_t offset)
             break;
         }
     }
+
     return token_count;
 }
 
 static size_t
-consume_c_comment_content(epc_parser_ctx_t * ctx, size_t offset)
+consume_c_comment_content(epc_parser_ctx_t * ctx, size_t token_offset)
 {
     size_t token_count = 0;
     bool prev_was_star = false;
+
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset + token_count);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, token_offset + token_count);
         if (res.is_eof)
         {
             return token_count;
@@ -128,6 +132,7 @@ consume_c_comment_content(epc_parser_ctx_t * ctx, size_t offset)
         }
         prev_was_star = (c == '*');
     }
+
     return token_count;
 }
 
@@ -287,26 +292,33 @@ parser_get_expected_str(epc_parser_t const * p)
 
 // Parser helper function
 static epc_parse_result_t
-parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
 #if WITH_PARSE_DEBUG
-    char const * input = epc_cpt_get_content_at_offset(ctx, input_offset);
+    epc_parser_token_t const * token = parse_ctx_get_token_at_offset(ctx, token_offset);
+    if (token != NULL)
+    {
+        char const * input = epc_cpt_get_content_at_offset(ctx, token->view.offset);
 
-    fprintf(
-        stderr,
-        "%*sparsing: name: %s, tag %s. input '%.*s', offset: %zu\n",
-        ctx->depth * 2,
-        "",
-        epc_parser_get_name(self),
-        parser_get_expected_str(self),
-        25,
-        input,
-        input_offset
-    );
+        if (input != NULL)
+        {
+            fprintf(
+                stderr,
+                "%*sparsing: name: %s, tag %s. input '%.*s', offset: %zu\n",
+                ctx->depth * 2,
+                "",
+                epc_parser_get_name(self),
+                parser_get_expected_str(self),
+                25,
+                input,
+                input_offset
+            );
+        }
+    }
 #endif
 
     ctx->depth++;
-    epc_parse_result_t result = self->parse_fn(self, ctx, input_offset);
+    epc_parse_result_t result = self->parse_fn(self, ctx, token_offset);
 
     ctx->depth--;
 

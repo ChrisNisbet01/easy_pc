@@ -709,7 +709,7 @@ parse_ctx_get_input_token_start(epc_parser_ctx_t const * ctx)
 
 EASY_PC_HIDDEN
 epc_parser_token_t const *
-parse_ctx_get_token_at_offset(epc_parser_ctx_t const * ctx, size_t offset)
+parse_ctx_get_token_at_offset(epc_parser_ctx_t const * ctx, size_t token_offset)
 {
     epc_parser_token_t const * token_start = parse_ctx_get_input_token_start(ctx);
 
@@ -719,12 +719,12 @@ parse_ctx_get_token_at_offset(epc_parser_ctx_t const * ctx, size_t offset)
     }
 
     /* Would normally be >=, but this presumes that there will always be a 'Nul" token at the end of the token list. */
-    if (offset > ctx->input_tokens.count)
+    if (token_offset > ctx->input_tokens.count)
     {
         return NULL;
     }
 
-    return token_start + offset;
+    return token_start + token_offset;
 }
 
 EASY_PC_HIDDEN
