@@ -62,7 +62,7 @@ TEST(CombinatorTest, SOIfailsAfterStartOfInput)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Start of input not found", result.data.error->message);
-    CHECK_EQUAL(1, result.data.error->input_offset);
+    CHECK_EQUAL(1, result.data.error->view.offset);
     STRCMP_EQUAL("<start of input>", result.data.error->expected);
     STRCMP_EQUAL("<post input>", result.data.error->found);
 }
@@ -196,7 +196,7 @@ TEST(CombinatorTest, PPlusFailsOnZeroMatches)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected character", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("a", result.data.error->expected);
     STRCMP_EQUAL("b", result.data.error->found);
 }

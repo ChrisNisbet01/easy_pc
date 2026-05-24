@@ -42,7 +42,7 @@ main(int argc, char ** argv)
     {
         epc_parser_error_t * err = session.result.data.error;
         fprintf(stderr, "Parse Error: %s\n", err->message);
-        fprintf(stderr, "At line %zu, col %zu\n", err->position.line + 1, err->position.col + 1);
+        fprintf(stderr, "At line %zu, col %zu\n", err->view.line_number, err->view.column_number);
         fprintf(stderr, "Expected: %s\n", err->expected);
         fprintf(stderr, "Found: %s\n", err->found);
 

@@ -450,12 +450,12 @@ epc_parse_and_build_ast(
             &msg,
             "Parse error: %s at '%.*s' (expected '%s', found '%s')Error err: line: %zu, col: %zu",
             err->message,
-            (int)(input_len - err->input_offset),
-            input + err->input_offset,
+            (int)(input_len - err->view.offset),
+            input + err->view.offset,
             err->expected,
             err->found,
-            err->position.line,
-            err->position.col
+            err->view.line_number,
+            err->view.column_number
         );
         if (len < 0)
         {

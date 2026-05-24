@@ -114,9 +114,7 @@ epc_parser_error_alloc(
     epc_parser_token_t const * token = parse_ctx_get_token_at_offset(ctx, token_offset);
     if (token != NULL)
     {
-        error->input_offset = token->view.offset;
-        error->position.line = token->view.line_number;
-        error->position.col = token->view.column_number;
+        error->view = token->view;
     }
 
     strncpy(error->message, message, sizeof(error->message));
@@ -210,7 +208,7 @@ update_furthest_error(epc_parser_ctx_t * ctx, epc_parser_error_t * new_error)
 
     epc_parser_error_t const * furthest_error = parse_ctx_get_furthest_error(ctx);
 
-    if (furthest_error == NULL || (new_error->input_offset >= furthest_error->input_offset))
+    if (furthest_error == NULL || (new_error->view.offset >= furthest_error->view.offset))
     {
         epc_parser_error_t * e_copy = epc_parser_error_copy(ctx, new_error);
         parser_furthest_error_restore(ctx, &e_copy);

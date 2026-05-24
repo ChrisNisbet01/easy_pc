@@ -795,7 +795,7 @@ choose_best_error(epc_parse_session_t * session)
         // A `furthest_error` is more informative if it parsed further into the input string.
         if (furthest_error != NULL
             && (session->result.data.error == NULL
-                || furthest_error->input_offset > session->result.data.error->input_offset))
+                || furthest_error->view.offset > session->result.data.error->view.offset))
         {
             // If it is, replace the result's error with the furthest one.
             epc_parser_error_free(session->result.data.error);
@@ -1311,7 +1311,7 @@ epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session)
     {
         epc_parser_error_t * err = session->result.data.error;
         fprintf(fp, "Parse Error: %s\n", err->message);
-        fprintf(fp, "At line %zu, col %zu\n", err->position.line + 1, err->position.col + 1);
+        fprintf(fp, "At line %zu, col %zu\n", err->view.line_number, err->view.column_number);
         fprintf(fp, "Expected: %s\n", err->expected);
         fprintf(fp, "Found: %s\n", err->found);
     }

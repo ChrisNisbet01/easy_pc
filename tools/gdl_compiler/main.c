@@ -145,15 +145,15 @@ main(int argc, char ** argv)
             stderr,
             "GDL Parsing Error: %s at input offset %zu'\n",
             session.result.data.error->message,
-            session.result.data.error->input_offset
+            session.result.data.error->view.offset
         );
         fprintf(
             stderr,
             "    Expected %s, found: %s at line %zu, col %zu'\n",
             session.result.data.error->expected,
             session.result.data.error->found,
-            session.result.data.error->position.line,
-            session.result.data.error->position.col
+            session.result.data.error->view.line_number,
+            session.result.data.error->view.column_number
         );
         exit_code = EXIT_FAILURE;
     }

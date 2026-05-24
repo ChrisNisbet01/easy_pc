@@ -42,7 +42,7 @@ TEST_GROUP(CptPrinter)
         if (result.is_error)
         {
             char const * input
-                = epc_cpt_get_content_at_offset(session.internal_parse_ctx, result.data.error->input_offset);
+                = epc_cpt_get_content_at_offset(session.internal_parse_ctx, result.data.error->view.offset);
             if (input == NULL)
             {
                 input = "NULL";

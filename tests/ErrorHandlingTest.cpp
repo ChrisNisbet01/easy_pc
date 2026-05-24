@@ -43,7 +43,7 @@ TEST(ErrorHandling, PCharReportsNullInputError)
 
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("non-NULL input string", result.data.error->expected);
     STRCMP_EQUAL("NULL", result.data.error->found);
 }
@@ -56,7 +56,7 @@ TEST(ErrorHandling, PCharReportsEmptyInputError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected end of input", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("a", result.data.error->expected);
     STRCMP_EQUAL("EOF", result.data.error->found);
 }
@@ -70,7 +70,7 @@ TEST(ErrorHandling, PCharReportsMismatchError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected character", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("a", result.data.error->expected);
     STRCMP_EQUAL("b", result.data.error->found);
 }
@@ -83,7 +83,7 @@ TEST(ErrorHandling, PStringReportsNullInputError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Input string is NULL", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("non-NULL input string", result.data.error->expected);
     STRCMP_EQUAL("NULL", result.data.error->found);
 }
@@ -97,7 +97,7 @@ TEST(ErrorHandling, PStringReportsTooShortInputError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected end of input", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("abc", result.data.error->expected);
     STRCMP_EQUAL("EOF", result.data.error->found);
 }
@@ -111,7 +111,7 @@ TEST(ErrorHandling, PStringReportsMismatchError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected string", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("abc", result.data.error->expected);
     STRCMP_EQUAL("x (pos: 1)", result.data.error->found);
 }
@@ -124,7 +124,7 @@ TEST(ErrorHandling, PDigitReportsNullInputError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Input string is NULL", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("non-NULL input string", result.data.error->expected);
     STRCMP_EQUAL("NULL", result.data.error->found);
 }
@@ -137,7 +137,7 @@ TEST(ErrorHandling, PDigitReportsEmptyInputError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected end of input", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("digit", result.data.error->expected);
     STRCMP_EQUAL("EOF", result.data.error->found);
 }
@@ -151,7 +151,7 @@ TEST(ErrorHandling, PDigitReportsMismatchError)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected character", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("digit", result.data.error->expected);
     STRCMP_EQUAL("a", result.data.error->found);
 }
@@ -166,7 +166,7 @@ TEST(ErrorHandling, POrReportsErrorWhenNoAlternatives)
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("No alternatives provided to 'or' parser", result.data.error->message);
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("or", result.data.error->expected); // The parser's name as expected
     STRCMP_EQUAL("N/A", result.data.error->found);
 }
@@ -185,7 +185,7 @@ TEST(ErrorHandling, POrReportsErrorWhenAllAlternativesFail)
     // The furthest error should be from the last attempted alternative 'y' at position 'a'
     STRCMP_EQUAL("No alternative matched", result.data.error->message); // Updated expectation
 
-    CHECK_EQUAL(0, result.data.error->input_offset);
+    CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("x or y", result.data.error->expected);
     STRCMP_EQUAL("a", result.data.error->found);
 }
@@ -197,8 +197,8 @@ TEST(ErrorHandling, ReportsCorrectLineAndColumnSingleLine)
     result = parse(p, input_str);
 
     CHECK_TRUE(result.is_error);
-    CHECK_EQUAL(1, result.data.error->position.line);
-    CHECK_EQUAL(1, result.data.error->position.col);
+    CHECK_EQUAL(1, result.data.error->view.line_number);
+    CHECK_EQUAL(1, result.data.error->view.column_number);
 }
 
 TEST(ErrorHandling, ReportsCorrectLineAndColumnErrorAtOffset1)
@@ -210,6 +210,6 @@ TEST(ErrorHandling, ReportsCorrectLineAndColumnErrorAtOffset1)
     result = parse(seq, input_str);
 
     CHECK_TRUE(result.is_error);
-    CHECK_EQUAL(1, result.data.error->position.line);
-    CHECK_EQUAL(2, result.data.error->position.col);
+    CHECK_EQUAL(1, result.data.error->view.line_number);
+    CHECK_EQUAL(2, result.data.error->view.column_number);
 }

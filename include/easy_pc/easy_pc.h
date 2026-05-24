@@ -58,13 +58,6 @@ typedef struct epc_parser_list epc_parser_list;
 typedef struct epc_parse_session_t epc_parse_session_t;
 typedef struct epc_parse_result_t epc_parse_result_t;
 
-// line and column information.
-typedef struct epc_line_col_t
-{
-    size_t line;
-    size_t col;
-} epc_line_col_t;
-
 /**
  * @brief Represents the input to be parsed, which can be either a string or a file stream.
  */
@@ -133,8 +126,7 @@ typedef struct epc_parse_input_t
  */
 typedef struct
 {
-    size_t input_offset;     /**< @brief Offset to the exact position in the input where the error occurred. */
-    epc_line_col_t position; /**< @brief Line and column coordinates of the error position. */
+    epc_parser_input_view_t view; /**< @brief View to the exact position in the input where the error occurred. */
     /**< @brief A descriptive message explaining the nature of the error. */
     char message[EPC_ERROR_MESSAGE_MAX_LEN + 1];
     /**< @brief A string describing what the parser was expecting at the error position. */

@@ -35,9 +35,9 @@ TEST_GROUP(GdlParserTest)
             "GDL Parsing Error: %s at input offset %zu (line %zu, col %zu)"
             " expected: '%s', found: '%s'\n",
             error->message,
-            error->input_offset,
-            error->position.line,
-            error->position.col,
+            error->view.offset,
+            error->view.line_number,
+            error->view.column_number,
             error->expected,
             error->found
         );

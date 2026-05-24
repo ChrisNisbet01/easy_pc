@@ -86,8 +86,10 @@ is_identifier_start_char_class(regex_node_t * const node)
             {
                 has_valid_part = true;
             }
-            else if ((strcmp(item->data.char_range.start->data.text, "A") == 0
-                      && strcmp(item->data.char_range.end->data.text, "Z") == 0))
+            else if (
+                (strcmp(item->data.char_range.start->data.text, "A") == 0
+                 && strcmp(item->data.char_range.end->data.text, "Z") == 0)
+            )
             {
                 has_valid_part = true;
             }
@@ -144,13 +146,17 @@ is_identifier_continue_char_class(regex_node_t * const node)
             {
                 has_valid_part = true;
             }
-            else if (strcmp(item->data.char_range.start->data.text, "A") == 0
-                     && strcmp(item->data.char_range.end->data.text, "Z") == 0)
+            else if (
+                strcmp(item->data.char_range.start->data.text, "A") == 0
+                && strcmp(item->data.char_range.end->data.text, "Z") == 0
+            )
             {
                 has_valid_part = true;
             }
-            else if (strcmp(item->data.char_range.start->data.text, "0") == 0
-                     && strcmp(item->data.char_range.end->data.text, "9") == 0)
+            else if (
+                strcmp(item->data.char_range.start->data.text, "0") == 0
+                && strcmp(item->data.char_range.end->data.text, "9") == 0
+            )
             {
                 has_valid_part = true;
             }
@@ -884,8 +890,8 @@ main(int argc, char ** argv)
             stderr,
             "Error: %s at %zu:%zu\n",
             session.result.data.error->message,
-            session.result.data.error->position.line,
-            session.result.data.error->position.col
+            session.result.data.error->view.line_number,
+            session.result.data.error->view.column_number
         );
         epc_parse_session_destroy(&session);
         epc_parser_list_free(l);
