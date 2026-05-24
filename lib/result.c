@@ -47,6 +47,10 @@ EASY_PC_API
 char *
 epc_get_line_at_offset(epc_parser_ctx_t * ctx, size_t const offset)
 {
+    /*
+        FIXME: - I think we have the offset to the start of the line right there in the node's view now, meaning
+        there is no need for any of the calculations going on in here anymore.
+    */
     if (ctx == NULL)
     {
         return NULL;
@@ -80,41 +84,6 @@ epc_get_line_at_offset(epc_parser_ctx_t * ctx, size_t const offset)
     line = strndup(&ctx->input_start[start_offset], len_to_copy);
 
     return line;
-}
-
-EASY_PC_API
-epc_line_col_t
-epc_calculate_line_and_column(epc_parser_ctx_t * ctx, size_t const offset)
-{
-    epc_line_col_t res = {0};
-
-    if (ctx == NULL)
-    {
-        return res;
-    }
-
-    if (ctx->newline.positions == NULL || ctx->newline.count == 0)
-    {
-        res.line = 1;
-        res.col = offset;
-        return res;
-    }
-
-    size_t next_index = calculate_next_newline_index(ctx, offset);
-
-    res.line = next_index + 1;
-    if (next_index == 0)
-    {
-        res.col = offset + 1;
-    }
-    else
-    {
-        size_t prev_newline_offset = ctx->newline.positions[next_index - 1];
-
-        res.col = offset - prev_newline_offset;
-    }
-
-    return res;
 }
 
 epc_parser_error_t *
