@@ -310,8 +310,8 @@ TEST(TerminalParsers, PSpaceMatchesSpace)
     CHECK_TRUE(result.data.success != NULL);
     char const * content = epc_cpt_node_get_content(result.data.success);
 
-    STRCMP_EQUAL("space", result.data.success->tag);
-    STRCMP_EQUAL("space", result.data.success->name);
+    STRCMP_EQUAL("whitespace", result.data.success->tag);
+    STRCMP_EQUAL("whitespace", result.data.success->name);
     STRNCMP_EQUAL(" ", content, 1);
     LONGS_EQUAL(1, result.data.success->token.count);
 }
@@ -325,8 +325,8 @@ TEST(TerminalParsers, PSpaceMatchesTab)
     CHECK_TRUE(result.data.success != NULL);
     char const * content = epc_cpt_node_get_content(result.data.success);
 
-    STRCMP_EQUAL("space", result.data.success->tag);
-    STRCMP_EQUAL("space", result.data.success->name);
+    STRCMP_EQUAL("whitespace", result.data.success->tag);
+    STRCMP_EQUAL("whitespace", result.data.success->name);
     STRNCMP_EQUAL("\t", content, 1);
     LONGS_EQUAL(1, result.data.success->token.count);
 }
@@ -340,8 +340,8 @@ TEST(TerminalParsers, PSpaceMatchesNewline)
     CHECK_TRUE(result.data.success != NULL);
     char const * content = epc_cpt_node_get_content(result.data.success);
 
-    STRCMP_EQUAL("space", result.data.success->tag);
-    STRCMP_EQUAL("space", result.data.success->name);
+    STRCMP_EQUAL("whitespace", result.data.success->tag);
+    STRCMP_EQUAL("whitespace", result.data.success->name);
     STRNCMP_EQUAL("\n", content, 1);
     LONGS_EQUAL(1, result.data.success->token.count);
 }
@@ -369,7 +369,7 @@ TEST(TerminalParsers, PSpaceFailsOnEmptyInput)
     CHECK_TRUE(result.data.error != NULL);
     STRCMP_EQUAL("Unexpected end of input", result.data.error->message);
     CHECK_EQUAL(0, result.data.error->view.offset);
-    STRCMP_EQUAL("space", result.data.error->expected);
+    STRCMP_EQUAL("whitespace", result.data.error->expected);
     STRCMP_EQUAL("EOF", result.data.error->found);
 }
 
