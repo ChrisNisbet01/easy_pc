@@ -24,8 +24,8 @@ typedef struct parser_list_t
 
 typedef struct
 {
-    epc_token_id_t start;
-    epc_token_id_t end;
+    char start;
+    char end;
 } char_range_data_t;
 
 typedef struct

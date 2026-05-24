@@ -392,12 +392,11 @@ EASY_PC_API epc_parser_t * epc_hex_digit(epc_parser_list * list, char const * na
  * @brief Creates a parser that matches a single character within a specified range and adds it to the list.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.
- * @param char_start The beginning character/token of the range (inclusive).
- * @param char_end The ending character/token of the range (inclusive).
+ * @param char_start The beginning character of the range (inclusive).
+ * @param char_end The ending character of the range (inclusive).
  * @return A new `parser_t` instance, or NULL on error.
  */
-EASY_PC_API epc_parser_t *
-epc_char_range(epc_parser_list * list, char const * name, epc_token_id_t char_start, epc_token_id_t char_end);
+EASY_PC_API epc_parser_t * epc_char_range(epc_parser_list * list, char const * name, char char_start, char char_end);
 
 /**
  * @brief Creates a parser that matches any single character NOT in the provided set and adds it to the list.

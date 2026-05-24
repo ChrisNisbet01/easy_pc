@@ -644,7 +644,7 @@ parse_ctx_free_error(epc_parser_ctx_t * ctx, epc_parser_error_t * error)
 
 EASY_PC_HIDDEN
 parse_get_input_result_t
-parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_offset)
+parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const token_offset)
 {
     size_t const count = 1;
 
@@ -665,7 +665,7 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
     {
         /* Wait for the input to arrive from the main thread. */
         pthread_mutex_lock(&ctx->streaming.mutex);
-        while (input_offset + count > ctx->input_tokens.count && !ctx->streaming.is_eof
+        while (token_offset + count > ctx->input_tokens.count && !ctx->streaming.is_eof
                && ctx->streaming.input_error == 0)
         {
             pthread_cond_wait(&ctx->streaming.cond, &ctx->streaming.mutex);
@@ -678,10 +678,10 @@ parse_ctx_get_input_at_offset(epc_parser_ctx_t * const ctx, size_t const input_o
 #endif
 
     /* Note that the streaming mutex is still held at this point. */
-    bool const is_eof = input_offset + count > ctx->input_tokens.count;
+    bool const is_eof = token_offset + count > ctx->input_tokens.count;
 
     parse_get_input_result_t result = {
-        .token = ctx->input_tokens.start[input_offset],
+        .token = ctx->input_tokens.start[token_offset],
         .is_eof = is_eof,
         .had_error = had_error,
     };

@@ -124,7 +124,7 @@ EASY_PC_HIDDEN
 void parse_ctx_free_error(epc_parser_ctx_t * ctx, epc_parser_error_t * error);
 
 EASY_PC_HIDDEN
-parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t input_offset);
+parse_get_input_result_t parse_ctx_get_input_at_offset(epc_parser_ctx_t * ctx, size_t token_offset);
 
 EASY_PC_HIDDEN
 epc_parser_token_t const * parse_ctx_get_token_at_offset(epc_parser_ctx_t const * ctx, size_t offset);
