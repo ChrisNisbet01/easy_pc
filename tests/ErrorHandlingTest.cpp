@@ -150,7 +150,7 @@ TEST(ErrorHandling, PDigitReportsMismatchError)
 
     CHECK_TRUE(result.is_error);
     CHECK_TRUE(result.data.error != NULL);
-    STRCMP_EQUAL("Unexpected character", result.data.error->message);
+    STRCMP_EQUAL("Unexpected token", result.data.error->message);
     CHECK_EQUAL(0, result.data.error->view.offset);
     STRCMP_EQUAL("digit", result.data.error->expected);
     STRCMP_EQUAL("a", result.data.error->found);

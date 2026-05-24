@@ -125,7 +125,9 @@ consume_c_comment_content(epc_parser_ctx_t * ctx, size_t token_offset)
             return token_count;
         }
         token_count++;
-        char const c = res.token.id;
+
+        epc_token_id_t const c = res.token.id;
+
         if (prev_was_star && c == '/')
         {
             break;
@@ -354,39 +356,39 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 // --- Terminal Parser Implementations ---
 
 static epc_parse_result_t
-pchar_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pchar_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     char const * expected_str = parser_get_expected_str(self);
     char expected_char = self->data.string[0];
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
+        return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", expected_str, "EOF");
     }
 
-    char const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
-    if (input == expected_char)
+    if (input == (epc_token_id_t)expected_char)
     {
         epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
         if (node == NULL)
         {
             return epc_parser_error_result(
-                ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
 
-        node->token.offset = input_offset;
+        node->token.offset = token_offset;
         node->token.count = 1;
 
         return epc_parser_success_result(node);
     }
 
     // else Mismatch
-    char found_str[2] = {input, '\0'};
-
-    return epc_parser_error_result(ctx, input_offset, "Unexpected character", expected_str, found_str);
+    return epc_parser_error_result_token_list(
+        ctx, token_offset, "Unexpected character", expected_str, &input_result.token, 1
+    );
 }
 
 static epc_parser_t *
@@ -419,18 +421,18 @@ epc_char(epc_parser_list * list, char const * name, char c)
 }
 
 static epc_parse_result_t
-pbyte_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pbyte_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     char const * expected_str = parser_get_expected_str(self);
     uint8_t expected_byte = self->data.byte.byte;
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
+        return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", expected_str, "EOF");
     }
 
-    uint8_t const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
     if (input == expected_byte)
     {
@@ -438,20 +440,20 @@ pbyte_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
         if (node == NULL)
         {
             return epc_parser_error_result(
-                ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
 
-        node->token.offset = input_offset;
+        node->token.offset = token_offset;
         node->token.count = 1;
 
         return epc_parser_success_result(node);
     }
 
     // else Mismatch
-    char found_str[2] = {input, '\0'};
-
-    return epc_parser_error_result(ctx, input_offset, "Unexpected byte", expected_str, found_str);
+    return epc_parser_error_result_token_list(
+        ctx, token_offset, "Unexpected byte", expected_str, &input_result.token, 1
+    );
 }
 
 static epc_parser_t *
@@ -485,50 +487,47 @@ epc_byte(epc_parser_list * list, char const * name, char b)
 }
 
 static epc_parse_result_t
-pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     char const * expected_str = parser_get_expected_str(self);
     char const * match_string = self->data.string;
     size_t expected_len = strlen(match_string);
 
-    for (size_t matched_chars = 0; matched_chars < expected_len; matched_chars++)
+    for (size_t matched_tokens = 0; matched_tokens < expected_len; matched_tokens++)
     {
-        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset + matched_chars);
-        char const input = input_result.token.id;
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset + matched_tokens);
+        epc_token_id_t const input = input_result.token.id;
 
         if (input_result.is_eof)
         {
-            char const * found_str;
-            char found_buffer[FOUND_BUFFER_SIZE];
-
-            if (input == '\0')
-            {
-                found_str = "EOF";
-            }
-            else
-            {
-                snprintf(found_buffer, sizeof(found_buffer), "%c", input);
-                found_str = found_buffer;
-            }
-            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, found_str);
+            char const * found_str = "EOF";
+            return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", expected_str, found_str);
         }
 
-        if (input != expected_str[matched_chars])
+        if (input != (epc_token_id_t)expected_str[matched_tokens])
         {
             /* Match not found. */
             char found_buffer[FOUND_BUFFER_SIZE];
-            snprintf(found_buffer, sizeof(found_buffer), "%c (pos: %zu)", input, matched_chars);
 
-            return epc_parser_error_result(ctx, input_offset, "Unexpected string", expected_str, found_buffer);
+            if (isascii(input))
+            {
+                snprintf(found_buffer, sizeof(found_buffer), "%c (pos: %zu)", (char)input, matched_tokens);
+            }
+            else
+            {
+                snprintf(found_buffer, sizeof(found_buffer), "%u (pos: %zu)", input, matched_tokens);
+            }
+
+            return epc_parser_error_result(ctx, token_offset, "Unexpected string", expected_str, found_buffer);
         }
     }
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = expected_len;
 
     return epc_parser_success_result(node);
@@ -598,15 +597,15 @@ epc_soi(epc_parser_list * list, char const * name)
 }
 
 static epc_parse_result_t
-peoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+peoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     if (!input_result.is_eof)
     {
         /* Still some input left. */
         char buf[FOUND_BUFFER_SIZE];
-        if (input_result.token.id < 256)
+        if (isascii(input_result.token.id))
         {
             buf[0] = (char)input_result.token.id;
             buf[1] = '\0';
@@ -617,16 +616,16 @@ peoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
             buf[sizeof(buf) - 1] = '\0';
         }
 
-        return epc_parser_error_result(ctx, input_offset, "End of input not found", "<end of input>", buf);
+        return epc_parser_error_result(ctx, token_offset, "End of input not found", "<end of input>", buf);
     }
 
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = 0;
 
     return epc_parser_success_result(node);
@@ -647,16 +646,16 @@ epc_eoi(epc_parser_list * list, char const * name)
 }
 
 static epc_parse_result_t
-pdigit_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pdigit_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "digit", "EOF");
+        return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", "digit", "EOF");
     }
 
-    char const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
     if (isdigit(input))
     {
@@ -664,19 +663,18 @@ pdigit_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
         if (node == NULL)
         {
             return epc_parser_error_result(
-                ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
 
-        node->token.offset = input_offset;
+        node->token.offset = token_offset;
         node->token.count = 1;
 
         return epc_parser_success_result(node);
     }
 
     // else Mismatch
-    char found_str[2] = {input, '\0'};
-    return epc_parser_error_result(ctx, input_offset, "Unexpected character", "digit", found_str);
+    return epc_parser_error_result_token_list(ctx, token_offset, "Unexpected token", "digit", &input_result.token, 1);
 }
 
 static epc_parser_t *
@@ -715,22 +713,30 @@ is_double_prefix(char const * s, size_t len)
 }
 
 static epc_parse_result_t
-pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     size_t parsed_len = 0;
 
     {
         char * temp_buffer = ctx->temp_parse_buffer;
         size_t current_len = 0;
+
         while (current_len < TEMP_PARSE_BUFFER_SIZE)
         {
-            parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len);
+            parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, token_offset + current_len);
             if (res.is_eof)
             {
                 break;
             }
 
-            temp_buffer[current_len++] = res.token.id;
+            epc_token_id_t const input = res.token.id;
+
+            if (!isascii(input))
+            {
+                break;
+            }
+
+            temp_buffer[current_len++] = input;
             temp_buffer[current_len] = '\0';
 
             char * endptr;
@@ -751,33 +757,31 @@ pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
         }
         if (current_len == TEMP_PARSE_BUFFER_SIZE)
         {
-            return epc_parser_error_result(ctx, input_offset, "Integer literal too long", "integer", "<too long>");
+            return epc_parser_error_result(ctx, token_offset, "Integer literal too long", "integer", "<too long>");
         }
     }
 
     if (parsed_len == 0)
     {
-        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+        parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
         if (input_result.is_eof)
         {
-            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "integer", "EOF");
+            return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", "integer", "EOF");
         }
 
         /* No match to an integer. */
-        char found_buffer[FOUND_BUFFER_SIZE];
-        snprintf(found_buffer, sizeof(found_buffer), "%c", input_result.token.id);
-        found_buffer[sizeof(found_buffer) - 1] = '\0';
-
-        return epc_parser_error_result(ctx, input_offset, "Expected an integer", "integer", found_buffer);
+        return epc_parser_error_result_token_list(
+            ctx, token_offset, "Expected an integer", "integer", &input_result.token, 1
+        );
     }
 
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = parsed_len;
 
     return epc_parser_success_result(node);
@@ -1563,7 +1567,9 @@ pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t
         }
         if (status == MATCH_MISMATCH)
         {
-            return epc_parser_error_result_token_list(ctx, input_offset, "Expected '//'", "//", found_tokens);
+            return epc_parser_error_result_token_list(
+                ctx, input_offset, "Expected '//'", "//", found_tokens, token_count + 1
+            );
         }
     }
 
@@ -1625,7 +1631,9 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
         }
         if (status == MATCH_MISMATCH)
         {
-            return epc_parser_error_result_token_list(ctx, input_offset, "Expected '/*'", "/*", found_tokens);
+            return epc_parser_error_result_token_list(
+                ctx, input_offset, "Expected '/*'", "/*", found_tokens, token_count + 1
+            );
         }
     }
 
@@ -1695,7 +1703,7 @@ pbash_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_
     }
     if (status == MATCH_MISMATCH)
     {
-        return epc_parser_error_result_token_list(ctx, input_offset, "Expected '#'", "#", found_tokens);
+        return epc_parser_error_result_token_list(ctx, input_offset, "Expected '#'", "#", found_tokens, 1);
     }
 
     size_t token_count = 1;
@@ -3210,7 +3218,7 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t offset, epc_consume_flags_t fl
                 {
                     break;
                 }
-                if (res.token.id >= 256 || !isspace((unsigned char)res.token.id))
+                if (!isspace((unsigned char)res.token.id))
                 {
                     break;
                 }

@@ -236,15 +236,23 @@ epc_parser_error_result_token_list(
     size_t token_offset,
     char const * message,
     char const * expected,
-    epc_parser_token_t const * found_tokens
+    epc_parser_token_t const * found_tokens,
+    size_t found_token_count
 )
 {
-    size_t found_offset = found_tokens->view.offset;
+    /* Assuming there is always at least 1 'found' token, and that tokens are all adjacent. */
+    size_t found_offset = found_tokens[0].view.offset;
     size_t input_length = 0;
-    for (epc_parser_token_t const * token = found_tokens; token->id != 0; token++)
+    if (found_token_count > 1)
     {
-        input_length += token->view.len;
+        input_length
+            += found_tokens[found_token_count - 1].view.offset - found_tokens[0].view.offset + found_tokens[1].view.len;
     }
+    else
+    {
+        input_length = found_tokens[0].view.len;
+    }
+
     char found_buf[EPC_ERROR_FOUND_MAX_LEN];
 
     snprintf(found_buf, sizeof(found_buf), "%.*s", (int)input_length, ctx->input_start + found_offset);

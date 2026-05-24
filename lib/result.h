@@ -34,7 +34,8 @@ epc_parse_result_t epc_parser_error_result_token_list(
     size_t input_offset,
     char const * message,
     char const * expected,
-    epc_parser_token_t const * found_tokens
+    epc_parser_token_t const * found_tokens,
+    size_t found_token_count
 );
 
 EASY_PC_HIDDEN
