@@ -313,7 +313,7 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
                 parser_get_expected_str(self),
                 25,
                 input,
-                input_offset
+                token_offset
             );
         }
     }
@@ -558,22 +558,22 @@ epc_string(epc_parser_list * list, char const * name, char const * s)
 }
 
 static epc_parse_result_t
-psoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+psoi_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
-    if (input_offset != 0)
+    if (token_offset != 0)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "Start of input not found", "<start of input>", "<post input>"
+            ctx, token_offset, "Start of input not found", "<start of input>", "<post input>"
         );
     }
 
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = 0;
 
     return epc_parser_success_result(node);
@@ -1614,7 +1614,7 @@ epc_or(epc_parser_list * list, char const * name, int count, ...)
 // --- C++ Comment Parser Implementation ---
 // Matches "//" followed by any characters until a newline or EOF.
 static epc_parse_result_t
-pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_token_t found_tokens[3] = {0};
     match_status_t status;
@@ -1623,31 +1623,31 @@ pcpp_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t
     // 1. Match the opening double slashes.
     for (token_count = 0; token_count < 2; token_count++)
     {
-        status = try_match_token(ctx, input_offset + token_count, '/', &found_tokens[token_count]);
+        status = try_match_token(ctx, token_offset + token_count, '/', &found_tokens[token_count]);
         if (status == MATCH_EOF)
         {
-            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "//", "EOF");
+            return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", "//", "EOF");
         }
         if (status == MATCH_MISMATCH)
         {
             return epc_parser_error_result_token_list(
-                ctx, input_offset, "Expected '//'", "//", found_tokens, token_count + 1
+                ctx, token_offset, "Expected '//'", "//", found_tokens, token_count + 1
             );
         }
     }
 
     // 2. Match content until newline or EOF
-    size_t const res = consume_until_newline(ctx, input_offset + token_count);
+    size_t const res = consume_until_newline(ctx, token_offset + token_count);
     token_count += res;
 
     // Success - create a CPT node for the whole comment
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = token_count;
 
     return epc_parser_success_result(node);
@@ -1756,33 +1756,33 @@ epc_c_comment(epc_parser_list * list, char const * name)
 // --- Bash Comment Parser Implementation ---
 // Matches "#" followed by any characters until a newline or EOF.
 static epc_parse_result_t
-pbash_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pbash_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_token_t found_tokens[2] = {0};
-    match_status_t status = try_match_token(ctx, input_offset, '#', &found_tokens[0]);
+    match_status_t status = try_match_token(ctx, token_offset, '#', &found_tokens[0]);
     if (status == MATCH_EOF)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "#", "EOF");
+        return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", "#", "EOF");
     }
     if (status == MATCH_MISMATCH)
     {
-        return epc_parser_error_result_token_list(ctx, input_offset, "Expected '#'", "#", found_tokens, 1);
+        return epc_parser_error_result_token_list(ctx, token_offset, "Expected '#'", "#", found_tokens, 1);
     }
 
     size_t token_count = 1;
 
     // 2. Match content until newline or EOF
-    size_t const res = consume_until_newline(ctx, input_offset + token_count);
+    size_t const res = consume_until_newline(ctx, token_offset + token_count);
     token_count += res;
 
     // Success - create a CPT node for the whole comment
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = token_count;
 
     return epc_parser_success_result(node);
@@ -1808,14 +1808,14 @@ epc_bash_comment(epc_parser_list * list, char const * name)
 }
 
 static epc_parse_result_t
-pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     parser_list_t * sequence = self->data.parser_list;
 
     if (sequence == NULL || sequence->count == 0)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "No parsers in 'and' sequence", epc_parser_get_name(self), "N/A"
+            ctx, token_offset, "No parsers in 'and' sequence", epc_parser_get_name(self), "N/A"
         );
     }
 
@@ -1823,10 +1823,10 @@ pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
 
     if (children_nodes == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    size_t current_input_offset = input_offset;
+    size_t current_token_offset = token_offset;
 
     epc_parse_result_t failed_child_result = {0};
     epc_parse_result_t null_child_result = {0};
@@ -1836,19 +1836,19 @@ pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
         epc_parser_t * current_parser = sequence->parsers[i];
         if (current_parser)
         {
-            epc_parse_result_t child_result = parse(current_parser, ctx, current_input_offset);
+            epc_parse_result_t child_result = parse(current_parser, ctx, current_token_offset);
             if (child_result.is_error)
             {
                 failed_child_result = child_result;
                 break;
             }
             children_nodes[i] = child_result.data.success;
-            current_input_offset += child_result.data.success->token.count;
+            current_token_offset += child_result.data.success->token.count;
         }
         else
         {
             null_child_result = epc_parser_error_result(
-                ctx, current_input_offset, "NULL parser found in 'and' sequence", epc_parser_get_name(self), "NULL"
+                ctx, current_token_offset, "NULL parser found in 'and' sequence", epc_parser_get_name(self), "NULL"
             );
             break;
         }
@@ -1882,13 +1882,13 @@ pand_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_o
         {
             epc_node_free(children_nodes[i]);
         }
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     parent_node->children = children_nodes;
     parent_node->children_count = sequence->count;
-    parent_node->token.offset = input_offset;
-    parent_node->token.count = current_input_offset - input_offset;
+    parent_node->token.offset = token_offset;
+    parent_node->token.count = current_token_offset - token_offset;
     parent_node->semantic_start_offset = get_semantic_start_offset(parent_node->children, parent_node->children_count);
     parent_node->semantic_end_offset = get_semantic_end_offset(parent_node->children, parent_node->children_count);
 
@@ -1939,13 +1939,13 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_
         );
     }
 
-    size_t current_input_offset = token_offset;
+    size_t current_token_offset = token_offset;
     size_t total_skipped_len = 0;
 
     while (1)
     {
         epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-        epc_parse_result_t child_result = parse(parser_to_skip, ctx, current_input_offset);
+        epc_parse_result_t child_result = parse(parser_to_skip, ctx, current_token_offset);
         if (child_result.is_error)
         {
             parser_furthest_error_restore(ctx, &original_furthest_error);
@@ -1966,7 +1966,7 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_
             );
         }
         total_skipped_len += child_result.data.success->token.count;
-        current_input_offset += child_result.data.success->token.count;
+        current_token_offset += child_result.data.success->token.count;
         epc_parser_error_free(original_furthest_error);
         epc_parser_result_cleanup(&child_result);
     }
@@ -2004,27 +2004,27 @@ epc_skip(epc_parser_list * list, char const * name, epc_parser_t * parser_to_ski
 }
 
 static epc_parse_result_t
-pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_t * parser_to_repeat = self->data.parser;
 
     if (parser_to_repeat == NULL)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "p_plus received NULL child parser", epc_parser_get_name(self), "NULL"
+            ctx, token_offset, "p_plus received NULL child parser", epc_parser_get_name(self), "NULL"
         );
     }
 
     child_list_t children = {0};
     if (!child_list_init(ctx, &children, 4))
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    size_t current_input_offset = input_offset;
-    size_t plus_start_input_offset = input_offset;
+    size_t current_token_offset = token_offset;
+    size_t plus_start_input_offset = token_offset;
 
-    epc_parse_result_t first_child_result = parse(parser_to_repeat, ctx, current_input_offset);
+    epc_parse_result_t first_child_result = parse(parser_to_repeat, ctx, current_token_offset);
     if (first_child_result.is_error)
     {
         child_list_release(&children);
@@ -2035,40 +2035,40 @@ pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     {
         child_list_release(&children);
         return epc_parser_error_result(
-            ctx, current_input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+            ctx, current_token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
         );
     }
-    current_input_offset += first_child_result.data.success->token.count;
+    current_token_offset += first_child_result.data.success->token.count;
 
     bool infinite_recursion_detected = false;
     while (!infinite_recursion_detected)
     {
-        size_t loop_start_input_offset = current_input_offset;
-        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input_offset);
+        size_t loop_start_input_offset = current_token_offset;
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_token_offset);
         if (!child_result.is_error)
         {
             if (!child_list_append(&children, child_result.data.success))
             {
                 child_list_release(&children);
                 return epc_parser_error_result(
-                    ctx, current_input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                    ctx, current_token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
                 );
             }
-            current_input_offset += child_result.data.success->token.count;
+            current_token_offset += child_result.data.success->token.count;
         }
         else
         {
             epc_parser_result_cleanup(&child_result);
             break;
         }
-        infinite_recursion_detected = current_input_offset == loop_start_input_offset;
+        infinite_recursion_detected = current_token_offset == loop_start_input_offset;
     }
 
     if (infinite_recursion_detected)
     {
         child_list_release(&children);
         return epc_parser_error_result(
-            ctx, current_input_offset, infinite_recursion_detected_msg, "Progress", "No progress"
+            ctx, current_token_offset, infinite_recursion_detected_msg, "Progress", "No progress"
         );
     }
 
@@ -2082,8 +2082,8 @@ pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     }
 
     child_list_transfer(&children, parent_node);
-    parent_node->token.offset = input_offset;
-    parent_node->token.count = current_input_offset - input_offset;
+    parent_node->token.offset = token_offset;
+    parent_node->token.count = current_token_offset - token_offset;
     parent_node->semantic_start_offset = get_semantic_start_offset(parent_node->children, parent_node->children_count);
     parent_node->semantic_end_offset = get_semantic_end_offset(parent_node->children, parent_node->children_count);
 
@@ -2297,7 +2297,7 @@ epc_none_of(epc_parser_list * list, char const * name, char const * chars_to_avo
 }
 
 static epc_parse_result_t
-pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_t * parser_to_repeat = self->data.parser;
 
@@ -2305,25 +2305,25 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     {
         // Should not happen if grammar is well-formed
         return epc_parser_error_result(
-            ctx, input_offset, "p_many received NULL child parser", epc_parser_get_name(self), "NULL"
+            ctx, token_offset, "p_many received NULL child parser", epc_parser_get_name(self), "NULL"
         );
     }
 
-    size_t current_input_offset = input_offset;
+    size_t current_token_offset = token_offset;
     child_list_t children = {0};
 
     if (!child_list_init(ctx, &children, 4))
     {
         return epc_parser_error_result(
-            ctx, current_input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+            ctx, current_token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
         );
     }
 
     bool infinite_recursion_detected = false;
     while (!infinite_recursion_detected) // Loop as long as child parser matches
     {
-        size_t loop_start_input_offset = current_input_offset;
-        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input_offset);
+        size_t loop_start_input_offset = current_token_offset;
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_token_offset);
         if (child_result.is_error)
         {
             epc_parser_result_cleanup(&child_result);
@@ -2333,19 +2333,19 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
         {
             child_list_release(&children);
             return epc_parser_error_result(
-                ctx, current_input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                ctx, current_token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
-        current_input_offset += child_result.data.success->token.count;
+        current_token_offset += child_result.data.success->token.count;
 
-        infinite_recursion_detected = current_input_offset == loop_start_input_offset;
+        infinite_recursion_detected = current_token_offset == loop_start_input_offset;
     }
 
     if (infinite_recursion_detected)
     {
         child_list_release(&children);
         return epc_parser_error_result(
-            ctx, current_input_offset, infinite_recursion_detected_msg, "Progress", "No progress"
+            ctx, current_token_offset, infinite_recursion_detected_msg, "Progress", "No progress"
         );
     }
 
@@ -2353,12 +2353,12 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     if (parent_node == NULL)
     {
         child_list_release(&children);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     child_list_transfer(&children, parent_node);
-    parent_node->token.offset = input_offset;
-    parent_node->token.count = current_input_offset - input_offset;
+    parent_node->token.offset = token_offset;
+    parent_node->token.count = current_token_offset - token_offset;
     if (parent_node->children_count > 0)
     {
         parent_node->semantic_start_offset
@@ -2390,7 +2390,7 @@ epc_many(epc_parser_list * list, char const * name, epc_parser_t * p)
 }
 
 static epc_parse_result_t
-pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     count_data_t * count_data = &self->data.count;
     epc_parser_t * parser_to_repeat = count_data->parser;
@@ -2400,7 +2400,7 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     if (parser_to_repeat == NULL)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "received NULL child parser", epc_parser_get_name(self), "NULL"
+            ctx, token_offset, "received NULL child parser", epc_parser_get_name(self), "NULL"
         );
     }
     /* max must be >= min. */
@@ -2409,23 +2409,23 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
         char found[FOUND_BUFFER_SIZE];
 
         snprintf(found, sizeof(found), "min: %zu, max: %zu", min_matches, max_matches);
-        return epc_parser_error_result(ctx, input_offset, "Max should be >= min", epc_parser_get_name(self), found);
+        return epc_parser_error_result(ctx, token_offset, "Max should be >= min", epc_parser_get_name(self), found);
     }
 
-    size_t current_input_offset = input_offset;
+    size_t current_token_offset = token_offset;
     child_list_t children = {0};
 
     if (!child_list_init(ctx, &children, 4))
     {
         return epc_parser_error_result(
-            ctx, current_input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+            ctx, current_token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
         );
     }
 
     size_t match_count;
     for (match_count = 0; match_count < max_matches; match_count++)
     {
-        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input_offset);
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_token_offset);
 
         if (child_result.is_error)
         {
@@ -2438,7 +2438,7 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
 
                 snprintf(msg, sizeof(msg), "Failed to match child at count %zu", match_count + 1);
                 epc_parse_result_t error_result = epc_parser_error_result(
-                    ctx, current_input_offset, msg, child_result.data.error->expected, child_result.data.error->found
+                    ctx, current_token_offset, msg, child_result.data.error->expected, child_result.data.error->found
                 );
                 epc_parser_result_cleanup(&child_result);
 
@@ -2452,16 +2452,16 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
         {
             child_list_release(&children);
             return epc_parser_error_result(
-                ctx, current_input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                ctx, current_token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
-        current_input_offset += child_result.data.success->token.count;
+        current_token_offset += child_result.data.success->token.count;
     }
 
     if (min_matches > 0 && max_matches > 0 && match_count == max_matches)
     {
         /* Matched exactly max times. The next parse needs to fail for this to be called a success. */
-        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_input_offset);
+        epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_token_offset);
 
         if (!child_result.is_error)
         {
@@ -2472,7 +2472,7 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
 
             snprintf(msg, sizeof(msg), "Child matched unexpectedly at count %zu", max_matches + 1);
             epc_parse_result_t error_result = epc_parser_error_result(
-                ctx, current_input_offset, msg, child_result.data.error->expected, child_result.data.error->found
+                ctx, current_token_offset, msg, child_result.data.error->expected, child_result.data.error->found
             );
             epc_parser_result_cleanup(&child_result);
 
@@ -2485,12 +2485,12 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     if (parent_node == NULL)
     {
         child_list_release(&children);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     child_list_transfer(&children, parent_node);
-    parent_node->token.offset = input_offset;
-    parent_node->token.count = current_input_offset - input_offset;
+    parent_node->token.offset = token_offset;
+    parent_node->token.count = current_token_offset - token_offset;
     if (parent_node->children_count > 0)
     {
         parent_node->semantic_start_offset
@@ -2568,11 +2568,11 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
         );
     }
 
-    size_t current_input_offset = token_offset;
+    size_t current_token_offset = token_offset;
     original_furthest_error = parser_furthest_error_copy(ctx);
 
     // 1. Match 'open'
-    epc_parse_result_t open_result = parse(p_open, ctx, current_input_offset);
+    epc_parse_result_t open_result = parse(p_open, ctx, current_token_offset);
     if (open_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
@@ -2581,22 +2581,22 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
     }
 
     open_len = open_result.data.success->token.count;
-    current_input_offset += open_result.data.success->token.count;
+    current_token_offset += open_result.data.success->token.count;
     epc_parser_result_cleanup(&open_result);
 
     // 2. Match 'wrapped' parser
-    epc_parse_result_t wrapped_result = parse(p_wrapped, ctx, current_input_offset);
+    epc_parse_result_t wrapped_result = parse(p_wrapped, ctx, current_token_offset);
     if (wrapped_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
 
         return wrapped_result;
     }
-    current_input_offset += wrapped_result.data.success->token.count;
+    current_token_offset += wrapped_result.data.success->token.count;
     /* Don't clean up the wrapped result as that is what gets returned on success. */
 
     // 3. Match 'close'
-    epc_parse_result_t close_result = parse(p_close, ctx, current_input_offset);
+    epc_parse_result_t close_result = parse(p_close, ctx, current_token_offset);
     if (close_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
@@ -2604,7 +2604,7 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
         return close_result;
     }
     close_len = close_result.data.success->token.count;
-    current_input_offset += close_result.data.success->token.count;
+    current_token_offset += close_result.data.success->token.count;
     epc_parser_result_cleanup(&close_result);
 
     // Success - create a node for 'between'
@@ -2633,7 +2633,7 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
     parent_node->children_count = 1;
 
     parent_node->token.offset = token_offset;
-    parent_node->token.count = current_input_offset - token_offset;
+    parent_node->token.count = current_token_offset - token_offset;
     parent_node->semantic_start_offset = open_len;
     parent_node->semantic_end_offset = close_len;
 
@@ -2663,7 +2663,7 @@ epc_between(epc_parser_list * list, char const * name, epc_parser_t * open, epc_
 }
 
 static epc_parse_result_t
-pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     delimited_data_t * delimited_data = &self->data.delimited;
     epc_parser_t * item_parser = delimited_data->item;
@@ -2672,21 +2672,21 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     if (item_parser == NULL)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "p_delimited received NULL item parser", epc_parser_get_name(self), "NULL"
+            ctx, token_offset, "p_delimited received NULL item parser", epc_parser_get_name(self), "NULL"
         );
     }
     // Delimiter can be NULL, meaning no delimiter, just sequence of items
 
-    size_t current_input_offset = input_offset;
+    size_t current_token_offset = token_offset;
     child_list_t children = {0};
 
     if (!child_list_init(ctx, &children, 4))
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     // First item (must match)
-    epc_parse_result_t first_item_result = parse(item_parser, ctx, current_input_offset);
+    epc_parse_result_t first_item_result = parse(item_parser, ctx, current_token_offset);
 
     if (first_item_result.is_error)
     {
@@ -2696,23 +2696,23 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     if (!child_list_append(&children, first_item_result.data.success))
     {
         child_list_release(&children);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    current_input_offset += first_item_result.data.success->token.count;
+    current_token_offset += first_item_result.data.success->token.count;
 
     // Remaining items (item + delimiter)
     bool infinite_recursion_detected = false;
 
     while (!infinite_recursion_detected)
     {
-        size_t loop_start_input_offset = current_input_offset;
-        size_t offset_before_delimiter = current_input_offset;
+        size_t loop_start_input_offset = current_token_offset;
+        size_t offset_before_delimiter = current_token_offset;
 
         if (delimiter_parser != NULL)
         {
             epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-            epc_parse_result_t delim_result = parse(delimiter_parser, ctx, current_input_offset);
+            epc_parse_result_t delim_result = parse(delimiter_parser, ctx, current_token_offset);
 
             if (delim_result.is_error)
             {
@@ -2722,11 +2722,11 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
                 break;
             }
             epc_parser_error_free(original_furthest_error);
-            current_input_offset += delim_result.data.success->token.count;
+            current_token_offset += delim_result.data.success->token.count;
             epc_parser_result_cleanup(&delim_result);
         }
         epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-        epc_parse_result_t item_result = parse(item_parser, ctx, current_input_offset);
+        epc_parse_result_t item_result = parse(item_parser, ctx, current_token_offset);
         if (item_result.is_error)
         {
             if (delimiter_parser != NULL)
@@ -2736,24 +2736,23 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
                     // Flexible mode: backtrack over delimiter and finish
                     epc_parser_result_cleanup(&item_result);
                     parser_furthest_error_restore(ctx, &original_furthest_error);
-                    current_input_offset = offset_before_delimiter;
+                    current_token_offset = offset_before_delimiter;
                     break;
                 }
-
-                char const * input_start = parse_ctx_get_input_start(ctx);
-                char const * current_input = input_start + current_input_offset;
-                char found_buffer[FOUND_BUFFER_SIZE];
-                snprintf(found_buffer, sizeof(found_buffer), "%.*s", (int)sizeof(found_buffer) - 1, current_input);
 
                 child_list_release(&children);
                 parser_furthest_error_restore(ctx, &original_furthest_error);
                 epc_parser_result_cleanup(&item_result);
-                return epc_parser_error_result(
+
+                parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, current_token_offset);
+
+                return epc_parser_error_result_token_list(
                     ctx,
-                    current_input_offset,
+                    current_token_offset,
                     "Unexpected trailing delimiter",
                     parser_get_expected_str(item_parser),
-                    found_buffer
+                    &input_result.token,
+                    1
                 );
             }
             // Item not found, stop parsing further items
@@ -2766,19 +2765,19 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
         {
             child_list_release(&children);
             return epc_parser_error_result(
-                ctx, current_input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                ctx, current_token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
             );
         }
-        current_input_offset += item_result.data.success->token.count;
+        current_token_offset += item_result.data.success->token.count;
 
-        infinite_recursion_detected = current_input_offset == loop_start_input_offset;
+        infinite_recursion_detected = current_token_offset == loop_start_input_offset;
     }
 
     if (infinite_recursion_detected)
     {
         child_list_release(&children);
         return epc_parser_error_result(
-            ctx, current_input_offset, infinite_recursion_detected_msg, "Progress", "No progress"
+            ctx, current_token_offset, infinite_recursion_detected_msg, "Progress", "No progress"
         );
     }
 
@@ -2786,12 +2785,12 @@ pdelimited_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     if (parent_node == NULL)
     {
         child_list_release(&children);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     child_list_transfer(&children, parent_node);
-    parent_node->token.offset = input_offset;
-    parent_node->token.count = current_input_offset - input_offset;
+    parent_node->token.offset = token_offset;
+    parent_node->token.count = current_token_offset - token_offset;
     if (parent_node->children_count > 0)
     {
         parent_node->semantic_start_offset
@@ -3106,11 +3105,11 @@ epc_not(epc_parser_list * list, char const * name, epc_parser_t * p)
 }
 
 static epc_parse_result_t
-pfail_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pfail_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     char const * failure_message = self->data.string;
 
-    return epc_parser_error_result(ctx, input_offset, failure_message, "Failure", "Failure");
+    return epc_parser_error_result(ctx, token_offset, failure_message, "Failure", "Failure");
 }
 
 static epc_parser_t *
@@ -3139,15 +3138,15 @@ epc_fail(epc_parser_list * list, char const * name, char const * message)
 }
 
 static epc_parse_result_t
-psucceed_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+psucceed_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = 0;
 
     return epc_parser_success_result(node);
@@ -3360,7 +3359,7 @@ consume_whitespace(epc_parser_ctx_t * ctx, size_t token_offset, epc_consume_flag
 }
 
 static epc_parse_result_t
-plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     lexeme_data_t * data = &self->data.lexeme;
     epc_parser_t * child_parser = data->parser;
@@ -3369,28 +3368,28 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     if (child_parser == NULL)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "Lexeme/Strip received NULL child parser", epc_parser_get_name(self), "NULL"
+            ctx, token_offset, "Lexeme/Strip received NULL child parser", epc_parser_get_name(self), "NULL"
         );
     }
 
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
 
     /* 1. Consume leading whitespace/comments. */
-    size_t const leading_ws_len = data->strip_leading ? consume_whitespace(ctx, input_offset, flags) : 0;
-    size_t current_input_offset = input_offset + leading_ws_len;
+    size_t const leading_ws_len = data->strip_leading ? consume_whitespace(ctx, token_offset, flags) : 0;
+    size_t current_token_offset = token_offset + leading_ws_len;
 
     /* 2. Parse the actual item. */
-    epc_parse_result_t item_result = parse(child_parser, ctx, current_input_offset);
+    epc_parse_result_t item_result = parse(child_parser, ctx, current_token_offset);
     if (item_result.is_error)
     {
         epc_parser_error_free(original_furthest_error);
         return item_result;
     }
-    current_input_offset += item_result.data.success->token.count;
+    current_token_offset += item_result.data.success->token.count;
 
     /* 3. Consume trailing whitespace/comments. */
-    size_t const trailing_ws_len = data->strip_trailing ? consume_whitespace(ctx, current_input_offset, flags) : 0;
-    current_input_offset += trailing_ws_len;
+    size_t const trailing_ws_len = data->strip_trailing ? consume_whitespace(ctx, current_token_offset, flags) : 0;
+    current_token_offset += trailing_ws_len;
 
     /* Success - create a node for 'lexeme' or 'strip'. */
     epc_cpt_node_t * parent_node = epc_node_alloc(ctx, self, self->tag);
@@ -3398,7 +3397,7 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     {
         epc_parser_result_cleanup(&item_result);
         epc_parser_error_free(original_furthest_error);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     parser_furthest_error_restore(ctx, &original_furthest_error);
@@ -3408,14 +3407,14 @@ plexeme_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t inpu
     {
         epc_parser_result_cleanup(&item_result);
         epc_node_free(parent_node);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     parent_node->children[0] = item_result.data.success;
     parent_node->children_count = 1;
 
-    parent_node->token.offset = input_offset;
-    parent_node->token.count = current_input_offset - input_offset;
+    parent_node->token.offset = token_offset;
+    parent_node->token.count = current_token_offset - token_offset;
     parent_node->semantic_start_offset = leading_ws_len;
     parent_node->semantic_end_offset = trailing_ws_len;
 
@@ -3583,24 +3582,24 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
         );
     }
 
-    size_t current_input_offset = token_offset;
+    size_t current_token_offset = token_offset;
     epc_parse_result_t left_result;
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
 
     // Parse the first item (must succeed)
-    left_result = parse(item_parser, ctx, current_input_offset);
+    left_result = parse(item_parser, ctx, current_token_offset);
     if (left_result.is_error)
     {
         epc_parser_error_free(original_furthest_error); // Cleanup in error path
         return left_result;
     }
-    current_input_offset += left_result.data.success->token.count;
+    current_token_offset += left_result.data.success->token.count;
 
     // Loop to parse (op item) pairs
     while (1)
     {
         epc_parser_error_t * loop_furthest_error = parser_furthest_error_copy(ctx); // Save for loop iteration
-        epc_parse_result_t op_result = parse(op_parser, ctx, current_input_offset);
+        epc_parse_result_t op_result = parse(op_parser, ctx, current_token_offset);
         if (op_result.is_error)
         {
             epc_parser_result_cleanup(&op_result);
@@ -3608,9 +3607,9 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
             break;                                                    // No more operators, chain ends
         }
         epc_parser_error_free(loop_furthest_error); // Operator matched, clear previous furthest error
-        current_input_offset += op_result.data.success->token.count;
+        current_token_offset += op_result.data.success->token.count;
 
-        epc_parse_result_t right_result = parse(item_parser, ctx, current_input_offset);
+        epc_parse_result_t right_result = parse(item_parser, ctx, current_token_offset);
         if (right_result.is_error)
         {
             epc_parser_result_cleanup(&op_result); // op succeeded, but not used in a final success
@@ -3620,7 +3619,7 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
             epc_parser_error_free(original_furthest_error); // Cleanup in error path
             return right_result;                            // Item after operator failed, so chain fails
         }
-        current_input_offset += right_result.data.success->token.count;
+        current_token_offset += right_result.data.success->token.count;
 
         // Combine left_result, op_result, and right_result into a new left_result
         epc_cpt_node_t * new_parent_node = epc_node_alloc(ctx, self, self->tag);
@@ -3654,7 +3653,7 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
         new_parent_node->children_count = 3;
 
         new_parent_node->token.offset = left_result.data.success->token.offset;
-        new_parent_node->token.count = current_input_offset - token_offset;
+        new_parent_node->token.count = current_token_offset - token_offset;
         new_parent_node->semantic_start_offset = left_result.data.success->semantic_start_offset;
         new_parent_node->semantic_end_offset = right_result.data.success->semantic_end_offset;
 
@@ -3717,18 +3716,18 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
         );
     }
 
-    size_t current_input_offset = token_offset;
+    size_t current_token_offset = token_offset;
     epc_parse_result_t first_item_result;
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx); // Declare here
 
     // Parse the first item (must succeed)
-    first_item_result = parse(item_parser, ctx, current_input_offset);
+    first_item_result = parse(item_parser, ctx, current_token_offset);
     if (first_item_result.is_error)
     {
         epc_parser_error_free(original_furthest_error); // Cleanup in error path
         return first_item_result;
     }
-    current_input_offset += first_item_result.data.success->token.count;
+    current_token_offset += first_item_result.data.success->token.count;
 
     // Collect (op item) pairs
     op_item_pair_t * pairs = NULL;
@@ -3745,7 +3744,7 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
     while (1)
     {
         epc_parser_error_t * loop_furthest_error = parser_furthest_error_copy(ctx); // Save for loop iteration
-        epc_parse_result_t op_result = parse(op_parser, ctx, current_input_offset);
+        epc_parse_result_t op_result = parse(op_parser, ctx, current_token_offset);
         if (op_result.is_error)
         {
             epc_parser_result_cleanup(&op_result);
@@ -3753,9 +3752,9 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
             break;                                                    // No more operators, chain ends
         }
         epc_parser_error_free(loop_furthest_error); // Operator matched, clear previous furthest error
-        current_input_offset += op_result.data.success->token.count;
+        current_token_offset += op_result.data.success->token.count;
 
-        epc_parse_result_t item_result = parse(item_parser, ctx, current_input_offset);
+        epc_parse_result_t item_result = parse(item_parser, ctx, current_token_offset);
         if (item_result.is_error)
         {
             epc_parser_result_cleanup(&op_result);
@@ -3769,7 +3768,7 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
             epc_parser_error_free(original_furthest_error); // Cleanup in error path
             return item_result;                             // Item after operator failed, so chain fails
         }
-        current_input_offset += item_result.data.success->token.count;
+        current_token_offset += item_result.data.success->token.count;
 
         // Store pair
         if (pair_count == pair_capacity)
@@ -3993,17 +3992,17 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
 }
 
 static epc_parse_result_t
-psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-    epc_parse_result_t token_result = parse(self->data.predicate.parser, ctx, input_offset);
+    epc_parse_result_t token_result = parse(self->data.predicate.parser, ctx, token_offset);
 
     if (token_result.is_error)
     {
         parser_furthest_error_restore(ctx, &original_furthest_error);
         epc_parse_result_t result = epc_parser_error_result(
             ctx,
-            input_offset,
+            token_offset,
             "Failed to match the satisfy token parser",
             token_result.data.error->expected,
             token_result.data.error->found
@@ -4032,7 +4031,7 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
         }
 
         epc_parse_result_t result = epc_parser_error_result(
-            ctx, input_offset, "Predicate failed", parser_get_expected_str(self), error_message
+            ctx, token_offset, "Predicate failed", parser_get_expected_str(self), error_message
         );
         /*
          *  Result cleanup must be done after the error result is created in case the error_message refers to the
@@ -4048,7 +4047,7 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     if (node == NULL)
     {
         epc_parser_result_cleanup(&token_result);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     node->children = calloc(1, sizeof(*node->children));
@@ -4056,7 +4055,7 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     {
         epc_parser_result_cleanup(&token_result);
         epc_node_free(node);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     node->children[0] = token_result.data.success;
@@ -4107,7 +4106,7 @@ epc_satisfy(
 }
 
 static epc_parse_result_t
-pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     wrap_data_t const * wrap_data = &self->data.wrap;
     epc_parser_t * wrapped_parser = wrap_data->parser;
@@ -4119,7 +4118,7 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
         callbacks.on_entry(wrapped_parser, ctx, parser_data);
     }
     epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
-    epc_parse_result_t result = parse(wrapped_parser, ctx, input_offset);
+    epc_parse_result_t result = parse(wrapped_parser, ctx, token_offset);
 
     if (callbacks.on_exit != NULL && !callbacks.on_exit(result, ctx, parser_data))
     {
@@ -4137,7 +4136,7 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
             parser_furthest_error_restore(ctx, &original_furthest_error);
             epc_parser_result_cleanup(&result);
             return epc_parser_error_result(
-                ctx, input_offset, "on_exit callback indicated failure", parser_get_expected_str(self), found_str
+                ctx, token_offset, "on_exit callback indicated failure", parser_get_expected_str(self), found_str
             );
         }
     }
@@ -4155,7 +4154,7 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
     if (wrap_node == NULL)
     {
         epc_parser_result_cleanup(&result);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     // The child of the wrap_node is the success node from the wrapped parser.
@@ -4164,7 +4163,7 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
     {
         epc_parser_result_cleanup(&result);
         epc_node_free(wrap_node);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
     wrap_node->children[0] = result.data.success;
     wrap_node->children_count = 1;
@@ -4207,24 +4206,24 @@ epc_wrap(
 }
 
 static epc_parse_result_t
-pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_t * wrapped_parser = self->data.parser;
 
     /* 1. Look up in memo table */
-    epc_parse_result_t * cached_result = epc_memo_table_get(ctx, self, input_offset);
+    epc_parse_result_t * cached_result = epc_memo_table_get(ctx, self, token_offset);
     if (cached_result != NULL)
     {
         return epc_parse_result_copy(ctx, *cached_result);
     }
 
     /* 2. Not found, parse it */
-    epc_parse_result_t child_result = parse(wrapped_parser, ctx, input_offset);
+    epc_parse_result_t child_result = parse(wrapped_parser, ctx, token_offset);
 
     if (child_result.is_error)
     {
         // Cache and return the error result as is.
-        epc_memo_table_set(ctx, self, input_offset, child_result);
+        epc_memo_table_set(ctx, self, token_offset, child_result);
         return child_result;
     }
 
@@ -4233,7 +4232,7 @@ pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     if (memoize_node == NULL)
     {
         epc_parser_result_cleanup(&child_result);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
     // The child of the memoize_node is the success node from the wrapped parser.
@@ -4242,7 +4241,7 @@ pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     {
         epc_parser_result_cleanup(&child_result);
         epc_node_free(memoize_node);
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
     memoize_node->children[0] = child_result.data.success;
     memoize_node->children_count = 1;
@@ -4256,7 +4255,7 @@ pmemoize_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offs
     epc_parse_result_t parent_result = epc_parser_success_result(memoize_node);
 
     /* 3. Store the new parent result in the memo table */
-    epc_memo_table_set(ctx, self, input_offset, parent_result);
+    epc_memo_table_set(ctx, self, token_offset, parent_result);
 
     return parent_result;
 }
