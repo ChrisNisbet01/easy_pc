@@ -3,8 +3,6 @@
 #include <easy_pc/easy_pc.h>
 #include <stdint.h>
 
-typedef uint32_t epc_token_id_t;
-
 typedef struct
 {
     epc_token_id_t id;

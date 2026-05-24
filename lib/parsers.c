@@ -814,7 +814,7 @@ pspace_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token
         );
     }
 
-    char const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
     if (!isspace(input))
     {
@@ -865,7 +865,7 @@ palpha_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token
         return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", self->tag, "EOF");
     }
 
-    char const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
     if (!isalpha(input))
     {
@@ -915,7 +915,7 @@ palphanum_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t to
         return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", self->tag, "EOF");
     }
 
-    char const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
     if (!isalnum(input))
     {
@@ -1296,32 +1296,38 @@ epc_hex(epc_parser_list * list, char const * name)
 }
 
 static epc_parse_result_t
-poctal_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+poctal_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     if (input_result.is_eof)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
+            ctx, token_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
         );
     }
 
-    char const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
     // Must start with '0'
     if (input != '0')
     {
-        char found_str[2] = {input, '\0'};
-        return epc_parser_error_result(
-            ctx, input_offset, "Expected octal literal", parser_get_expected_str(self), found_str
+        if (isascii(input))
+        {
+            char found_str[2] = {input, '\0'};
+            return epc_parser_error_result(
+                ctx, token_offset, "Expected octal literal", parser_get_expected_str(self), found_str
+            );
+        }
+        return epc_parser_error_result_token_list(
+            ctx, token_offset, "Expected octal literal", parser_get_expected_str(self), &input_result.token, 1
         );
     }
 
     size_t current_len = 1;
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, token_offset + current_len);
         if (res.is_eof)
         {
             break;
@@ -1336,10 +1342,10 @@ poctal_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = current_len;
 
     return epc_parser_success_result(node);
@@ -1365,32 +1371,38 @@ epc_octal(epc_parser_list * list, char const * name)
 }
 
 static epc_parse_result_t
-pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     if (input_result.is_eof)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
+            ctx, token_offset, "Unexpected end of input", parser_get_expected_str(self), "EOF"
         );
     }
 
-    char const input = input_result.token.id;
+    epc_token_id_t const input = input_result.token.id;
 
     // First char must be alpha or underscore
     if (!isalpha(input) && input != '_')
     {
-        char found_str[2] = {input, '\0'};
-        return epc_parser_error_result(
-            ctx, input_offset, "Expected identifier", parser_get_expected_str(self), found_str
+        if (isascii(input))
+        {
+            char found_str[2] = {input, '\0'};
+            return epc_parser_error_result(
+                ctx, token_offset, "Expected identifier", parser_get_expected_str(self), found_str
+            );
+        }
+        return epc_parser_error_result_token_list(
+            ctx, token_offset, "Expected identifier", parser_get_expected_str(self), &input_result.token, 1
         );
     }
 
     size_t current_len = 1;
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + current_len);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, token_offset + current_len);
         if (res.is_eof)
         {
             break;
@@ -1405,10 +1417,10 @@ pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = current_len;
 
     return epc_parser_success_result(node);
@@ -1433,7 +1445,7 @@ epc_identifier(epc_parser_list * list, char const * name)
 }
 
 static epc_parse_result_t
-por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_error_t * original_furthest_error = NULL;
     parser_list_t * alternatives = self->data.parser_list;
@@ -1441,7 +1453,7 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_of
     if (alternatives == NULL || alternatives->count == 0)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "No alternatives provided to 'or' parser", epc_parser_get_name(self), "N/A"
+            ctx, token_offset, "No alternatives provided to 'or' parser", epc_parser_get_name(self), "N/A"
         );
     }
 
@@ -1452,7 +1464,7 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_of
         epc_parser_t * current_parser = alternatives->parsers[i];
         if (current_parser)
         {
-            epc_parse_result_t child_result = parse(current_parser, ctx, input_offset);
+            epc_parse_result_t child_result = parse(current_parser, ctx, token_offset);
             if (!child_result.is_error)
             {
                 // Return the child's success, but mark the CPT node with this 'or' parser
@@ -1463,7 +1475,7 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_of
                     epc_parser_error_free(original_furthest_error);
 
                     return epc_parser_error_result(
-                        ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                        ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
                     );
                 }
 
@@ -1478,7 +1490,7 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_of
                     epc_parser_error_free(original_furthest_error);
 
                     return epc_parser_error_result(
-                        ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
+                        ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A"
                     );
                 }
 
@@ -1546,13 +1558,27 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_of
         expected_str = epc_parser_get_name(self);
     }
 
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
-    char const input = input_result.token.id;
-    char found_buffer[FOUND_BUFFER_SIZE];
-    snprintf(found_buffer, sizeof(found_buffer), "%c", input);
+    /* No alternatives matched. */
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
-    epc_parse_result_t result
-        = epc_parser_error_result(ctx, input_offset, "No alternative matched", expected_str, found_buffer);
+    epc_token_id_t const input = input_result.token.id;
+    epc_parse_result_t result;
+    static char const * no_alternative_matched = "No alternative matched";
+
+    if (isascii(input))
+    {
+        char found_buffer[FOUND_BUFFER_SIZE];
+        snprintf(found_buffer, sizeof(found_buffer), "%c", input);
+
+        result = epc_parser_error_result(ctx, token_offset, no_alternative_matched, expected_str, found_buffer);
+    }
+    else
+    {
+        result = epc_parser_error_result_token_list(
+            ctx, token_offset, no_alternative_matched, expected_str, &input_result.token, 1
+        );
+    }
+
     free(aggregated_expected_str);
 
     return result;
@@ -1649,7 +1675,7 @@ epc_cpp_comment(epc_parser_list * list, char const * name)
 // --- C-style Comment Parser Implementation ---
 // Matches "/* ... */".
 static epc_parse_result_t
-pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     epc_parser_token_t found_tokens[3] = {0};
     match_status_t status;
@@ -1660,16 +1686,16 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     for (token_count = 0; token_count < 2; token_count++)
     {
         status = try_match_token(
-            ctx, input_offset + token_count, c_comment_prefix[token_count], &found_tokens[token_count]
+            ctx, token_offset + token_count, c_comment_prefix[token_count], &found_tokens[token_count]
         );
         if (status == MATCH_EOF)
         {
-            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "/*", "EOF");
+            return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", "/*", "EOF");
         }
         if (status == MATCH_MISMATCH)
         {
             return epc_parser_error_result_token_list(
-                ctx, input_offset, "Expected '/*'", "/*", found_tokens, token_count + 1
+                ctx, token_offset, "Expected '/*'", "/*", found_tokens, token_count + 1
             );
         }
     }
@@ -1679,13 +1705,13 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     // 2. Match content until "*/"
     while (1)
     {
-        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, input_offset + token_count);
+        parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, token_offset + token_count);
         if (res.is_eof)
         {
-            return epc_parser_error_result(ctx, input_offset, "Unterminated C-style comment", "*/", "EOF");
+            return epc_parser_error_result(ctx, token_offset, "Unterminated C-style comment", "*/", "EOF");
         }
 
-        char const c = res.token.id;
+        epc_token_id_t const c = res.token.id;
         token_count++;
 
         if (prev_was_star && c == '/')
@@ -1699,10 +1725,10 @@ pc_comment_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t i
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = token_count;
 
     return epc_parser_success_result(node);
@@ -1897,23 +1923,23 @@ epc_and(epc_parser_list * list, char const * name, int count, ...)
 }
 
 static epc_parse_result_t
-pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     if (input_result.is_eof)
     {
-        return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", "skip", "EOF");
+        return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", "skip", "EOF");
     }
     epc_parser_t * parser_to_skip = self->data.parser;
     if (parser_to_skip == NULL)
     {
         return epc_parser_error_result(
-            ctx, input_offset, "p_skip received NULL child parser", epc_parser_get_name(self), "NULL"
+            ctx, token_offset, "p_skip received NULL child parser", epc_parser_get_name(self), "NULL"
         );
     }
 
-    size_t current_input_offset = input_offset;
+    size_t current_input_offset = token_offset;
     size_t total_skipped_len = 0;
 
     while (1)
@@ -1936,7 +1962,7 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
             epc_parser_error_free(original_furthest_error);
             epc_parser_result_cleanup(&child_result);
             return epc_parser_error_result(
-                ctx, input_offset, infinite_recursion_detected_msg, epc_parser_get_name(self), "N/A"
+                ctx, token_offset, infinite_recursion_detected_msg, epc_parser_get_name(self), "N/A"
             );
         }
         total_skipped_len += child_result.data.success->token.count;
@@ -1948,10 +1974,10 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_
     epc_cpt_node_t * dummy_node = epc_node_alloc(ctx, self, self->tag);
     if (dummy_node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
 
-    dummy_node->token.offset = input_offset;
+    dummy_node->token.offset = token_offset;
     dummy_node->token.count = total_skipped_len;
 
     return epc_parser_success_result(dummy_node);
@@ -2085,10 +2111,10 @@ epc_plus(epc_parser_list * list, char const * name, epc_parser_t * parser_to_rep
 }
 
 static epc_parse_result_t
-pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t input_offset)
+pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
     char_range_data_t * range = &self->data.range;
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, input_offset);
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     {
         char expected_str[32]; // e.g., "character in range [a-z]"
@@ -2096,17 +2122,23 @@ pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
 
         if (input_result.is_eof)
         {
-            return epc_parser_error_result(ctx, input_offset, "Unexpected end of input", expected_str, "EOF");
+            return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", expected_str, "EOF");
         }
 
-        char const input = input_result.token.id;
+        epc_token_id_t const input = input_result.token.id;
 
         if (input < range->start || input > range->end)
         {
             /* Not in range. */
-            char found_str[2] = {input, '\0'};
+            if (isascii(input))
+            {
+                char found_str[2] = {input, '\0'};
 
-            return epc_parser_error_result(ctx, input_offset, "Unexpected character", expected_str, found_str);
+                return epc_parser_error_result(ctx, token_offset, "Unexpected character", expected_str, found_str);
+            }
+            return epc_parser_error_result_token_list(
+                ctx, token_offset, "Unexpected token", expected_str, &input_result.token, 1
+            );
         }
     }
 
@@ -2114,16 +2146,16 @@ pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
 
     if (node == NULL)
     {
-        return epc_parser_error_result(ctx, input_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
     }
-    node->token.offset = input_offset;
+    node->token.offset = token_offset;
     node->token.count = 1;
 
     return epc_parser_success_result(node);
 }
 
 static epc_parser_t *
-_epc_char_range(char const * name, char char_start, char char_end)
+_epc_char_range(char const * name, epc_token_id_t char_start, epc_token_id_t char_end)
 {
     epc_parser_t * p = epc_parser_allocate(name, "char_range", pchar_range_parse_fn);
     if (p == NULL)
@@ -2138,7 +2170,7 @@ _epc_char_range(char const * name, char char_start, char char_end)
 }
 
 EASY_PC_API epc_parser_t *
-epc_char_range(epc_parser_list * list, char const * name, char char_start, char char_end)
+epc_char_range(epc_parser_list * list, char const * name, epc_token_id_t char_start, epc_token_id_t char_end)
 {
     return epc_parser_list_add(list, _epc_char_range(name, char_start, char_end));
 }
