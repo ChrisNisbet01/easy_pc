@@ -33,10 +33,11 @@ TEST_GROUP(CombinatorParsersNew)
     {
         char const * content = epc_cpt_node_get_content(node);
 
+        fprintf(stderr, "check: %s\n", expected_tag);
         CHECK_TRUE(node != NULL);
         STRCMP_EQUAL(expected_tag, node->tag);
+        LONGS_EQUAL(expected_len, epc_cpt_node_get_content_len(node));
         STRNCMP_EQUAL(expected_content, content, expected_len);
-        LONGS_EQUAL(expected_len, node->token.count);
         LONGS_EQUAL(expected_children_count, node->children_count);
     }
 
@@ -725,4 +726,32 @@ TEST(CombinatorParsersNew, ChainR1_FailsNullChildParser)
     epc_parser_t * p_chain = epc_chainr1(list, NULL, p_num, NULL);
     session = parse(p_chain, "1^2");
     check_failure("epc_chainr1 received NULL child parser(s)");
+}
+
+TEST(CombinatorParsersNew, StringLiteralRuleParsesEmptyString)
+{
+    // Rule: StringChar
+    epc_parser_t * Stringchar = epc_or(
+        list,
+        "Stringchar",
+        2,
+        epc_and(list, NULL, 2, epc_string(list, NULL, "\\"), epc_any(list, "any")),
+        epc_none_of(list, NULL, "\"\\\n\r")
+    );
+
+    epc_parser_t * Stringliteralinner = epc_many(list, "Stringliteralinner", Stringchar);
+    epc_parser_t * Stringliteralpart
+        = epc_and(list, NULL, 3, epc_char(list, NULL, '"'), Stringliteralinner, epc_char(list, NULL, '"'));
+    epc_parser_t * Stringliteral = epc_plus(list, "Stringliteral", Stringliteralpart);
+
+    session = parse(Stringliteral, "\"\"");
+
+    CHECK_FALSE(session.result.is_error);
+
+    epc_cpt_node_t * root_node = session.result.data.success;
+    check_cpt_node(root_node, "plus", "\"\"", 2, 1);
+    check_cpt_node(root_node->children[0], "and", "\"\"", 2, 3);
+    check_cpt_node(root_node->children[0]->children[0], "char", "\"", 1, 0);
+    check_cpt_node(root_node->children[0]->children[1], "many", "", 0, 0);
+    check_cpt_node(root_node->children[0]->children[2], "char", "\"", 1, 0);
 }
