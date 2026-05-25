@@ -2248,7 +2248,7 @@ pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
 
         epc_token_id_t const input = input_result.token.id;
 
-        if (!isascii(input) || strchr(chars_to_avoid, input) != NULL)
+        if (strchr(chars_to_avoid, input) != NULL)
         {
             if (isascii(input))
             {
