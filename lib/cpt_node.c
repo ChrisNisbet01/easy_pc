@@ -158,6 +158,7 @@ epc_cpt_node_get_input_semantic_view(epc_cpt_node_t const * node)
     }
 
     size_t first_token_offset;
+
     // Ensure start offset does not go beyond the actual content.
     // If it does, effectively, there is no semantic content.
     if (node->semantic_start_offset >= node->token.count)
@@ -169,6 +170,32 @@ epc_cpt_node_get_input_semantic_view(epc_cpt_node_t const * node)
         first_token_offset = node->token.offset + node->semantic_start_offset;
     }
 
+    size_t last_token_offset;
+
+    if (node->semantic_end_offset >= node->token.count)
+    {
+        last_token_offset = first_token_offset;
+    }
+    else
+    {
+        last_token_offset = node->token.offset + node->token.count - node->semantic_end_offset - 1;
+    }
+
+    size_t view_len = 0;
+    if (node->token.count > 0)
+    {
+        for (size_t i = first_token_offset; i <= last_token_offset; i++)
+        {
+            epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, i);
+
+            if (token == NULL) /* Shouldn't happen. */
+            {
+                continue;
+            }
+            view_len += token->view.len;
+        }
+    }
+
     epc_parser_token_t const * first_token = parse_ctx_get_token_at_offset(node->ctx, first_token_offset);
 
     if (first_token == NULL)
@@ -177,32 +204,8 @@ epc_cpt_node_get_input_semantic_view(epc_cpt_node_t const * node)
         return (epc_parser_input_view_t){0};
     }
 
-    size_t last_token_offset;
-    if (node->semantic_end_offset >= node->token.count)
-    {
-        last_token_offset = node->token.offset;
-    }
-    else
-    {
-        last_token_offset = node->token.offset + node->token.count - node->semantic_end_offset - 1;
-    }
-
-    if (last_token_offset <= first_token_offset)
-    {
-        return first_token->view;
-    }
-
-    epc_parser_token_t const * last_token = parse_ctx_get_token_at_offset(node->ctx, last_token_offset);
-
-    if (last_token == NULL)
-    {
-        /* Shouldn't happen unless there is some kind of data/logic error. */
-        return (epc_parser_input_view_t){0};
-    }
-
     epc_parser_input_view_t view = first_token->view;
-
-    view.len = last_token->view.offset - first_token->view.offset + last_token->view.len;
+    view.len = view_len;
 
     return view;
 }
@@ -227,29 +230,31 @@ epc_cpt_node_get_input_view(epc_cpt_node_t const * node)
         return (epc_parser_input_view_t){0};
     }
 
+    size_t view_len = 0;
+    if (node->token.count > 0)
+    {
+        for (size_t i = node->token.offset; i <= node->token.offset + node->token.count - 1; i++)
+        {
+            epc_parser_token_t const * token = parse_ctx_get_token_at_offset(node->ctx, i);
+
+            if (token == NULL) /* Shouldn't happen. */
+            {
+                continue;
+            }
+            view_len += token->view.len;
+        }
+    }
+
     epc_parser_token_t const * first_token = parse_ctx_get_token_at_offset(node->ctx, node->token.offset);
 
     if (first_token == NULL)
     {
-        return (epc_parser_input_view_t){0};
-    }
-
-    if (node->token.count < 2)
-    {
-        return first_token->view;
-    }
-
-    epc_parser_token_t const * last_token
-        = parse_ctx_get_token_at_offset(node->ctx, node->token.offset + node->token.count - 1);
-
-    if (last_token == NULL)
-    {
+        /* Shouldn't happen unless there is some kind of data/logic error. */
         return (epc_parser_input_view_t){0};
     }
 
     epc_parser_input_view_t view = first_token->view;
-
-    view.len = last_token->view.offset - first_token->view.offset + last_token->view.len;
+    view.len = view_len;
 
     return view;
 }
