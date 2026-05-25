@@ -310,7 +310,7 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
                 ctx->depth * 2,
                 "",
                 epc_parser_get_name(self),
-                parser_get_expected_str(self),
+                self->tag,
                 25,
                 input,
                 token_offset
@@ -338,15 +338,23 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
     }
     else
     {
-        fprintf(
-            stderr,
-            "%*smatched: %s `%.*s`\n",
-            ctx->depth * 2,
-            "",
-            epc_parser_get_name(self),
-            (int)result.data.success->len,
-            input
-        );
+        epc_parser_token_t const * token = parse_ctx_get_token_at_offset(ctx, token_offset);
+
+        if (token != NULL)
+        {
+            size_t content_len = epc_cpt_node_get_content_len(result.data.success);
+
+            fprintf(
+                stderr,
+                "%*smatched: %s `%.*s` len: %zu\n",
+                ctx->depth * 2,
+                "",
+                epc_parser_get_name(self),
+                (int)content_len,
+                epc_cpt_get_content_at_offset(ctx, token->view.offset),
+                content_len
+            );
+        }
     }
 #endif
 
