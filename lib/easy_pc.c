@@ -1277,6 +1277,69 @@ epc_parse_fd_reactive(
     return epc_parse_input(top_parser, input, user_ctx);
 }
 
+EASY_PC_API bool
+epc_parse_session_reparse(epc_parse_session_t * session, epc_parser_t * new_parser, epc_token_list_t * tokens)
+{
+    if (session == NULL || new_parser == NULL || tokens == NULL)
+    {
+        return false;
+    }
+
+    epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+    if (ctx == NULL)
+    {
+        return false;
+    }
+
+    size_t const token_count = epc_token_list_count(tokens);
+
+    if (token_count > ctx->input_tokens.count)
+    {
+        /*
+         * Not enough space in the existing token buffer. The buffer was sized for
+         * one-token-per-character of the original input, so grouping tokens should
+         * always produce fewer tokens than the input length.
+         */
+        return false;
+    }
+
+    /* Clean up the previous parse result. */
+    epc_parser_result_cleanup(&session->result);
+
+    ctx->input_tokens.count = token_count;
+
+    /* Copy user tokens into the context's mmap token buffer. */
+    epc_parser_token_t const * src = epc_token_list_data(tokens);
+    if (src == NULL && token_count > 0)
+    {
+        return false;
+    }
+    memcpy(ctx->input_tokens.start, src, token_count * sizeof(epc_parser_token_t));
+
+    /* Legacy sentinel: the old token system adds a NUL token at the end. */
+    ctx->input_tokens.start[token_count] = (epc_parser_token_t){
+        .id = '\0',
+        .view = {
+            .offset = ctx->input_len,
+            .len = 0,
+            .line_number = 0,
+            .column_number = 0,
+        },
+    };
+
+    /* Reset parsing state. */
+    epc_memo_table_reset(ctx);
+    epc_parser_error_free(ctx->furthest_error);
+    ctx->furthest_error = NULL;
+
+    /* Run the new parser. */
+    session->result = new_parser->parse_fn(new_parser, ctx, 0);
+
+    choose_best_error(session);
+
+    return !session->result.is_error;
+}
+
 EASY_PC_API void
 epc_parse_session_destroy(epc_parse_session_t * session)
 {

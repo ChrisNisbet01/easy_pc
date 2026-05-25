@@ -408,3 +408,26 @@ add_test(
     NAME MemoizeTest
     COMMAND MemoizeTest
 )
+
+add_executable(TokenListTest
+    AllTests.cpp
+    TokenListTest.cpp
+)
+
+add_dependencies(all_unit_tests TokenListTest)
+
+target_include_directories(TokenListTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+)
+
+target_link_libraries(TokenListTest PRIVATE
+    easy_pc_shared
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME TokenListTest
+    COMMAND TokenListTest
+)

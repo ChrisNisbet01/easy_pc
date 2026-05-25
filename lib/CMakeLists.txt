@@ -8,6 +8,7 @@ set(EASY_PC_LIB_SOURCES
   child_list.c
   result.c
   memo.c
+  token_list.c
 )
 
 # Shared Library

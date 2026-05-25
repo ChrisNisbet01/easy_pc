@@ -1,5 +1,7 @@
 #pragma once
 
+#include "token.h"
+
 #include <easy_pc/easy_pc.h>
 
 /**
@@ -27,3 +29,5 @@ EASY_PC_HIDDEN epc_parser_t * epc_parser_list_add(epc_parser_list * list, epc_pa
  * @return A `const char*` pointer to the content.
  */
 EASY_PC_API const char * epc_cpt_get_content_at_offset(epc_parser_ctx_t const * ctx, size_t offset);
+
+EASY_PC_HIDDEN epc_parser_token_t const * epc_token_list_data(epc_token_list_t const * list);

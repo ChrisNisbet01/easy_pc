@@ -52,6 +52,8 @@ typedef enum
 #define EPC_TOKEN_ID_FIRST_USER 300
 typedef uint32_t epc_token_id_t;
 
+typedef struct epc_token_list_t epc_token_list_t;
+
 // Forward declarations of structs
 typedef struct epc_parser_t epc_parser_t;
 typedef struct epc_cpt_node_t epc_cpt_node_t;
@@ -1187,6 +1189,57 @@ EASY_PC_API char const * epc_get_version(void);
  */
 EASY_PC_API
 char * epc_get_line_at_offset(epc_parser_ctx_t * ctx, size_t const offset);
+
+// --- Token List API ---
+
+/**
+ * @brief Creates a new mmap-backed token list.
+ * @param initial_capacity The initial number of tokens to reserve space for.
+ * @return A pointer to the new epc_token_list_t, or NULL on failure.
+ */
+EASY_PC_API epc_token_list_t * epc_token_list_create(size_t initial_capacity);
+
+/**
+ * @brief Frees a token list created with epc_token_list_create().
+ * @param list The token list to free, or NULL.
+ */
+EASY_PC_API void epc_token_list_free(epc_token_list_t * list);
+
+/**
+ * @brief Adds a token to the list.
+ * @param list The token list to add to.
+ * @param id The token ID (e.g., character code, or custom ID >= EPC_TOKEN_ID_FIRST_USER).
+ * @param view The view describing the token's offset, length, line, and column in the input.
+ * @return true on success, false on failure (allocation error).
+ */
+EASY_PC_API bool epc_token_list_add(epc_token_list_t * list, epc_token_id_t id, epc_parser_input_view_t view);
+
+/**
+ * @brief Returns the number of tokens currently in the list.
+ * @param list The token list.
+ * @return The number of tokens.
+ */
+EASY_PC_API size_t epc_token_list_count(epc_token_list_t const * list);
+
+// --- Reparse API ---
+
+/**
+ * @brief Re-parses the input using a new grammar and token list, reusing the existing parse session.
+ *
+ * This function replaces the token list in the session's internal context with the
+ * user-supplied token list and re-runs the parser. The input buffer and newline
+ * position data from the original parse are preserved (no copying, no re-scanning).
+ * The previous parse result (e.g., the Stage 1 CPT) is cleaned up automatically.
+ *
+ * @param session The existing parse session to reuse. Must have been created by a prior
+ *                call to epc_parse_str() or similar.
+ * @param new_parser The parser to use for the second stage.
+ * @param tokens The token list to use for the second stage. Tokens are copied into the
+ *               session's internal buffer.
+ * @return true if the re-parse succeeded, false otherwise. Check session->result for details.
+ */
+EASY_PC_API bool
+epc_parse_session_reparse(epc_parse_session_t * session, epc_parser_t * new_parser, epc_token_list_t * tokens);
 
 #ifdef __cplusplus
 }
