@@ -47,6 +47,7 @@ typedef enum epc_ast_user_defined_action_gdl
     GDL_AST_ACTION_CREATE_SATISFY_CALL,
     GDL_AST_ACTION_CREATE_WRAP_CALL,
     GDL_AST_ACTION_CREATE_MEMOIZE_CALL,
+    GDL_AST_ACTION_CREATE_TOKEN_LITERAL,
     GDL_AST_ACTION_MAX,
 } epc_ast_user_defined_action_gdl;
 
@@ -93,6 +94,7 @@ typedef enum
     GDL_AST_NODE_TYPE_ARGUMENT_LIST,
     GDL_AST_NODE_TYPE_SATISFY_CALL,
     GDL_AST_NODE_TYPE_WRAP_CALL,
+    GDL_AST_NODE_TYPE_TOKEN_LITERAL,
 } gdl_ast_node_type_t;
 
 // Forward declaration for gdl_ast_node_t
@@ -247,6 +249,11 @@ typedef struct
 
 typedef struct
 {
+    char const * value; /* The raw text between '<' and '>' */
+} gdl_ast_token_literal_t;
+
+typedef struct
+{
     gdl_ast_node_t * expr;
     char const * message;
     char const * predicate_name;
@@ -272,6 +279,7 @@ struct gdl_ast_node_t
         gdl_ast_string_literal_t string_literal;
         gdl_ast_char_literal_t char_literal;
         gdl_ast_raw_char_literal_t raw_char_literal;
+        gdl_ast_token_literal_t token_literal;
         gdl_ast_number_literal_t number_literal;
         gdl_ast_char_range_t char_range;
         gdl_ast_repetition_operator_t repetition_op;

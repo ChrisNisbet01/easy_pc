@@ -226,6 +226,10 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
         free(node->data.char_literal.value);
         break;
 
+    case GDL_AST_NODE_TYPE_TOKEN_LITERAL:
+        free((char *)node->data.token_literal.value);
+        break;
+
     case GDL_AST_NODE_TYPE_SATISFY_CALL:
         gdl_ast_node_free(node->data.satisfy_call.expr, user_data);
         free((char *)node->data.satisfy_call.message);
@@ -645,6 +649,44 @@ handle_create_char_literal(
     {
         /* Exclude the quotes that wrap the (possibly escaped) char. */
         ast_node->data.char_literal.value = strndup(content + 1, len - 2);
+        epc_ast_push(ctx, ast_node);
+    }
+}
+
+static void
+handle_create_token_literal(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    (void)node;
+    (void)children;
+    (void)user_data;
+
+    if (count > 0)
+    {
+        epc_ast_builder_set_error(ctx, "Create token literal expects 0 child, got %d", count);
+        for (int i = 0; i < count; ++i)
+        {
+            gdl_ast_node_free(children[i], user_data);
+        }
+        return;
+    }
+
+    size_t len = epc_cpt_node_get_semantic_len(node);
+    char const * content = epc_cpt_node_get_semantic_content(node);
+
+    /* Content should be '<' (value) '>'. Extract the value between the angle brackets. */
+    if (len < 3 || content[0] != '<' || content[len - 1] != '>')
+    {
+        epc_ast_builder_set_error(ctx, "Expected token literal <...>, but didn't get one (%.*s)", (int)len, content);
+        return;
+    }
+
+    gdl_ast_node_t * ast_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_TOKEN_LITERAL);
+    if (ast_node != NULL)
+    {
+        /* Exclude the angle brackets. */
+        ast_node->data.token_literal.value = strndup(content + 1, len - 2);
         epc_ast_push(ctx, ast_node);
     }
 }
@@ -2007,4 +2049,5 @@ gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_FAIL_CALL, handle_create_fail_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_SATISFY_CALL, handle_create_satisfy_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_WRAP_CALL, handle_create_wrap_call);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_TOKEN_LITERAL, handle_create_token_literal);
 }

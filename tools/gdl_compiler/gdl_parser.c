@@ -275,6 +275,15 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_not_keyword = epc_not(l, "NotKeyword", keyword);
     epc_parser_t * gdl_actual_identifier = epc_and(l, "ActualIdentifier", 2, gdl_not_keyword, gdl_identifier);
 
+    // Define TokenLiteral: '<' (any char except '>')+ '>'
+    epc_parser_t * raw_gdl_lt = epc_char(l, "RawLT", '<');
+    epc_parser_t * raw_gdl_gt = epc_char(l, "RawGT", '>');
+    epc_parser_t * gdl_token_content
+        = epc_plus(l, "TokenContent", epc_none_of(l, "TokenContentChar", ">"));
+    epc_parser_t * gdl_token_literal
+        = epc_and(l, "TokenLiteral", 3, raw_gdl_lt, gdl_token_content, raw_gdl_gt);
+    epc_parser_set_ast_action(gdl_token_literal, GDL_AST_ACTION_CREATE_TOKEN_LITERAL);
+
     // Define CharRange: '[' char_literal '-' char_literal ']'
     epc_parser_t * raw_gdl_lbrack = epc_char(l, "RawLBracket", '[');
     epc_parser_t * raw_gdl_rbrack = epc_char(l, "RawRBracket", ']');
@@ -328,9 +337,10 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_terminal = epc_or(
         l,
         "Terminal",
-        7,
+        8,
         gdl_string_literal,
         gdl_char_literal,
+        gdl_token_literal,
         terminal_keyword,
         fail_call,
         gdl_actual_identifier,

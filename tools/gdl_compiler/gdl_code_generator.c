@@ -487,6 +487,7 @@ traverse_expression_for_references(
 
     case GDL_AST_NODE_TYPE_STRING_LITERAL:
     case GDL_AST_NODE_TYPE_CHAR_LITERAL:
+    case GDL_AST_NODE_TYPE_TOKEN_LITERAL:
     case GDL_AST_NODE_TYPE_NUMBER_LITERAL:
     case GDL_AST_NODE_TYPE_CHAR_RANGE:
     case GDL_AST_NODE_TYPE_REPETITION_OPERATOR:
@@ -922,9 +923,16 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_CHAR_LITERAL:
     {
-        char * ch = expression_node->data.char_literal.value; /* Acutally a string, to deal with escaping. */
+        char * ch = expression_node->data.char_literal.value; /* Actually a string, to deal with escaping. */
 
         fprintf(source_file, "epc_char(list, %s%s%s, '%s')", q, expr_name, q, ch);
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_TOKEN_LITERAL:
+    {
+        char const * token_val = expression_node->data.token_literal.value;
+        fprintf(source_file, "epc_token(list, %s%s%s, %s)", q, expr_name, q, token_val);
         break;
     }
 

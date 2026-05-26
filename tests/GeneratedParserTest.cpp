@@ -102,6 +102,20 @@ TEST(GeneratedParserTest, GeneratesFilesWithFwdRefSuccessfully)
     CHECK_TRUE(gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir, NULL));
 }
 
+TEST(GeneratedParserTest, GeneratesFilesWithTokenLiteralSuccessfully)
+{
+    char const * output_dir = ".";
+    char const * base_name = "token_literal_test";
+    char const * gdl_input = "MyToken = <MY_CUSTOM_TOKEN>;\n"
+                             "AnotherToken = <ANOTHER_TOKEN_42>;\n"
+                             "EOI = eoi;\n"
+                             "Program = MyToken AnotherToken EOI @EPC_AST_SEMANTIC_ACTION_PROGRAM_RULE;\n";
+
+    generate_ast(gdl_input);
+
+    CHECK_TRUE(gdl_generate_c_code((gdl_ast_node_t *)ast_build_result.ast_root, base_name, output_dir, NULL));
+}
+
 TEST(GeneratedParserTest, GeneratesFilesWithLongDoubleSuccessfully)
 {
     // Output directory for generated files in the test environment
