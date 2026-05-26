@@ -1,0 +1,135 @@
+// Python Tokenizer Grammar - Stage 1
+// Defines the character-level structure of Python source code.
+// The grammar produces a CPT where each matched token is identified
+// by its rule name. The C code walks the CPT to build a token list
+// with indent/dedent tracking for stage 2 parsing.
+
+// --- Line structure ---
+Newline = '\n' @SEM_ACTION_NEWLINE;
+CR = '\r';
+
+// --- Whitespace ---
+Space = ' ' | '\t' @SEM_ACTION_SPACE;
+
+// --- Comments ---
+Comment = '#' noneof("\n\r")*;
+
+// --- Line continuation ---
+LineContinuation = '\\' Newline;
+
+// --- Identifiers and Keywords ---
+Name = identifier @SEM_ACTION_IDENTIFIER;
+
+
+// --- Numeric literals ---
+DecDigit = digit;
+HexPrefix = "0x" | "0X";
+OctPrefix = "0o" | "0O";
+BinPrefix = "0b" | "0B";
+OctDigit = oneof("01234567");
+BinDigit = oneof("01");
+IntegerSuffix = oneof("jJ");
+ExponentMarker = oneof("eE");
+Sign = oneof("+-");
+DecimalPart = DecDigit+;
+HexInteger = HexPrefix hex_digit+;
+OctInteger = OctPrefix OctDigit+;
+BinInteger = BinPrefix BinDigit+;
+Fraction = '.' DecimalPart;
+Exponent = ExponentMarker Sign? DecimalPart;
+PointFloat = DecimalPart? Fraction Exponent? | DecimalPart Fraction? Exponent;
+ImagNumber = (PointFloat | DecimalPart) IntegerSuffix;
+DecInteger = DecimalPart;
+Number = ImagNumber | PointFloat | HexInteger | OctInteger | BinInteger | DecInteger @SEM_ACTION_NUMBER;
+
+// --- String literals (no prefix handling - quotes only) ---
+StringEscape = '\\' any;
+ShortStringChar = noneof("'\"\\\n\r") | StringEscape;
+ShortStringSQ = '\'' ShortStringChar* '\'';
+ShortStringDQ = '"' ShortStringChar* '"';
+
+// Triple-quoted strings: consume anything that isn't the closing delimiter
+NotTripleQuoteEndSQ = not(lookahead("'''")) any;
+TripleSQ = "'''" NotTripleQuoteEndSQ* "'''";
+
+NotTripleQuoteEndDQ = not(lookahead("\"\"\"")) any;
+TripleDQ = "\"\"\"" NotTripleQuoteEndDQ* "\"\"\"";
+
+String = TripleDQ | TripleSQ | ShortStringDQ | ShortStringSQ @SEM_ACTION_STRING_LITERAL;
+
+// --- Operators: multi-char first (greedy matching), then single-char ---
+DoubleStar = "**" @SEM_ACTION_GENERIC_TOKEN;
+DoubleSlash = "//" @SEM_ACTION_GENERIC_TOKEN;
+LeftShift = "<<" @SEM_ACTION_GENERIC_TOKEN;
+RightShift = ">>" @SEM_ACTION_GENERIC_TOKEN;
+DoubleEqual = "==" @SEM_ACTION_GENERIC_TOKEN;
+NotEqual = "!=" @SEM_ACTION_GENERIC_TOKEN;
+LessEqual = "<=" @SEM_ACTION_GENERIC_TOKEN;
+GreaterEqual = ">=" @SEM_ACTION_GENERIC_TOKEN;
+Arrow = "->" @SEM_ACTION_GENERIC_TOKEN;
+PlusAssign = "+=" @SEM_ACTION_GENERIC_TOKEN;
+MinusAssign = "-=" @SEM_ACTION_GENERIC_TOKEN;
+StarAssign = "*=" @SEM_ACTION_GENERIC_TOKEN;
+SlashAssign = "/=" @SEM_ACTION_GENERIC_TOKEN;
+PercentAssign = "%=" @SEM_ACTION_GENERIC_TOKEN;
+AmpersandAssign = "&=" @SEM_ACTION_GENERIC_TOKEN;
+PipeAssign = "|=" @SEM_ACTION_GENERIC_TOKEN;
+CaretAssign = "^=" @SEM_ACTION_GENERIC_TOKEN;
+LeftShiftAssign = "<<=" @SEM_ACTION_GENERIC_TOKEN;
+RightShiftAssign = ">>=" @SEM_ACTION_GENERIC_TOKEN;
+StarStarAssign = "**=" @SEM_ACTION_GENERIC_TOKEN;
+SlashSlashAssign = "//=" @SEM_ACTION_GENERIC_TOKEN;
+Walrus = ":=" @SEM_ACTION_GENERIC_TOKEN;
+
+Plus = '+' @SEM_ACTION_GENERIC_TOKEN;
+Minus = '-' @SEM_ACTION_GENERIC_TOKEN;
+Star = '*' @SEM_ACTION_GENERIC_TOKEN;
+Slash = '/' @SEM_ACTION_GENERIC_TOKEN;
+Percent = '%' @SEM_ACTION_GENERIC_TOKEN;
+Ampersand = '&' @SEM_ACTION_GENERIC_TOKEN;
+Pipe = '|' @SEM_ACTION_GENERIC_TOKEN;
+Caret = '^' @SEM_ACTION_GENERIC_TOKEN;
+Tilde = '~' @SEM_ACTION_GENERIC_TOKEN;
+Less = '<' @SEM_ACTION_GENERIC_TOKEN;
+Greater = '>' @SEM_ACTION_GENERIC_TOKEN;
+Equal = '=' @SEM_ACTION_GENERIC_TOKEN;
+Bang = '!' @SEM_ACTION_GENERIC_TOKEN;
+At = '@' @SEM_ACTION_GENERIC_TOKEN;
+
+// --- Delimiters ---
+LParen = '(' @SEM_ACTION_GENERIC_TOKEN;
+RParen = ')' @SEM_ACTION_GENERIC_TOKEN;
+LBrace = '{' @SEM_ACTION_GENERIC_TOKEN;
+RBrace = '}' @SEM_ACTION_GENERIC_TOKEN;
+LBracket = '[' @SEM_ACTION_GENERIC_TOKEN;
+RBracket = ']' @SEM_ACTION_GENERIC_TOKEN;
+Comma = ',' @SEM_ACTION_GENERIC_TOKEN;
+Colon = ':' @SEM_ACTION_GENERIC_TOKEN;
+Semicolon = ';' @SEM_ACTION_GENERIC_TOKEN;
+Dot = '.' @SEM_ACTION_GENERIC_TOKEN;
+Ellipsis = "..."  @SEM_ACTION_GENERIC_TOKEN;
+Backslash = '\\' @SEM_ACTION_GENERIC_TOKEN;
+
+OpToken = DoubleStar | DoubleSlash | LeftShift | RightShift
+        | DoubleEqual | NotEqual | LessEqual | GreaterEqual | Arrow
+        | PlusAssign | MinusAssign | StarAssign | SlashAssign
+        | PercentAssign | AmpersandAssign | PipeAssign | CaretAssign
+        | LeftShiftAssign | RightShiftAssign
+        | StarStarAssign | SlashSlashAssign
+        | Walrus | Ellipsis
+        | Plus | Minus | Star | Slash | Percent
+        | Ampersand | Pipe | Caret | Tilde
+        | Less | Greater | Equal | Bang | At;
+
+DelimToken = Comma | Colon | Semicolon | Dot
+           | LParen | RParen | LBrace | RBrace | LBracket | RBracket
+           | Backslash;
+
+AtomicToken = Comment | Newline | CR | Space
+            | String | Number | Name
+            | LineContinuation
+            | OpToken | DelimToken;
+
+Token = AtomicToken;
+
+Program = Token* eoi;
