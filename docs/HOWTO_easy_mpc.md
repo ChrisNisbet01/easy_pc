@@ -14,6 +14,7 @@ This guide uses examples inspired by the `simple_ast_test.cpp` provided with the
 3.  [Building Blocks: Terminal Parsers](#3-building-blocks-terminal-parsers)
     *   [`epc_char`](#epc_char)
     *   [`epc_string`](#epc_string)
+    *   [`epc_token`](#epc_token)
     *   [`epc_digit`, `epc_alpha`, `epc_alphanum`, `epc_int`, `epc_double`, `epc_space`](#epc_digit-epc_alpha-epc_alphanum-epc_int-epc_double-epc_space)
 4.  [Combining Parsers: Combinators](#4-combining-parsers-combinators)
     *   [`epc_and`](#epc_and)
@@ -33,6 +34,7 @@ This guide uses examples inspired by the `simple_ast_test.cpp` provided with the
 9.  [Debugging with CPT Printouts (`epc_cpt_to_string`)](#9-debugging-with-cpt-printouts-epc_cpt_to_string)
 10. [Full Example: Simple Arithmetic Parser](#10-full-example-simple-arithmetic-parser)
 11. [Streaming Input](#11-streaming-input)
+12. [Two-Stage Parsing with Token Lists](#12-two-stage-parsing-with-token-lists)
 
 ---
 
@@ -110,6 +112,20 @@ Matches an exact sequence of characters (a string literal).
 epc_parser_t* p_hello = epc_string(list, "hello_string", "hello");
 // On success, creates an epc_cpt_node_t with tag "string", name "string", content "hello", len 5.
 ```
+
+### `epc_token`
+
+Matches a single token by its numeric ID. This parser is used in the second stage of a two-stage parse. It reads from a token list (built during stage 1) and succeeds when the current token's ID matches the expected value.
+
+```c
+// Matches a token with ID 256
+epc_parser_t* p_token = epc_token(list, "my_token", 256);
+
+// Matches a token with a custom enum value
+epc_parser_t* p_keyword = epc_token(list, "kw_if", TOKEN_IF);
+```
+
+On success, creates an `epc_cpt_node_t` with tag `"token"` and content pointing to the original input span recorded in the token list's view.
 
 ### `epc_digit`, `epc_alpha`, `epc_alphanum`, `epc_int`, `epc_double`, `epc_space`
 
@@ -548,3 +564,112 @@ cmake -DWITH_INPUT_STREAM_SUPPORT=OFF ..
 ```
 
 When disabled, the `epc_parse_fd` function and related threading logic are removed from the library.
+
+## 12. Two-Stage Parsing with Token Lists
+
+Starting with version 1.1, `easy_pc` supports a two-stage parsing model that separates raw character-level parsing from token-level semantic parsing. This is useful for building lexer-like pipelines where stage 1 identifies token boundaries and stage 2 matches grammar rules against those tokens.
+
+### Overview
+
+1. **Stage 1 (Character Parsing)**: Parse the raw input using character-level parsers (e.g., `epc_char`, `epc_any`), and for each recognized token, record a `epc_parser_input_view_t` (offset, length, line, column) plus a numeric token ID into an `epc_token_list_t`.
+2. **Stage 2 (Token Parsing)**: Call `epc_parse_session_reparse()` to re-run the parser using the same session context, but with a grammar composed of `epc_token()` parsers that match by token ID instead of raw characters.
+
+### Token List API
+
+| Function | Description |
+| :------- | :---------- |
+| `epc_token_list_create(initial_capacity)` | Creates a new mmap-backed token list. |
+| `epc_token_list_add(list, id, view)` | Adds a token with the given ID and input view. |
+| `epc_token_list_count(list)` | Returns the number of tokens in the list. |
+| `epc_token_list_free(list)` | Frees the token list. Safe to call with NULL. |
+
+### The `epc_parser_input_view_t` struct
+
+```c
+typedef struct {
+    size_t offset;        // Byte offset into the original input buffer
+    size_t len;           // Length of the token in bytes
+    size_t line_number;   // 1-based line number
+    size_t column_number; // 1-based column number
+} epc_parser_input_view_t;
+```
+
+### Reparse API
+
+```c
+bool epc_parse_session_reparse(
+    epc_parse_session_t * session,
+    epc_parser_t * new_parser,
+    epc_token_list_t * tokens
+);
+```
+
+This function:
+- Preserves the original input buffer and newline position data from stage 1 (no re-scanning).
+- Transfers ownership of the token list's mmap buffer into the session so token views refer directly into the input.
+- Cleans up the previous parse result (e.g., the stage 1 CPT) automatically.
+- Runs `new_parser` against the token list.
+
+### Full Example
+
+```c
+#include <easy_pc/easy_pc.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Custom token IDs
+enum {
+    TOKEN_HELLO = 256,
+    TOKEN_WORLD = 257,
+};
+
+int main(void) {
+    epc_parser_list * list = epc_parser_list_create();
+    epc_parse_session_t session = {0};
+
+    // --- Stage 1: character-level parse ---
+    // Match each individual character with epc_any and build a token list.
+    epc_parser_t * p_any = epc_any(list, "any");
+    session = epc_parse_str(p_any, "hello world", NULL);
+
+    if (session.result.is_error) {
+        fprintf(stderr, "Stage 1 failed\n");
+        goto cleanup;
+    }
+
+    // Build token list: "hello" -> TOKEN_HELLO, " " -> skip, "world" -> TOKEN_WORLD
+    // (In a real application, your own lexer logic would walk the CPT and
+    //  determine token boundaries and IDs.)
+    epc_token_list_t * tokens = epc_token_list_create(2);
+    epc_parser_input_view_t view1 = {0, 5, 1, 1}; // "hello" at offset 0
+    epc_token_list_add(tokens, TOKEN_HELLO, view1);
+    epc_parser_input_view_t view2 = {6, 5, 1, 7}; // "world" at offset 6
+    epc_token_list_add(tokens, TOKEN_WORLD, view2);
+
+    // --- Stage 2: token-level parse ---
+    epc_parser_t * p_hello = epc_token(list, "hello", TOKEN_HELLO);
+    epc_parser_t * p_world = epc_token(list, "world", TOKEN_WORLD);
+    epc_parser_t * p_greeting = epc_and(list, "greeting", 2, p_hello, p_world);
+
+    bool ok = epc_parse_session_reparse(&session, p_greeting, tokens);
+    if (ok && !session.result.is_error) {
+        printf("Two-stage parse succeeded! Matched 'hello world'\n");
+    } else {
+        fprintf(stderr, "Stage 2 failed\n");
+    }
+
+    epc_token_list_free(tokens);
+
+cleanup:
+    epc_parse_session_destroy(&session);
+    epc_parser_list_free(list);
+    return 0;
+}
+```
+
+### Notes
+
+- After `epc_parse_session_reparse()` returns, you can safely free the `epc_token_list_t` struct with `epc_token_list_free()` — the session has taken ownership of the underlying mmap buffer.
+- Token views must reference valid offsets within the original input buffer. Offsets are 0-based; line and column numbers are 1-based.
+- `epc_token()` can match any `uint32_t` token ID. Use IDs below `EPC_TOKEN_ID_FIRST_USER` (300) for character codes (ASCII), and IDs at or above `EPC_TOKEN_ID_FIRST_USER` for custom token types.

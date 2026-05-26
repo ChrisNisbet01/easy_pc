@@ -51,7 +51,19 @@ Character literals are single characters enclosed in single quotes. They can con
 ';
     ```
 
-### 2.4 Raw Characters
+### 2.4 Token Literals
+
+Token literals are identifiers enclosed in angle brackets that reference a token ID constant. The content between `<` and `>` is written verbatim into the generated C code, so it can be a numeric literal (e.g., `256`) or a C enum constant (e.g., `MY_ENUM_VALUE`). Token literals are used with the two-stage parsing infrastructure: stage 1 produces a list of tokens from raw input, and stage 2 matches against those token IDs using `epc_token()`.
+
+*   **Syntax:** `<` `(alpha | digit | underscore)+` `>`
+*   **Examples:**
+    ```gdl
+    MyToken = <MY_CUSTOM_TOKEN>;
+    AnotherToken = <256>;
+    KeyWord = <TOKEN_IF>;
+    ```
+
+### 2.5 Raw Characters
 
 Raw characters are single characters, possibly escaped, not enclosed in quotes. They are typically used within character ranges or certain combinators where a literal character is expected without the overhead of a `char_literal` parser.
 
@@ -61,7 +73,7 @@ Raw characters are single characters, possibly escaped, not enclosed in quotes. 
     // Used in char ranges like: '[' a '-' z ']'
     ```
 
-### 2.5 Number Literals
+### 2.6 Number Literals
 
 Number literals are sequences of one or more digits. They are primarily used as arguments for combinators like `count()`.
 
@@ -91,6 +103,7 @@ GDL provides several predefined keywords that directly map to `easy_pc`'s built-
 | `eoi`       | Matches the End Of Input. Essential for top-level rules.        | `epc_eoi(list, "eoi")`                                  |
 | `fail`      | Always fails.                                                   | `epc_fail(list, "fail")`                                |
 | `succeed`   | Always succeeds without consuming input.                        | `epc_succeed(list, "succeed")`                          |
+| `token`     | Matches a single token by its numeric ID. Requires `epc_parse_session_reparse()` with a token list. | `epc_token(list, "token", token_id)`       |
 
 ## 4. Repetition Operators
 
