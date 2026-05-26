@@ -121,3 +121,22 @@ epc_token_list_data(epc_token_list_t const * list)
 
     return list->tokens;
 }
+
+void
+epc_token_list_detach_mmap(epc_token_list_t * list, void ** out_base, size_t * out_size)
+{
+    if (list == NULL)
+    {
+        if (out_base) *out_base = NULL;
+        if (out_size) *out_size = 0;
+        return;
+    }
+
+    if (out_base) *out_base = list->mmap_base;
+    if (out_size) *out_size = list->mmap_size;
+
+    list->tokens = NULL;
+    list->mmap_base = NULL;
+    list->mmap_size = 0;
+    list->capacity = 0;
+}

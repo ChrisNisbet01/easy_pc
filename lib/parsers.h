@@ -77,6 +77,12 @@ typedef struct epc_byte_data_t
     uint8_t byte;     /* The byte value; */
 } epc_byte_data_t;
 
+typedef struct epc_token_data_t
+{
+    char const * str;   /* The token ID represented as a string (e.g. "token(256)") */
+    epc_token_id_t id;  /* The token ID value; */
+} epc_token_data_t;
+
 typedef enum parser_data_type_t
 {
     PARSER_DATA_TYPE_NONE,
@@ -92,6 +98,7 @@ typedef enum parser_data_type_t
     PARSER_DATA_TYPE_WRAP,
     PARSER_DATA_TYPE_MEMOIZE,
     PARSER_DATA_TYPE_BYTE,
+    PARSER_DATA_TYPE_TOKEN,
 } parser_data_type_t;
 
 typedef struct parser_data_type_st
@@ -110,6 +117,7 @@ typedef struct parser_data_type_st
         predicate_data_t predicate;
         wrap_data_t wrap;
         epc_byte_data_t byte;
+        epc_token_data_t token;
     };
 } parser_data_type_st;
 

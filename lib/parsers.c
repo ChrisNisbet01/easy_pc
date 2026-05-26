@@ -227,6 +227,11 @@ parser_data_free(parser_data_type_st * data)
         free((char *)data->byte.str);
         data->byte.str = NULL;
         break;
+
+    case PARSER_DATA_TYPE_TOKEN:
+        free((char *)data->token.str);
+        data->token.str = NULL;
+        break;
     }
 
     data->type = PARSER_DATA_TYPE_NONE;
@@ -487,6 +492,70 @@ EASY_PC_API epc_parser_t *
 epc_byte(epc_parser_list * list, char const * name, char b)
 {
     return epc_parser_list_add(list, _epc_byte(name, b));
+}
+
+static epc_parse_result_t
+ptoken_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
+{
+    char const * expected_str = parser_get_expected_str(self);
+    epc_token_id_t expected_id = self->data.token.id;
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
+
+    if (input_result.is_eof)
+    {
+        return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", expected_str, "EOF");
+    }
+
+    epc_token_id_t const input = input_result.token.id;
+
+    if (input != expected_id)
+    {
+        return epc_parser_error_result_token_list(
+            ctx, token_offset, "Unexpected token", expected_str, &input_result.token, 1
+        );
+    }
+
+    epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
+
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, epc_parser_get_name(self), "N/A");
+    }
+
+    node->token.offset = token_offset;
+    node->token.count = 1;
+
+    return epc_parser_success_result(node);
+}
+
+static epc_parser_t *
+_epc_token(char const * name, epc_token_id_t token_id)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "token", ptoken_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    char * data;
+    int len = asprintf(&data, "token(%u)", (unsigned)token_id);
+    if (len < 0 || data == NULL)
+    {
+        free(p);
+        return NULL;
+    }
+    p->data.type = PARSER_DATA_TYPE_TOKEN;
+    p->data.token.str = data;
+    p->data.token.id = token_id;
+    p->expected_value = p->data.token.str;
+
+    return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_token(epc_parser_list * list, char const * name, epc_token_id_t token_id)
+{
+    return epc_parser_list_add(list, _epc_token(name, token_id));
 }
 
 static epc_parse_result_t
@@ -3980,6 +4049,11 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
         dst->data.byte.str = strdup(src->data.byte.str);
         break;
 
+    case PARSER_DATA_TYPE_TOKEN:
+        dst->data.token = src->data.token;
+        dst->data.token.str = strdup(src->data.token.str);
+        break;
+
     case PARSER_DATA_TYPE_PARSER_LIST:
         dst->data.parser_list = parser_list_duplicate(src->data.parser_list);
         break;
@@ -3988,6 +4062,10 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
     if (src->data.type == PARSER_DATA_TYPE_BYTE && src->expected_value == src->data.byte.str)
     {
         dst->expected_value = dst->data.byte.str;
+    }
+    else if (src->data.type == PARSER_DATA_TYPE_TOKEN && src->expected_value == src->data.token.str)
+    {
+        dst->expected_value = dst->data.token.str;
     }
     else if (src->expected_value == src->data.string)
     {

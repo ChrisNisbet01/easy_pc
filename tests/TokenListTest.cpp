@@ -236,3 +236,125 @@ TEST(TokenListReparse, ReparseWithNullTokensFails)
     bool ok = epc_parse_session_reparse(&session, p_x, NULL);
     CHECK_FALSE(ok);
 }
+
+TEST_GROUP(TokenParser)
+{
+    epc_parse_session_t session = {0};
+    epc_parse_result_t result;
+    epc_parser_list * list = NULL;
+
+    void setup() override
+    {
+        session = (epc_parse_session_t){0};
+        list = epc_parser_list_create();
+    }
+
+    void teardown() override
+    {
+        epc_parse_session_destroy(&session);
+        epc_parser_list_free(list);
+    }
+};
+
+TEST(TokenParser, MatchesTokenById)
+{
+    /*
+     * Parse a character and then reparse using epc_token with the same char's numeric ID.
+     * This works because char token IDs are just ASCII values, and epc_token compares by ID.
+     */
+    epc_parser_t * p_any = epc_any(list, "any");
+    session = epc_parse_str(p_any, "abc", NULL);
+    CHECK_FALSE(session.result.is_error);
+
+    epc_token_list_t * tokens = epc_token_list_create(1);
+    CHECK_TRUE(tokens != NULL);
+
+    epc_parser_input_view_t view = {.offset = 0, .len = 3, .line_number = 1, .column_number = 1};
+    CHECK_TRUE(epc_token_list_add(tokens, (epc_token_id_t)'X', view));
+
+    /* epc_token matches the token ID 'X' (88). */
+    epc_parser_t * p_token = epc_token(list, "match_x", (epc_token_id_t)'X');
+    bool reparse_ok = epc_parse_session_reparse(&session, p_token, tokens);
+    CHECK_TRUE(reparse_ok);
+    CHECK_FALSE(session.result.is_error);
+
+    epc_token_list_free(tokens);
+}
+
+TEST(TokenParser, FailsOnWrongTokenId)
+{
+    epc_parser_t * p_any = epc_any(list, "any");
+    session = epc_parse_str(p_any, "abc", NULL);
+    CHECK_FALSE(session.result.is_error);
+
+    epc_token_list_t * tokens = epc_token_list_create(1);
+    CHECK_TRUE(tokens != NULL);
+
+    epc_parser_input_view_t view = {.offset = 0, .len = 3, .line_number = 1, .column_number = 1};
+    CHECK_TRUE(epc_token_list_add(tokens, (epc_token_id_t)42, view));
+
+    /* Try to match token ID 99 — should fail since our token is ID 42. */
+    epc_parser_t * p_token = epc_token(list, "match_99", (epc_token_id_t)99);
+    bool reparse_ok = epc_parse_session_reparse(&session, p_token, tokens);
+    CHECK_FALSE(reparse_ok);
+    CHECK_TRUE(session.result.is_error);
+
+    epc_token_list_free(tokens);
+}
+
+TEST(TokenParser, MatchesCustomTokenId)
+{
+    /*
+     * Use a custom token ID >= EPC_TOKEN_ID_FIRST_USER (300).
+     * This demonstrates the parser works with any uint32_t token ID.
+     */
+    epc_parser_t * p_any = epc_any(list, "any");
+    session = epc_parse_str(p_any, "hello", NULL);
+    CHECK_FALSE(session.result.is_error);
+
+    epc_token_id_t const custom_id = EPC_TOKEN_ID_FIRST_USER + 42;
+
+    epc_token_list_t * tokens = epc_token_list_create(1);
+    CHECK_TRUE(tokens != NULL);
+
+    epc_parser_input_view_t view = {.offset = 0, .len = 5, .line_number = 1, .column_number = 1};
+    CHECK_TRUE(epc_token_list_add(tokens, custom_id, view));
+
+    epc_parser_t * p_token = epc_token(list, "custom", custom_id);
+    bool reparse_ok = epc_parse_session_reparse(&session, p_token, tokens);
+    CHECK_TRUE(reparse_ok);
+    CHECK_FALSE(session.result.is_error);
+
+    epc_token_list_free(tokens);
+}
+
+TEST(TokenParser, MatchesTokenInSequence)
+{
+    /*
+     * Two tokens with custom IDs, matched in sequence using epc_and.
+     */
+    epc_parser_t * p_any = epc_any(list, "any");
+    session = epc_parse_str(p_any, "abcdef", NULL);
+    CHECK_FALSE(session.result.is_error);
+
+    epc_token_id_t const id_a = EPC_TOKEN_ID_FIRST_USER;
+    epc_token_id_t const id_b = EPC_TOKEN_ID_FIRST_USER + 1;
+
+    epc_token_list_t * tokens = epc_token_list_create(2);
+    CHECK_TRUE(tokens != NULL);
+
+    epc_parser_input_view_t view_a = {.offset = 0, .len = 3, .line_number = 1, .column_number = 1};
+    epc_parser_input_view_t view_b = {.offset = 3, .len = 3, .line_number = 1, .column_number = 4};
+    CHECK_TRUE(epc_token_list_add(tokens, id_a, view_a));
+    CHECK_TRUE(epc_token_list_add(tokens, id_b, view_b));
+
+    epc_parser_t * p_a = epc_token(list, "id_a", id_a);
+    epc_parser_t * p_b = epc_token(list, "id_b", id_b);
+    epc_parser_t * p_seq = epc_and(list, "seq", 2, p_a, p_b);
+
+    bool reparse_ok = epc_parse_session_reparse(&session, p_seq, tokens);
+    CHECK_TRUE(reparse_ok);
+    CHECK_FALSE(session.result.is_error);
+
+    epc_token_list_free(tokens);
+}

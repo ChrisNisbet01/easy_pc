@@ -270,6 +270,15 @@ EASY_PC_API epc_parser_t * epc_char(epc_parser_list * list, char const * name, c
 EASY_PC_API epc_parser_t * epc_byte(epc_parser_list * list, char const * name, char b);
 
 /**
+ * @brief Creates a parser that matches a single token by its numeric ID and adds it to the list.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param token_id The numeric token ID to match (e.g., a character code or custom ID >= EPC_TOKEN_ID_FIRST_USER).
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_token(epc_parser_list * list, char const * name, epc_token_id_t token_id);
+
+/**
  * @brief Creates a parser that matches a specific string literal and adds it to the list.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.

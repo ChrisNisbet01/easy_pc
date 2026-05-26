@@ -1293,39 +1293,33 @@ epc_parse_session_reparse(epc_parse_session_t * session, epc_parser_t * new_pars
 
     size_t const token_count = epc_token_list_count(tokens);
 
-    if (token_count > ctx->input_tokens.count)
-    {
-        /*
-         * Not enough space in the existing token buffer. The buffer was sized for
-         * one-token-per-character of the original input, so grouping tokens should
-         * always produce fewer tokens than the input length.
-         */
-        return false;
-    }
-
     /* Clean up the previous parse result. */
     epc_parser_result_cleanup(&session->result);
 
-    ctx->input_tokens.count = token_count;
+    /* Free the old mmap token buffer allocated during the initial parse context creation. */
+    if (ctx->mmap_token_buffer.buffer != NULL)
+    {
+        munmap((void *)ctx->mmap_token_buffer.buffer, ctx->mmap_token_buffer.total_size);
+        ctx->mmap_token_buffer = (mmap_input_buffer_t){0};
+    }
 
-    /* Copy user tokens into the context's mmap token buffer. */
+    /* Point directly at the user's token list buffer — no memcpy needed. */
     epc_parser_token_t const * src = epc_token_list_data(tokens);
     if (src == NULL && token_count > 0)
     {
         return false;
     }
-    memcpy(ctx->input_tokens.start, src, token_count * sizeof(epc_parser_token_t));
+    ctx->input_tokens.start = (epc_parser_token_t *)src;
+    ctx->input_tokens.count = token_count;
 
-    /* Legacy sentinel: the old token system adds a NUL token at the end. */
-    ctx->input_tokens.start[token_count] = (epc_parser_token_t){
-        .id = '\0',
-        .view = {
-            .offset = ctx->input_len,
-            .len = 0,
-            .line_number = 0,
-            .column_number = 0,
-        },
-    };
+    /* Transfer ownership of the mmap buffer from the token list to the context. */
+    {
+        void * mmap_base = NULL;
+        size_t mmap_size = 0;
+        epc_token_list_detach_mmap(tokens, &mmap_base, &mmap_size);
+        ctx->mmap_token_buffer.buffer = mmap_base;
+        ctx->mmap_token_buffer.total_size = mmap_size;
+    }
 
     /* Reset parsing state. */
     epc_memo_table_reset(ctx);
