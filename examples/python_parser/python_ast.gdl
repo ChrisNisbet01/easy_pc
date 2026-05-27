@@ -1,0 +1,346 @@
+// Python AST Grammar — Stage 2
+// Token-level GDL grammar that parses the token list from stage 1
+// and builds a Python AST via semantic action callbacks.
+//
+// All tokens and token IDs are defined in python_token_ids.h.
+
+// ==============================
+// 1. Structural tokens
+// ==============================
+Newline = <TOKEN_NEWLINE>;
+Indent = <TOKEN_INDENT>;
+Dedent = <TOKEN_DEDENT>;
+Endmarker = <TOKEN_ENDMARKER>;
+Name = <TOKEN_NAME> @AST_NAME;
+Number = <TOKEN_NUMBER>;
+String = <TOKEN_STRING>;
+
+// ==============================
+// 2. Keyword tokens
+// ==============================
+KwFalse = <TOKEN_KW_FALSE>;
+KwNone = <TOKEN_KW_NONE>;
+KwTrue = <TOKEN_KW_TRUE>;
+KwAnd = <TOKEN_KW_AND>;
+KwAs = <TOKEN_KW_AS>;
+KwAssert = <TOKEN_KW_ASSERT>;
+KwBreak = <TOKEN_KW_BREAK>;
+KwClass = <TOKEN_KW_CLASS>;
+KwContinue = <TOKEN_KW_CONTINUE>;
+KwDef = <TOKEN_KW_DEF>;
+KwDel = <TOKEN_KW_DEL>;
+KwElif = <TOKEN_KW_ELIF>;
+KwElse = <TOKEN_KW_ELSE>;
+KwExcept = <TOKEN_KW_EXCEPT>;
+KwFinally = <TOKEN_KW_FINALLY>;
+KwFor = <TOKEN_KW_FOR>;
+KwFrom = <TOKEN_KW_FROM>;
+KwGlobal = <TOKEN_KW_GLOBAL>;
+KwIf = <TOKEN_KW_IF>;
+KwImport = <TOKEN_KW_IMPORT>;
+KwIn = <TOKEN_KW_IN>;
+KwIs = <TOKEN_KW_IS>;
+KwLambda = <TOKEN_KW_LAMBDA>;
+KwNonlocal = <TOKEN_KW_NONLOCAL>;
+KwNot = <TOKEN_KW_NOT>;
+KwOr = <TOKEN_KW_OR>;
+KwPass = <TOKEN_KW_PASS>;
+KwRaise = <TOKEN_KW_RAISE>;
+KwReturn = <TOKEN_KW_RETURN>;
+KwTry = <TOKEN_KW_TRY>;
+KwWhile = <TOKEN_KW_WHILE>;
+KwWith = <TOKEN_KW_WITH>;
+KwYield = <TOKEN_KW_YIELD>;
+
+// ==============================
+// 3. Operator tokens
+// ==============================
+Plus = <TOKEN_PLUS>;
+Minus = <TOKEN_MINUS>;
+Star = <TOKEN_STAR>;
+Slash = <TOKEN_SLASH>;
+Percent = <TOKEN_PERCENT>;
+DoubleStar = <TOKEN_DOUBLE_STAR>;
+DoubleSlash = <TOKEN_DOUBLE_SLASH>;
+LeftShift = <TOKEN_LEFT_SHIFT>;
+RightShift = <TOKEN_RIGHT_SHIFT>;
+Ampersand = <TOKEN_AMPERSAND>;
+Pipe = <TOKEN_PIPE>;
+Caret = <TOKEN_CARET>;
+Tilde = <TOKEN_TILDE>;
+Less = <TOKEN_LESS>;
+Greater = <TOKEN_GREATER>;
+DoubleEqual = <TOKEN_DOUBLE_EQUAL>;
+NotEqual = <TOKEN_NOT_EQUAL>;
+LessEqual = <TOKEN_LESS_EQUAL>;
+GreaterEqual = <TOKEN_GREATER_EQUAL>;
+Arrow = <TOKEN_ARROW>;
+Walrus = <TOKEN_WALRUS>;
+Ellipsis = <TOKEN_ELLIPSIS>;
+
+// Augmented assignment
+PlusAssign = <TOKEN_PLUS_ASSIGN>;
+MinusAssign = <TOKEN_MINUS_ASSIGN>;
+StarAssign = <TOKEN_STAR_ASSIGN>;
+SlashAssign = <TOKEN_SLASH_ASSIGN>;
+PercentAssign = <TOKEN_PERCENT_ASSIGN>;
+AmpersandAssign = <TOKEN_AMPERSAND_ASSIGN>;
+PipeAssign = <TOKEN_PIPE_ASSIGN>;
+CaretAssign = <TOKEN_CARET_ASSIGN>;
+LeftShiftAssign = <TOKEN_LEFT_SHIFT_ASSIGN>;
+RightShiftAssign = <TOKEN_RIGHT_SHIFT_ASSIGN>;
+DoubleStarAssign = <TOKEN_DOUBLE_STAR_ASSIGN>;
+DoubleSlashAssign = <TOKEN_DOUBLE_SLASH_ASSIGN>;
+
+// ==============================
+// 4. Delimiter tokens
+// ==============================
+LParen = <TOKEN_LPAREN>;
+RParen = <TOKEN_RPAREN>;
+LBrace = <TOKEN_LBRACE>;
+RBrace = <TOKEN_RBRACE>;
+LBracket = <TOKEN_LBRACKET>;
+RBracket = <TOKEN_RBRACKET>;
+Comma = <TOKEN_COMMA>;
+Colon = <TOKEN_COLON>;
+Semicolon = <TOKEN_SEMICOLON>;
+Dot = <TOKEN_DOT>;
+Equal = <TOKEN_EQUAL>;
+At = <TOKEN_AT>;
+
+// ==============================
+// 5. Operator identity rules
+// Each pushes an identifier for the operator.
+// Single-token operators use combined rules; the callback
+// identifies the specific operator from epc_cpt_node_get_content().
+// Multi-token operators (not in, is not) have their own rules.
+// ==============================
+add_op = Plus | Minus @AST_OP_ADD_OR_SUB;
+mul_op = Star | Slash | Percent | DoubleSlash @AST_OP_MUL_DIV_MOD_FLOOR;
+unary_op = Plus | Minus | Tilde @AST_OP_UNARY;
+power_op = DoubleStar @AST_OP_POW;
+shift_op = LeftShift | RightShift @AST_OP_SHIFT;
+bit_and_op = Ampersand @AST_OP_BIT_AND;
+bit_xor_op = Caret @AST_OP_BIT_XOR;
+bit_or_op = Pipe @AST_OP_BIT_OR;
+
+// Comparison operators
+cmp_not_in = KwNot KwIn @AST_OP_NOT_IN;
+cmp_is_not = KwIs KwNot @AST_OP_IS_NOT;
+cmp_single = Less | Greater | DoubleEqual | NotEqual | LessEqual | GreaterEqual | KwIs @AST_OP_COMP_SINGLE;
+comp_op = cmp_single | cmp_not_in | cmp_is_not;
+
+// Boolean not (used in not_test)
+bool_not_op = KwNot @AST_OP_NOT;
+
+// Augmented assignment operators
+aug_assign_op = PlusAssign | MinusAssign | StarAssign | SlashAssign
+              | PercentAssign | DoubleStarAssign | DoubleSlashAssign
+              | LeftShiftAssign | RightShiftAssign
+              | AmpersandAssign | PipeAssign | CaretAssign @AST_OP_AUG_ASSIGN;
+
+// ==============================
+// 6. Atoms and primaries
+// ==============================
+list_items = delimited(expr, Comma) @AST_LIST_ITEMS;
+list_display = LBracket list_items RBracket @AST_LIST;
+dict_item = expr Colon expr @AST_DICT_ITEM;
+dict_items = delimited(dict_item, Comma) @AST_DICT_ITEMS;
+dict_display = LBrace dict_items RBrace @AST_DICT;
+tuple_items = delimited(expr, Comma) @AST_TUPLE_ITEMS;
+tuple_display = LParen tuple_items RParen @AST_TUPLE;
+paren_expr = LParen expr RParen @AST_PAREN_EXPR;
+
+atom_name = Name @AST_ATOM_NAME;
+atom_number = Number @AST_CONSTANT_NUMBER;
+atom_string = String @AST_CONSTANT_STRING;
+atom_true = KwTrue @AST_CONSTANT_TRUE;
+atom_false = KwFalse @AST_CONSTANT_FALSE;
+atom_none = KwNone @AST_CONSTANT_NONE;
+atom_fstring = Name String @AST_FSTRING;
+atom = atom_fstring | atom_name | atom_number | atom_string
+     | atom_true | atom_false | atom_none
+     | list_display | dict_display | tuple_display | paren_expr;
+
+// Postfix: function calls, attribute access, subscript
+call_trail = LParen arglist? RParen @AST_CALL_TRAIL;
+attr_trail = Dot Name @AST_ATTR_TRAIL;
+subscript_trail = LBracket expr RBracket @AST_SUBSCR_TRAIL;
+trail = call_trail | attr_trail | subscript_trail;
+trails = trail* @AST_TRAILS;
+primary = atom trails @AST_PRIMARY;
+
+// ==============================
+// 7. Expression hierarchy (chainl1 for left-assoc binary ops)
+// ==============================
+power = primary (DoubleStar unary)? @AST_POWER;
+
+// Unary
+unary_op_expr = unary_op unary @AST_UNARY;
+unary = unary_op_expr | power;
+
+// Multiplicative
+term = chainl1(unary, mul_op) @AST_BINOP;
+
+// Additive
+sum = chainl1(term, add_op) @AST_BINOP;
+
+// Shift
+shift = chainl1(sum, shift_op) @AST_BINOP;
+
+// Bitwise AND
+bit_and = chainl1(shift, bit_and_op) @AST_BINOP;
+
+// Bitwise XOR
+bit_xor = chainl1(bit_and, bit_xor_op) @AST_BINOP;
+
+// Bitwise OR
+bit_or = chainl1(bit_xor, bit_or_op) @AST_BINOP;
+
+// Comparison
+comp_tails = (comp_op bit_or)* @AST_COMP_TAILS;
+comparison = bit_or comp_tails @AST_COMPARE;
+
+// Boolean not
+neg_test_expr = bool_not_op neg_test @AST_NOT_TEST;
+neg_test = neg_test_expr | comparison;
+
+// Boolean and
+and_tests = (KwAnd neg_test)* @AST_AND_TESTS;
+and_test = neg_test and_tests @AST_AND_TEST;
+
+// Boolean or
+or_tests = (KwOr and_test)* @AST_OR_TESTS;
+or_test = and_test or_tests @AST_OR_TEST;
+
+// Ternary if-else
+ternary_else = KwElse or_test @AST_TERNARY_ELSE;
+ternary = or_test (KwIf or_test ternary_else)? @AST_TERNARY;
+
+// Lambda (not yet supported — stubbed to pass through)
+expr = ternary;
+test = expr;
+
+// ==============================
+// 8. Argument lists
+// ==============================
+arg = expr @AST_ARG;
+arglist = delimited(arg, Comma) @AST_ARGLIST;
+
+// ==============================
+// 9. Simple statements
+// ==============================
+more_stmts = (Semicolon small_stmt)* @AST_MORE_STMTS;
+simple_stmt = small_stmt more_stmts Newline @AST_SIMPLE_STMT;
+
+// Expression statement
+expr_stmt = expr @AST_EXPR_STMT;
+
+// Assignment
+assign_tails = (Equal expr)+ @AST_ASSIGN_TAILS;
+assign_stmt = expr assign_tails @AST_ASSIGN;
+
+// Augmented assignment
+aug_assign_stmt = expr aug_assign_op expr @AST_AUG_ASSIGN;
+
+// Pass, break, continue
+pass_stmt = KwPass @AST_PASS;
+break_stmt = KwBreak @AST_BREAK;
+continue_stmt = KwContinue @AST_CONTINUE;
+
+// Return
+return_stmt = KwReturn expr? @AST_RETURN;
+
+// Import
+import_names = delimited(dotted_name, Comma) @AST_IMPORT_NAMES;
+import_stmt = KwImport import_names @AST_IMPORT;
+
+from_names = delimited(import_alias, Comma) @AST_FROM_NAMES;
+from_import_stmt = KwFrom dotted_name KwImport from_names @AST_FROM_IMPORT;
+
+dotted_name = Name (Dot Name)* @AST_DOTTED_NAME;
+import_alias = Name (KwAs Name)? @AST_IMPORT_ALIAS;
+
+// Global / Nonlocal
+global_names = delimited(Name, Comma) @AST_GLOBAL_NAMES;
+global_stmt = KwGlobal global_names @AST_GLOBAL;
+
+nonlocal_names = delimited(Name, Comma) @AST_NONLOCAL_NAMES;
+nonlocal_stmt = KwNonlocal nonlocal_names @AST_NONLOCAL;
+
+// Assert
+assert_stmt = KwAssert expr (Comma expr)? @AST_ASSERT;
+
+// Raise
+raise_stmt = KwRaise expr? (KwFrom expr)? @AST_RAISE;
+
+// Del
+del_targets = delimited(expr, Comma) @AST_DEL_TARGETS;
+del_stmt = KwDel del_targets @AST_DEL;
+
+// Yield
+yield_stmt = KwYield expr? @AST_YIELD;
+
+// Small statement grouping
+small_stmt = assign_stmt | aug_assign_stmt | expr_stmt
+           | return_stmt | pass_stmt | break_stmt | continue_stmt
+           | import_stmt | from_import_stmt
+           | global_stmt | nonlocal_stmt
+           | assert_stmt | raise_stmt | del_stmt | yield_stmt;
+
+// ==============================
+// 10. Compound statements
+// ==============================
+// Suite
+stmts = (stmt | Newline)+ @AST_STMTS;
+block_suite = Newline Indent stmts Dedent @AST_BLOCK_SUITE;
+suite = simple_stmt | block_suite;
+
+// If / Elif / Else
+elif_clause = KwElif test Colon suite @AST_ELIF_CLAUSE;
+elifs = elif_clause* @AST_ELIFS;
+else_clause = KwElse Colon suite @AST_ELSE_CLAUSE;
+opt_else = else_clause? @AST_OPT_ELSE;
+if_stmt = KwIf test Colon suite elifs opt_else @AST_IF;
+
+// While
+while_stmt = KwWhile test Colon suite @AST_WHILE;
+
+// For
+for_targets = delimited(expr, Comma) @AST_FOR_TARGETS;
+for_stmt = KwFor for_targets KwIn test Colon suite @AST_FOR;
+
+// Function definition
+params = delimited(param, Comma) @AST_PARAMS;
+param = Name (Colon expr)? (Equal expr)? @AST_PARAM;
+opt_params = params? @AST_OPT_PARAMS;
+opt_return = (Arrow expr)? @AST_OPT_RETURN;
+func_def = KwDef Name LParen opt_params RParen opt_return Colon suite @AST_FUNC_DEF;
+
+// Class definition
+opt_args = arglist? @AST_OPT_ARGS;
+class_def = KwClass Name LParen opt_args RParen Colon suite @AST_CLASS_DEF;
+
+// Try / Except / Finally
+except_clause = KwExcept expr? (KwAs Name)? Colon suite @AST_EXCEPT_CLAUSE;
+excepts = except_clause+ @AST_EXCEPTS;
+opt_excepts = excepts? @AST_OPT_EXCEPTS;
+opt_try_else = (KwElse Colon suite)? @AST_OPT_TRY_ELSE;
+opt_try_finally = (KwFinally Colon suite)? @AST_OPT_TRY_FINALLY;
+try_stmt = KwTry Colon suite opt_excepts opt_try_else opt_try_finally @AST_TRY;
+
+// With
+with_items = delimited(with_item, Comma) @AST_WITH_ITEMS;
+with_item = expr (KwAs expr)? @AST_WITH_ITEM;
+with_stmt = KwWith with_items Colon suite @AST_WITH;
+
+// Compound statement grouping
+compound_stmt = if_stmt | while_stmt | for_stmt | func_def | class_def | try_stmt | with_stmt;
+
+// ==============================
+// 11. Top level
+// ==============================
+stmt = simple_stmt | compound_stmt;
+
+opt_stmts = (stmt | Newline)* @AST_OPT_STMTS;
+module = opt_stmts Endmarker @AST_MODULE;

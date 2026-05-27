@@ -1,4 +1,8 @@
 #include "cpt_node.h"
+#include "python_ast.h"
+#include "python_ast_actions.h"
+#include "python_ast_builder.h"
+#include "python_ast_printer.h"
 #include "python_token_ids.h"
 #include "python_tokenizer.h"
 
@@ -46,7 +50,7 @@ static keyword_entry_t const keywords[] = {
     {.name = "not", .id = TOKEN_KW_NOT},
     {.name = "or", .id = TOKEN_KW_OR},
     {.name = "pass", .id = TOKEN_KW_PASS},
-    {.name = "print", .id = TOKEN_KW_PRINT},
+    // 'print' is intentionally omitted: it is a built-in function, not a keyword, in Python 3
     {.name = "raise", .id = TOKEN_KW_RAISE},
     {.name = "return", .id = TOKEN_KW_RETURN},
     {.name = "try", .id = TOKEN_KW_TRY},
@@ -668,8 +672,96 @@ main(int argc, char ** argv)
         return EXIT_FAILURE;
     }
 
-    // Cleanup
+    // === Stage 2: Parse token list into AST ===
+    printf("\n=== Stage 2: Reparse with AST grammar ===\n");
+
+    epc_parser_t * ast_parser = create_python_ast_parser(parser_list);
+    if (ast_parser == NULL)
+    {
+        fprintf(stderr, "Failed to create AST parser\n");
+        epc_token_list_free(tokens);
+        epc_parse_session_destroy(&session);
+        epc_parser_list_free(parser_list);
+        free(input);
+        return EXIT_FAILURE;
+    }
+
+    bool reparse_ok = epc_parse_session_reparse(&session, ast_parser, tokens);
+    // Tokens have been copied into the session; we can free our copy
     epc_token_list_free(tokens);
+    tokens = NULL;
+
+    if (!reparse_ok || session.result.is_error)
+    {
+        fprintf(stderr, "\nStage 2 reparse FAILED:\n");
+        if (session.result.is_error && session.result.data.error)
+        {
+            fprintf(stderr, "  Message: %s\n", session.result.data.error->message);
+            fprintf(stderr, "  Expected: %s\n", session.result.data.error->expected);
+            fprintf(stderr, "  Found: %s\n", session.result.data.error->found);
+            fprintf(
+                stderr,
+                "  Line: %zu, Col: %zu\n",
+                session.result.data.error->view.line_number,
+                session.result.data.error->view.column_number
+            );
+        }
+        epc_parse_session_destroy(&session);
+        epc_parser_list_free(parser_list);
+        free(input);
+        return EXIT_FAILURE;
+    }
+
+    printf("Stage 2 parse SUCCEEDED\n");
+
+    epc_cpt_node_t * ast_cpt_root = session.result.data.success;
+
+    // Print CPT
+    {
+        char * cpt_str = epc_cpt_to_string(session.internal_parse_ctx, ast_cpt_root);
+        if (cpt_str)
+        {
+            printf("\n=== AST CPT ===\n%s=== End AST CPT ===\n\n", cpt_str);
+            free(cpt_str);
+        }
+    }
+
+    // Build AST via semantic actions
+    epc_ast_hook_registry_t * ast_registry = epc_ast_hook_registry_create(PYTHON_AST_AST_ACTION_COUNT__);
+    if (ast_registry == NULL)
+    {
+        fprintf(stderr, "Failed to create AST hook registry\n");
+        epc_parse_session_destroy(&session);
+        epc_parser_list_free(parser_list);
+        free(input);
+        return EXIT_FAILURE;
+    }
+
+    py_ast_hook_registry_init(ast_registry);
+
+    epc_ast_result_t ast_result = epc_ast_build(ast_cpt_root, ast_registry, NULL);
+
+    if (ast_result.has_error)
+    {
+        fprintf(stderr, "\nAST build FAILED: %s\n", ast_result.error_message);
+        epc_ast_hook_registry_free(ast_registry);
+        epc_parse_session_destroy(&session);
+        epc_parser_list_free(parser_list);
+        free(input);
+        return EXIT_FAILURE;
+    }
+
+    printf("AST build SUCCEEDED\n");
+
+    // Print reconstructed source
+    printf("\n=== Reconstructed Source ===\n");
+    py_ast_node_t * ast_root = (py_ast_node_t *)ast_result.ast_root;
+    py_ast_print(ast_root, 0);
+    printf("=== End Reconstructed Source ===\n");
+
+    // Cleanup
+    py_node_free(ast_root);
+    epc_ast_hook_registry_free(ast_registry);
     epc_parse_session_destroy(&session);
     epc_parser_list_free(parser_list);
     free(input);
