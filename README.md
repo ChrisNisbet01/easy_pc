@@ -245,3 +245,6 @@ The `easy_pc` library comes with several example applications demonstrating its 
 
 *   **Reactive Streaming Parser:** Located in [examples/reactive_streaming/](examples/reactive_streaming/)
     Demonstrates the non-blocking reactive streaming API. It shows how to integrate the parser with a `poll()` loop and use a completion callback to process a sequence of packets from a single stream.
+
+*   **Python Parser:** Located in [examples/python_parser/](examples/python_parser/)
+    A two-stage Python parser that uses the library's token-list and reparse API to handle Python's context-sensitive grammar and significant indentation. Stage 1 tokenizes raw source into a flat list of typed tokens (keywords, operators, NEWLINE/INDENT/DEDENT markers). Stage 2 then reparses that token list with a separate grammar to build an AST — this separation is essential because Python's lexical structure (indentation-based block delimiting) must be resolved before meaningful syntactic analysis can begin. The AST grammar is defined in GDL and uses semantic action callbacks to construct a custom node tree, which is then printed back as reconstructed source code to verify correctness.
