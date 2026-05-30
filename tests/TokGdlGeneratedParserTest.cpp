@@ -3,13 +3,13 @@
 #include "CppUTest/TestHarness.h"
 
 extern "C" {
-#include "gdl_code_generator.h"
 #include "gdl_ast.h"
+#include "gdl_code_generator.h"
+#include "gdl_compiler_ast_actions.h"
 #include "gdl_parser.h"
 #include "gdl_token_ids.h"
 #include "gdl_tokenizer_actions.h"
 #include "gdl_tokenizer_parser.h"
-#include "tok_gdl_parser_ast_actions.h"
 }
 
 #include <stdio.h>

@@ -268,10 +268,10 @@ add_test(
 add_executable(TokGdlParserTest
     AllTests.cpp
     TokGdlParserTest.cpp
-    ../tools/tok_gdl_parser/gdl_parser.c
-    ../tools/tok_gdl_parser/gdl_tokenizer_parser.c
-    ../tools/tok_gdl_parser/gdl_tokenizer_actions.c
-    ../tools/tok_gdl_parser/tok_gdl_parser_ast_actions.c
+    ../tools/gdl_compiler/gdl_parser.c
+    ../tools/gdl_compiler/gdl_tokenizer_parser.c
+    ../tools/gdl_compiler/gdl_tokenizer_actions.c
+    ../tools/gdl_compiler/gdl_compiler_ast_actions.c
 )
 
 add_dependencies(all_unit_tests TokGdlParserTest)
@@ -279,7 +279,7 @@ add_dependencies(all_unit_tests TokGdlParserTest)
 target_include_directories(TokGdlParserTest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/tok_gdl_parser
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/gdl_compiler
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
@@ -297,11 +297,11 @@ add_test(
 add_executable(TokGdlGeneratedParserTest
     AllTests.cpp
     TokGdlGeneratedParserTest.cpp
-    ../tools/tok_gdl_parser/gdl_parser.c
-    ../tools/tok_gdl_parser/gdl_tokenizer_parser.c
-    ../tools/tok_gdl_parser/gdl_tokenizer_actions.c
-    ../tools/tok_gdl_parser/tok_gdl_parser_ast_actions.c
-    ../tools/tok_gdl_parser/gdl_code_generator.c
+    ../tools/gdl_compiler/gdl_parser.c
+    ../tools/gdl_compiler/gdl_tokenizer_parser.c
+    ../tools/gdl_compiler/gdl_tokenizer_actions.c
+    ../tools/gdl_compiler/gdl_compiler_ast_actions.c
+    ../tools/gdl_compiler/gdl_code_generator.c
 )
 
 add_dependencies(all_unit_tests TokGdlGeneratedParserTest)
@@ -309,7 +309,7 @@ add_dependencies(all_unit_tests TokGdlGeneratedParserTest)
 target_include_directories(TokGdlGeneratedParserTest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/tok_gdl_parser
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/gdl_compiler
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 

@@ -4,20 +4,16 @@
 #include <stdio.h>
 
 extern "C" {
-#include "gdl_ast.h"
+#include "gdl_compiler_ast_actions.h"
 #include "gdl_parser.h"
 #include "gdl_token_ids.h"
 #include "gdl_tokenizer_actions.h"
 #include "gdl_tokenizer_parser.h"
-#include "tok_gdl_parser_ast_actions.h"
 }
 
 static void
 run_two_stage_pipeline(
-    epc_parser_list * parser_list,
-    char const * input,
-    epc_parse_session_t * session,
-    gdl_ast_node_t ** ast_root
+    epc_parser_list * parser_list, char const * input, epc_parse_session_t * session, gdl_ast_node_t ** ast_root
 )
 {
     epc_parser_t * tokenizer = create_gdl_tokenizer_parser(parser_list);

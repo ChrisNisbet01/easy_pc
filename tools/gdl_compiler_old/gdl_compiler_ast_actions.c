@@ -771,7 +771,7 @@ handle_create_raw_char_literal(
 
     if (count > 0)
     {
-        epc_ast_builder_set_error(ctx, "Create raw char literal expects no children, got %d", count);
+        epc_ast_builder_set_error(ctx, "Create raw char literal expects 0 child, got %d", count);
         for (int i = 0; i < count; ++i)
         {
             gdl_ast_node_free(children[i], user_data);
