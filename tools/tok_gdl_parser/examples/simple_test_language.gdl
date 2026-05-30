@@ -1,0 +1,10 @@
+Greeting = "hello";
+World = "world";
+CharX = 'x';
+CharY = 'y';
+CharZ = 'z';
+SeqGreeting = Greeting World;
+SeqChar = CharX CharY CharZ;
+SimpleRule = SeqGreeting | SeqChar;
+EOI = eoi; // Define EOI as a rule
+Program = SimpleRule EOI @EPC_AST_SEMANTIC_ACTION_CREATE_PROGRAM; // Use EOI as a rule reference

@@ -122,6 +122,7 @@ endif ()
 
 add_subdirectory(tools/gdl_compiler)
 add_subdirectory(tools/gdl_debug)
+add_subdirectory(tools/tok_gdl_parser)
 
 # --- pkg-config ---
 configure_file(
