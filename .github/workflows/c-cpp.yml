@@ -21,8 +21,16 @@ jobs:
     - name: Install Graphviz
       run: sudo apt-get install -y graphviz
 
+    - name: Install LSP dependencies
+      run: |
+        sudo apt-get install -y libjson-c-dev
+        git clone --depth 1 https://github.com/openwrt/libubox.git
+        cmake -S libubox -B libubox/build -DBUILD_LUA=OFF
+        cmake --build libubox/build
+        sudo cmake --install libubox/build
+
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DBUILD_EXAMPLES=ON -DWITH_UNIT_TESTS=ON
+      run: cmake -B ${{github.workspace}}/build -DBUILD_EXAMPLES=ON -DWITH_UNIT_TESTS=ON -DBUILD_GDL_LSP=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build

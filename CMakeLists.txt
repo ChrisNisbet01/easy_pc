@@ -122,7 +122,10 @@ endif ()
 
 add_subdirectory(tools/gdl_compiler)
 add_subdirectory(tools/gdl_debug)
-add_subdirectory(tools/gdl_lsp)
+option(BUILD_GDL_LSP "Build the GDL LSP server" OFF)
+if(BUILD_GDL_LSP)
+  add_subdirectory(tools/gdl_lsp)
+endif()
 #add_subdirectory(tools/tok_gdl_parser)
 
 # --- pkg-config ---
