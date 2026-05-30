@@ -8,3 +8,4 @@ build/
 *.json
 /install_test/
 /temp/
+/tools/vscode-gdl-lsp/node_modules/

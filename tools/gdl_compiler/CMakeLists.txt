@@ -1,14 +1,23 @@
 # CMakeLists.txt for tools/gdl_compiler
 set(app "gdl_compiler")
 
-# Define the executable for the token-based GDL parser
-add_executable(
-    ${app}
-    main.c
+# Shared parser sources (consumed by gdl_compiler and gdl_lsp)
+add_library(gdl_parser_objects OBJECT
     gdl_parser.c
     gdl_tokenizer_parser.c
     gdl_tokenizer_actions.c
     gdl_compiler_ast_actions.c
+)
+target_include_directories(gdl_parser_objects PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../lib>
+)
+target_compile_options(gdl_parser_objects PRIVATE -Wall -Wextra -pedantic)
+
+# Define the executable for the token-based GDL parser
+add_executable(
+    ${app}
+    main.c
     gdl_code_generator.c
     gdl_bootstrap_generator.c
 )
@@ -25,10 +34,7 @@ target_compile_definitions(${app} PRIVATE GDL_COMPILER_VERSION="${PROJECT_VERSIO
 
 add_dependencies(${app} all_unit_tests)
 
-# Link the GDL parser against the easy_pc library
-target_link_libraries(${app} PRIVATE easy_pc_shared)
-
-# Set include directories for easy_pc headers
-target_include_directories(${app} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+# Link the GDL parser against the easy_pc library and shared objects
+target_link_libraries(${app} PRIVATE gdl_parser_objects easy_pc_shared)
 
 install(TARGETS ${app} RUNTIME DESTINATION bin)

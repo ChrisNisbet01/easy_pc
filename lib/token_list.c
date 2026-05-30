@@ -111,6 +111,19 @@ epc_token_list_count(epc_token_list_t const * list)
     return list->count;
 }
 
+bool
+epc_token_list_get(epc_token_list_t const * list, size_t index, epc_token_id_t * out_id, epc_parser_input_view_t * out_view)
+{
+    if (list == NULL || index >= list->count)
+    {
+        return false;
+    }
+
+    if (out_id) *out_id = list->tokens[index].id;
+    if (out_view) *out_view = list->tokens[index].view;
+    return true;
+}
+
 epc_parser_token_t const *
 epc_token_list_data(epc_token_list_t const * list)
 {

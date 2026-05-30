@@ -1230,6 +1230,17 @@ EASY_PC_API bool epc_token_list_add(epc_token_list_t * list, epc_token_id_t id, 
  */
 EASY_PC_API size_t epc_token_list_count(epc_token_list_t const * list);
 
+/**
+ * @brief Retrieves a token from the list by index.
+ * @param list The token list.
+ * @param index The index of the token to retrieve.
+ * @param out_id Output parameter for the token ID.
+ * @param out_view Output parameter for the token's view (offset, length, line, column).
+ * @return true on success, false if the index is out of range or list is NULL.
+ */
+EASY_PC_API bool
+epc_token_list_get(epc_token_list_t const * list, size_t index, epc_token_id_t * out_id, epc_parser_input_view_t * out_view);
+
 // --- Reparse API ---
 
 /**

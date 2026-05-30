@@ -42,4 +42,3 @@ Object = OObject OptionalMembers CObject        @JSON_ACTION_CREATE_OBJECT;
 Newline = '\n';
 
 Json = Newline* Value eoi;
-
