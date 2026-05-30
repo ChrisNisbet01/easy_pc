@@ -33,12 +33,26 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_number_literal = epc_token(l, "NumberLiteral", TOKEN_NUMBER);
     epc_parser_set_ast_action(gdl_number_literal, GDL_AST_ACTION_CREATE_NUMBER_LITERAL);
 
+    // --- Structural tokens ---
+    epc_parser_t * gdl_equals = epc_token(l, "Equals", TOKEN_EQUALS);
+    epc_parser_t * gdl_semicolon = epc_token(l, "Semicolon", TOKEN_SEMICOLON);
+    epc_parser_t * gdl_pipe = epc_token(l, "Pipe", TOKEN_PIPE);
+    epc_parser_t * gdl_at = epc_token(l, "AtSign", TOKEN_AT);
+    epc_parser_t * gdl_lparen = epc_token(l, "LParen", TOKEN_LPAREN);
+    epc_parser_t * gdl_rparen = epc_token(l, "RParen", TOKEN_RPAREN);
+    epc_parser_t * gdl_comma = epc_token(l, "Comma", TOKEN_COMMA);
+    epc_parser_t * gdl_star = epc_token(l, "Star", TOKEN_STAR);
+    epc_parser_t * gdl_plus = epc_token(l, "Plus", TOKEN_PLUS);
+    epc_parser_t * gdl_minus = epc_token(l, "Minus", TOKEN_MINUS);
+    epc_parser_t * gdl_question = epc_token(l, "Question", TOKEN_QUESTION);
+
     epc_parser_t * gdl_char_range = epc_and(
         l,
         "CharRange",
-        4,
+        5,
         epc_token(l, "LBracket", TOKEN_LBRACKET),
         gdl_raw_char_literal,
+        gdl_minus,
         gdl_raw_char_literal,
         epc_token(l, "RBracket", TOKEN_RBRACKET)
     );
@@ -101,18 +115,6 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * lexeme_flag_all_comments = epc_token(l, "KW_all_comments", TOKEN_KW_ALL_COMMENTS);
     epc_parser_t * lexeme_flag_all = epc_token(l, "KW_all", TOKEN_KW_ALL);
     epc_parser_t * lexeme_flag_all_styles = epc_token(l, "KW_all_styles", TOKEN_KW_ALL_STYLES);
-
-    // --- Structural tokens ---
-    epc_parser_t * gdl_equals = epc_token(l, "Equals", TOKEN_EQUALS);
-    epc_parser_t * gdl_semicolon = epc_token(l, "Semicolon", TOKEN_SEMICOLON);
-    epc_parser_t * gdl_pipe = epc_token(l, "Pipe", TOKEN_PIPE);
-    epc_parser_t * gdl_at = epc_token(l, "AtSign", TOKEN_AT);
-    epc_parser_t * gdl_lparen = epc_token(l, "LParen", TOKEN_LPAREN);
-    epc_parser_t * gdl_rparen = epc_token(l, "RParen", TOKEN_RPAREN);
-    epc_parser_t * gdl_comma = epc_token(l, "Comma", TOKEN_COMMA);
-    epc_parser_t * gdl_star = epc_token(l, "Star", TOKEN_STAR);
-    epc_parser_t * gdl_plus = epc_token(l, "Plus", TOKEN_PLUS);
-    epc_parser_t * gdl_question = epc_token(l, "Question", TOKEN_QUESTION);
 
     // --- Keyword grouping ---
 

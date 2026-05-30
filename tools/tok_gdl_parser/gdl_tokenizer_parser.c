@@ -56,18 +56,6 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     epc_parser_t * token_literal = epc_and(l, "TokenLiteral", 3, tok_lt, tok_content, tok_gt);
     epc_parser_set_ast_action(token_literal, TOKENIZER_ACTION_TOKEN_LITERAL);
 
-    // --- CharRange: [char-char] ---
-    epc_parser_t * cr_escape = epc_and(l, "CREscape", 2, epc_char(l, "CRBS", '\\'), epc_any(l, "CRAny"));
-    epc_parser_t * cr_char = epc_or(l, "CRChar", 2, cr_escape, epc_none_of(l, "CRNonStruct", "]"));
-    epc_parser_set_ast_action(cr_char, TOKENIZER_ACTION_RAW_CHAR_LITERAL);
-
-    epc_parser_t * cr_body = epc_and(l, "CRBody", 3, cr_char, epc_char(l, "CRDash", '-'), cr_char);
-    epc_parser_t * cr_lb = epc_char(l, "CRLB", '[');
-    epc_parser_set_ast_action(cr_lb, TOKENIZER_ACTION_STRUCTURAL);
-    epc_parser_t * cr_rb = epc_char(l, "CRRB", ']');
-    epc_parser_set_ast_action(cr_rb, TOKENIZER_ACTION_STRUCTURAL);
-    epc_parser_t * char_range = epc_and(l, "CharRange", 3, cr_lb, cr_body, cr_rb);
-
     // --- NumberLiteral: digit+ ---
     epc_parser_t * number = epc_plus(l, "Number", epc_digit(l, "NumDigit"));
     epc_parser_set_ast_action(number, TOKENIZER_ACTION_NUMBER);
@@ -95,6 +83,18 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     epc_parser_set_ast_action(plus, TOKENIZER_ACTION_STRUCTURAL);
     epc_parser_t * question = epc_char(l, "QuChar", '?');
     epc_parser_set_ast_action(question, TOKENIZER_ACTION_STRUCTURAL);
+
+    // --- CharRange: [char-char] ---
+    epc_parser_t * cr_escape = epc_and(l, "CREscape", 2, epc_char(l, "CRBS", '\\'), epc_any(l, "CRAny"));
+    epc_parser_t * cr_char = epc_or(l, "CRChar", 2, cr_escape, epc_none_of(l, "CRNonStruct", "]"));
+    epc_parser_set_ast_action(cr_char, TOKENIZER_ACTION_RAW_CHAR_LITERAL);
+
+    epc_parser_t * cr_body = epc_and(l, "CRBody", 3, cr_char, minus, cr_char);
+    epc_parser_t * cr_lb = epc_char(l, "CRLB", '[');
+    epc_parser_set_ast_action(cr_lb, TOKENIZER_ACTION_STRUCTURAL);
+    epc_parser_t * cr_rb = epc_char(l, "CRRB", ']');
+    epc_parser_set_ast_action(cr_rb, TOKENIZER_ACTION_STRUCTURAL);
+    epc_parser_t * char_range = epc_and(l, "CharRange", 3, cr_lb, cr_body, cr_rb);
 
     // --- Combined token alternatives ---
     // Order matters: compound tokens before identifiers, since identifiers overlap
