@@ -1,6 +1,7 @@
+#include "gdl_tokenizer_parser.h"
+
 #include "gdl_token_ids.h"
 #include "gdl_tokenizer_actions.h"
-#include "gdl_tokenizer_parser.h"
 
 #include <easy_pc/easy_pc.h>
 #include <stdio.h>
@@ -23,11 +24,9 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     epc_parser_t * str_esc_n = epc_string(l, "EscN", "\\n");
     epc_parser_t * str_esc_t = epc_string(l, "EscT", "\\t");
     epc_parser_t * str_esc_r = epc_string(l, "EscR", "\\r");
-    epc_parser_t * str_any_char
-        = epc_none_of(l, "StrAnyChar", "\"\\");
-    epc_parser_t * str_char = epc_or(
-        l, "StrChar", 6, str_esc_dq, str_esc_bs, str_esc_n, str_esc_t, str_esc_r, str_any_char
-    );
+    epc_parser_t * str_any_char = epc_none_of(l, "StrAnyChar", "\"\\");
+    epc_parser_t * str_char
+        = epc_or(l, "StrChar", 6, str_esc_dq, str_esc_bs, str_esc_n, str_esc_t, str_esc_r, str_any_char);
     epc_parser_t * str_content = epc_many(l, "StrContent", str_char);
     epc_parser_t * str_open = epc_char(l, "StrOpen", '"');
     epc_parser_t * str_close = epc_char(l, "StrClose", '"');
@@ -41,11 +40,9 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     epc_parser_t * chr_esc_n = epc_string(l, "ChrEscN", "\\n");
     epc_parser_t * chr_esc_t = epc_string(l, "ChrEscT", "\\t");
     epc_parser_t * chr_esc_r = epc_string(l, "ChrEscR", "\\r");
-    epc_parser_t * chr_any_char
-        = epc_none_of(l, "ChrAnyChar", "'\\");
-    epc_parser_t * chr_char = epc_or(
-        l, "ChrChar", 7, chr_esc_sq, chr_esc_dq, chr_esc_bs, chr_esc_n, chr_esc_t, chr_esc_r, chr_any_char
-    );
+    epc_parser_t * chr_any_char = epc_none_of(l, "ChrAnyChar", "'\\");
+    epc_parser_t * chr_char
+        = epc_or(l, "ChrChar", 7, chr_esc_sq, chr_esc_dq, chr_esc_bs, chr_esc_n, chr_esc_t, chr_esc_r, chr_any_char);
     epc_parser_t * chr_content = epc_and(l, "ChrContent", 1, chr_char);
     epc_parser_t * chr_open = epc_char(l, "ChrOpen", '\'');
     epc_parser_t * chr_close = epc_char(l, "ChrClose", '\'');
@@ -62,11 +59,14 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     // --- CharRange: [char-char] ---
     epc_parser_t * cr_escape = epc_and(l, "CREscape", 2, epc_char(l, "CRBS", '\\'), epc_any(l, "CRAny"));
     epc_parser_t * cr_char = epc_or(l, "CRChar", 2, cr_escape, epc_none_of(l, "CRNonStruct", "]"));
+    epc_parser_set_ast_action(cr_char, TOKENIZER_ACTION_RAW_CHAR_LITERAL);
+
     epc_parser_t * cr_body = epc_and(l, "CRBody", 3, cr_char, epc_char(l, "CRDash", '-'), cr_char);
     epc_parser_t * cr_lb = epc_char(l, "CRLB", '[');
+    epc_parser_set_ast_action(cr_lb, TOKENIZER_ACTION_STRUCTURAL);
     epc_parser_t * cr_rb = epc_char(l, "CRRB", ']');
+    epc_parser_set_ast_action(cr_rb, TOKENIZER_ACTION_STRUCTURAL);
     epc_parser_t * char_range = epc_and(l, "CharRange", 3, cr_lb, cr_body, cr_rb);
-    epc_parser_set_ast_action(char_range, TOKENIZER_ACTION_CHAR_RANGE);
 
     // --- NumberLiteral: digit+ ---
     epc_parser_t * number = epc_plus(l, "Number", epc_digit(l, "NumDigit"));
@@ -122,8 +122,7 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     );
 
     // Wrap in lexeme to consume whitespace/comments between tokens
-    epc_parser_t * token
-        = epc_lexeme_ex(l, "Token", raw_token, EPC_CONSUME_ALL_STYLES);
+    epc_parser_t * token = epc_lexeme_ex(l, "Token", raw_token, EPC_CONSUME_ALL_STYLES);
 
     // Program: many(Token) eoi
     epc_parser_t * many_tokens = epc_many(l, "ManyTokens", token);

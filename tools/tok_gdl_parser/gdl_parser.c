@@ -24,13 +24,24 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_char_literal = epc_token(l, "CharLiteral", TOKEN_CHAR_LITERAL);
     epc_parser_set_ast_action(gdl_char_literal, GDL_AST_ACTION_CREATE_CHAR_LITERAL);
 
+    epc_parser_t * gdl_raw_char_literal = epc_token(l, "RawCharLiteral", TOKEN_RAW_CHAR_LITERAL);
+    epc_parser_set_ast_action(gdl_raw_char_literal, GDL_AST_ACTION_CREATE_RAW_CHAR_LITERAL);
+
     epc_parser_t * gdl_token_literal = epc_token(l, "TokenLiteral", TOKEN_TOKEN_LITERAL);
     epc_parser_set_ast_action(gdl_token_literal, GDL_AST_ACTION_CREATE_TOKEN_LITERAL);
 
     epc_parser_t * gdl_number_literal = epc_token(l, "NumberLiteral", TOKEN_NUMBER);
     epc_parser_set_ast_action(gdl_number_literal, GDL_AST_ACTION_CREATE_NUMBER_LITERAL);
 
-    epc_parser_t * gdl_char_range = epc_token(l, "CharRange", TOKEN_CHAR_RANGE);
+    epc_parser_t * gdl_char_range = epc_and(
+        l,
+        "CharRange",
+        4,
+        epc_token(l, "LBracket", TOKEN_LBRACKET),
+        gdl_raw_char_literal,
+        gdl_raw_char_literal,
+        epc_token(l, "RBracket", TOKEN_RBRACKET)
+    );
     epc_parser_set_ast_action(gdl_char_range, GDL_AST_ACTION_CREATE_CHAR_RANGE);
 
     // --- Keyword terminals ---
@@ -109,11 +120,25 @@ create_gdl_parser(epc_parser_list * l)
         l,
         "TerminalNoArgKeyword",
         18,
-        p_char, p_digit, p_alphanum, p_alpha, p_identifier,
-        p_int, p_octal, p_hex, p_double_kw, p_long_double,
-        p_space, p_any, p_succeed, p_hex_digit,
-        p_soi, p_eoi,
-        p_cpp_comment, p_c_comment, p_bash_comment
+        p_char,
+        p_digit,
+        p_alphanum,
+        p_alpha,
+        p_identifier,
+        p_int,
+        p_octal,
+        p_hex,
+        p_double_kw,
+        p_long_double,
+        p_space,
+        p_any,
+        p_succeed,
+        p_hex_digit,
+        p_soi,
+        p_eoi,
+        p_cpp_comment,
+        p_c_comment,
+        p_bash_comment
     );
     epc_parser_set_ast_action(terminal_no_arg_parser, GDL_AST_ACTION_CREATE_KEYWORD);
 
@@ -126,21 +151,34 @@ create_gdl_parser(epc_parser_list * l)
         l,
         "CombinatorKeyword",
         23,
-        p_string, p_char_range_kw, p_none_of,
-        p_many, p_count, p_count_range, p_between,
-        p_delimited, p_delimited_flex, p_optional,
-        p_lookahead, p_not, p_one_of,
-        p_lexeme, p_strip, p_stripl, p_stripr,
-        p_chainl1, p_chainr1, p_skip, p_memoize,
-        p_satisfy, p_wrap
+        p_string,
+        p_char_range_kw,
+        p_none_of,
+        p_many,
+        p_count,
+        p_count_range,
+        p_between,
+        p_delimited,
+        p_delimited_flex,
+        p_optional,
+        p_lookahead,
+        p_not,
+        p_one_of,
+        p_lexeme,
+        p_strip,
+        p_stripl,
+        p_stripr,
+        p_chainl1,
+        p_chainr1,
+        p_skip,
+        p_memoize,
+        p_satisfy,
+        p_wrap
     );
     epc_parser_set_ast_action(combinator_parser, GDL_AST_ACTION_CREATE_KEYWORD);
 
     // --- FailCall: fail(<string_literal>) ---
-    epc_parser_t * fail_call = epc_and(
-        l, "FailCall", 4,
-        p_fail_kw, gdl_lparen, gdl_string_literal, gdl_rparen
-    );
+    epc_parser_t * fail_call = epc_and(l, "FailCall", 4, p_fail_kw, gdl_lparen, gdl_string_literal, gdl_rparen);
     epc_parser_set_ast_action(fail_call, GDL_AST_ACTION_CREATE_FAIL_CALL);
 
     // --- Terminal ---
@@ -164,158 +202,122 @@ create_gdl_parser(epc_parser_list * l)
     // --- Combinator calls ---
 
     // noneof_call: noneof '(' string_literal ')'
-    epc_parser_t * none_of_call = epc_and(
-        l, "NoneofCall", 4, p_none_of, gdl_lparen, gdl_string_literal, gdl_rparen
-    );
+    epc_parser_t * none_of_call = epc_and(l, "NoneofCall", 4, p_none_of, gdl_lparen, gdl_string_literal, gdl_rparen);
     epc_parser_set_ast_action(none_of_call, GDL_AST_ACTION_CREATE_NONEOF_CALL);
 
     // count_call: count '(' number_literal ',' definition_expression ')'
-    epc_parser_t * count_args = epc_and(
-        l, "CountArgs", 3, gdl_number_literal, gdl_comma, gdl_definition_expression
-    );
-    epc_parser_t * count_call = epc_and(
-        l, "CountCall", 4, p_count, gdl_lparen, count_args, gdl_rparen
-    );
+    epc_parser_t * count_args = epc_and(l, "CountArgs", 3, gdl_number_literal, gdl_comma, gdl_definition_expression);
+    epc_parser_t * count_call = epc_and(l, "CountCall", 4, p_count, gdl_lparen, count_args, gdl_rparen);
     epc_parser_set_ast_action(count_call, GDL_AST_ACTION_CREATE_COUNT_CALL);
 
     // count_range_call: count_range '(' number_literal ',' number_literal ',' definition_expression ')'
     epc_parser_t * count_range_args = epc_and(
-        l, "CountRangeArgs", 5,
-        gdl_number_literal, gdl_comma, gdl_number_literal, gdl_comma, gdl_definition_expression
+        l, "CountRangeArgs", 5, gdl_number_literal, gdl_comma, gdl_number_literal, gdl_comma, gdl_definition_expression
     );
-    epc_parser_t * count_range_call = epc_and(
-        l, "CountRangeCall", 4, p_count_range, gdl_lparen, count_range_args, gdl_rparen
-    );
+    epc_parser_t * count_range_call
+        = epc_and(l, "CountRangeCall", 4, p_count_range, gdl_lparen, count_range_args, gdl_rparen);
     epc_parser_set_ast_action(count_range_call, GDL_AST_ACTION_CREATE_COUNT_RANGE_CALL);
 
     // between_call: between '(' expression ',' expression ',' expression ')'
     epc_parser_t * between_args = epc_and(
-        l, "BetweenArgs", 5,
-        gdl_expression_arg, gdl_comma, gdl_expression_arg, gdl_comma, gdl_expression_arg
+        l, "BetweenArgs", 5, gdl_expression_arg, gdl_comma, gdl_expression_arg, gdl_comma, gdl_expression_arg
     );
-    epc_parser_t * between_call = epc_and(
-        l, "BetweenCall", 4, p_between, gdl_lparen, between_args, gdl_rparen
-    );
+    epc_parser_t * between_call = epc_and(l, "BetweenCall", 4, p_between, gdl_lparen, between_args, gdl_rparen);
     epc_parser_set_ast_action(between_call, GDL_AST_ACTION_CREATE_BETWEEN_CALL);
 
     // delimited_call: delimited '(' expression ',' expression ')'
-    epc_parser_t * delimited_args = epc_and(
-        l, "DelimitedArgs", 3, gdl_expression_arg, gdl_comma, gdl_expression_arg
-    );
-    epc_parser_t * delimited_call = epc_and(
-        l, "DelimitedCall", 4, p_delimited, gdl_lparen, delimited_args, gdl_rparen
-    );
+    epc_parser_t * delimited_args = epc_and(l, "DelimitedArgs", 3, gdl_expression_arg, gdl_comma, gdl_expression_arg);
+    epc_parser_t * delimited_call = epc_and(l, "DelimitedCall", 4, p_delimited, gdl_lparen, delimited_args, gdl_rparen);
     epc_parser_set_ast_action(delimited_call, GDL_AST_ACTION_CREATE_DELIMITED_CALL);
 
     // delimited_flex_call: delimited_flex '(' expression ',' expression ')'
-    epc_parser_t * delimited_flex_call = epc_and(
-        l, "DelimitedFlexCall", 4, p_delimited_flex, gdl_lparen, delimited_args, gdl_rparen
-    );
+    epc_parser_t * delimited_flex_call
+        = epc_and(l, "DelimitedFlexCall", 4, p_delimited_flex, gdl_lparen, delimited_args, gdl_rparen);
     epc_parser_set_ast_action(delimited_flex_call, GDL_AST_ACTION_CREATE_DELIMITED_FLEX_CALL);
 
     // lookahead_call: lookahead '(' expression ')'
-    epc_parser_t * lookahead_call = epc_and(
-        l, "LookaheadCall", 4, p_lookahead, gdl_lparen, gdl_expression_arg, gdl_rparen
-    );
+    epc_parser_t * lookahead_call
+        = epc_and(l, "LookaheadCall", 4, p_lookahead, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(lookahead_call, GDL_AST_ACTION_CREATE_LOOKAHEAD_CALL);
 
     // not_call: not '(' expression ')'
-    epc_parser_t * not_call = epc_and(
-        l, "NotCall", 4, p_not, gdl_lparen, gdl_expression_arg, gdl_rparen
-    );
+    epc_parser_t * not_call = epc_and(l, "NotCall", 4, p_not, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(not_call, GDL_AST_ACTION_CREATE_NOT_CALL);
 
     // oneof_call: oneof '(' string_literal ')'
-    epc_parser_t * one_of_call = epc_and(
-        l, "OneofCall", 4, p_one_of, gdl_lparen, gdl_string_literal, gdl_rparen
-    );
+    epc_parser_t * one_of_call = epc_and(l, "OneofCall", 4, p_one_of, gdl_lparen, gdl_string_literal, gdl_rparen);
     epc_parser_set_ast_action(one_of_call, GDL_AST_ACTION_CREATE_ONEOF_CALL);
 
     // lexeme/strip flags
     epc_parser_t * lexeme_flag = epc_or(
-        l, "LexemeFlag", 7,
-        lexeme_flag_ws, lexeme_flag_c_comment, lexeme_flag_cpp_comment,
-        lexeme_flag_bash_comment, lexeme_flag_all_comments, lexeme_flag_all_styles,
+        l,
+        "LexemeFlag",
+        7,
+        lexeme_flag_ws,
+        lexeme_flag_c_comment,
+        lexeme_flag_cpp_comment,
+        lexeme_flag_bash_comment,
+        lexeme_flag_all_comments,
+        lexeme_flag_all_styles,
         lexeme_flag_all
     );
     epc_parser_set_ast_action(lexeme_flag, GDL_AST_ACTION_CREATE_KEYWORD);
 
     // lexeme_call: lexeme '(' expression (',' flag)* ')'
-    epc_parser_t * extra_lexeme_arg = epc_and(
-        l, "ExtraLexemeArg", 2, gdl_comma, lexeme_flag
-    );
+    epc_parser_t * extra_lexeme_arg = epc_and(l, "ExtraLexemeArg", 2, gdl_comma, lexeme_flag);
     epc_parser_t * extra_lexeme_args = epc_many(l, "ExtraLexemeArgs", extra_lexeme_arg);
     epc_parser_set_ast_action(extra_lexeme_args, GDL_AST_ACTION_CREATE_SEQUENCE);
-    epc_parser_t * lexeme_args = epc_and(
-        l, "LexemeArgs", 2, gdl_expression_arg, extra_lexeme_args
-    );
-    epc_parser_t * lexeme_call = epc_and(
-        l, "LexemeCall", 4, p_lexeme, gdl_lparen, lexeme_args, gdl_rparen
-    );
+    epc_parser_t * lexeme_args = epc_and(l, "LexemeArgs", 2, gdl_expression_arg, extra_lexeme_args);
+    epc_parser_t * lexeme_call = epc_and(l, "LexemeCall", 4, p_lexeme, gdl_lparen, lexeme_args, gdl_rparen);
     epc_parser_set_ast_action(lexeme_call, GDL_AST_ACTION_CREATE_LEXEME_CALL);
 
     // strip variants
-    epc_parser_t * strip_call = epc_and(
-        l, "StripCall", 4, p_strip, gdl_lparen, lexeme_args, gdl_rparen
-    );
+    epc_parser_t * strip_call = epc_and(l, "StripCall", 4, p_strip, gdl_lparen, lexeme_args, gdl_rparen);
     epc_parser_set_ast_action(strip_call, GDL_AST_ACTION_CREATE_STRIP_CALL);
 
-    epc_parser_t * stripl_call = epc_and(
-        l, "StriplCall", 4, p_stripl, gdl_lparen, lexeme_args, gdl_rparen
-    );
+    epc_parser_t * stripl_call = epc_and(l, "StriplCall", 4, p_stripl, gdl_lparen, lexeme_args, gdl_rparen);
     epc_parser_set_ast_action(stripl_call, GDL_AST_ACTION_CREATE_STRIPL_CALL);
 
-    epc_parser_t * stripr_call = epc_and(
-        l, "StriprCall", 4, p_stripr, gdl_lparen, lexeme_args, gdl_rparen
-    );
+    epc_parser_t * stripr_call = epc_and(l, "StriprCall", 4, p_stripr, gdl_lparen, lexeme_args, gdl_rparen);
     epc_parser_set_ast_action(stripr_call, GDL_AST_ACTION_CREATE_STRIPR_CALL);
 
     // chain calls
-    epc_parser_t * chain_args = epc_and(
-        l, "ChainArgs", 3, gdl_expression_arg, gdl_comma, gdl_expression_arg
-    );
+    epc_parser_t * chain_args = epc_and(l, "ChainArgs", 3, gdl_expression_arg, gdl_comma, gdl_expression_arg);
 
-    epc_parser_t * chainl1_call = epc_and(
-        l, "ChainL1Call", 4, p_chainl1, gdl_lparen, chain_args, gdl_rparen
-    );
+    epc_parser_t * chainl1_call = epc_and(l, "ChainL1Call", 4, p_chainl1, gdl_lparen, chain_args, gdl_rparen);
     epc_parser_set_ast_action(chainl1_call, GDL_AST_ACTION_CREATE_CHAINL1_CALL);
 
-    epc_parser_t * chainr1_call = epc_and(
-        l, "ChainR1Call", 4, p_chainr1, gdl_lparen, chain_args, gdl_rparen
-    );
+    epc_parser_t * chainr1_call = epc_and(l, "ChainR1Call", 4, p_chainr1, gdl_lparen, chain_args, gdl_rparen);
     epc_parser_set_ast_action(chainr1_call, GDL_AST_ACTION_CREATE_CHAINR1_CALL);
 
     // skip_call: skip '(' expression ')'
-    epc_parser_t * skip_call = epc_and(
-        l, "SkipCall", 4, p_skip, gdl_lparen, gdl_expression_arg, gdl_rparen
-    );
+    epc_parser_t * skip_call = epc_and(l, "SkipCall", 4, p_skip, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(skip_call, GDL_AST_ACTION_CREATE_SKIP_CALL);
 
     // memoize_call: memoize '(' expression ')'
-    epc_parser_t * memoize_call = epc_and(
-        l, "MemoizeCall", 4, p_memoize, gdl_lparen, gdl_expression_arg, gdl_rparen
-    );
+    epc_parser_t * memoize_call = epc_and(l, "MemoizeCall", 4, p_memoize, gdl_lparen, gdl_expression_arg, gdl_rparen);
     epc_parser_set_ast_action(memoize_call, GDL_AST_ACTION_CREATE_MEMOIZE_CALL);
 
     // satisfy_call: satisfy '(' expression ',' string_literal ',' identifier ',' identifier ')'
     epc_parser_t * satisfy_args = epc_and(
-        l, "SatisfyArgs", 7,
-        gdl_expression_arg, gdl_comma, gdl_string_literal,
-        gdl_comma, gdl_identifier, gdl_comma, gdl_identifier
+        l,
+        "SatisfyArgs",
+        7,
+        gdl_expression_arg,
+        gdl_comma,
+        gdl_string_literal,
+        gdl_comma,
+        gdl_identifier,
+        gdl_comma,
+        gdl_identifier
     );
-    epc_parser_t * satisfy_call = epc_and(
-        l, "SatisfyCall", 4, p_satisfy, gdl_lparen, satisfy_args, gdl_rparen
-    );
+    epc_parser_t * satisfy_call = epc_and(l, "SatisfyCall", 4, p_satisfy, gdl_lparen, satisfy_args, gdl_rparen);
     epc_parser_set_ast_action(satisfy_call, GDL_AST_ACTION_CREATE_SATISFY_CALL);
 
     // wrap_call: wrap '(' expression ',' identifier ',' identifier ')'
-    epc_parser_t * wrap_args = epc_and(
-        l, "WrapArgs", 5,
-        gdl_expression_arg, gdl_comma, gdl_identifier, gdl_comma, gdl_identifier
-    );
-    epc_parser_t * wrap_call = epc_and(
-        l, "WrapCall", 4, p_wrap, gdl_lparen, wrap_args, gdl_rparen
-    );
+    epc_parser_t * wrap_args
+        = epc_and(l, "WrapArgs", 5, gdl_expression_arg, gdl_comma, gdl_identifier, gdl_comma, gdl_identifier);
+    epc_parser_t * wrap_call = epc_and(l, "WrapCall", 4, p_wrap, gdl_lparen, wrap_args, gdl_rparen);
     epc_parser_set_ast_action(wrap_call, GDL_AST_ACTION_CREATE_WRAP_CALL);
 
     // --- All combinator calls combined ---
@@ -323,20 +325,33 @@ create_gdl_parser(epc_parser_list * l)
         l,
         "CombinatorCall",
         20,
-        none_of_call, count_call, count_range_call,
-        between_call, delimited_call, delimited_flex_call,
-        lookahead_call, not_call, fail_call, one_of_call,
-        lexeme_call, strip_call, stripl_call, stripr_call,
-        chainl1_call, chainr1_call, skip_call, memoize_call,
-        satisfy_call, wrap_call
+        none_of_call,
+        count_call,
+        count_range_call,
+        between_call,
+        delimited_call,
+        delimited_flex_call,
+        lookahead_call,
+        not_call,
+        fail_call,
+        one_of_call,
+        lexeme_call,
+        strip_call,
+        stripl_call,
+        stripr_call,
+        chainl1_call,
+        chainr1_call,
+        skip_call,
+        memoize_call,
+        satisfy_call,
+        wrap_call
     );
 
     // --- Expression grammar ---
 
     // PrimaryExpression: Terminal | CharRange | CombinatorCall | '(' definition_expression ')'
-    epc_parser_t * gdl_parenthesized_expression = epc_and(
-        l, "ParenthesizedExpression", 3, gdl_lparen, gdl_definition_expression, gdl_rparen
-    );
+    epc_parser_t * gdl_parenthesized_expression
+        = epc_and(l, "ParenthesizedExpression", 3, gdl_lparen, gdl_definition_expression, gdl_rparen);
 
     epc_parser_t * gdl_primary_expression = epc_or(
         l,
@@ -350,17 +365,14 @@ create_gdl_parser(epc_parser_list * l)
     );
 
     // ExpressionFactor: primary_expression repetition_operator?
-    epc_parser_t * gdl_repetition_operator = epc_or(
-        l, "RepetitionOperator", 3, gdl_star, gdl_plus, gdl_question
-    );
+    epc_parser_t * gdl_repetition_operator = epc_or(l, "RepetitionOperator", 3, gdl_star, gdl_plus, gdl_question);
     epc_parser_set_ast_action(gdl_repetition_operator, GDL_AST_ACTION_CREATE_REPETITION_OPERATOR);
 
     epc_parser_t * gdl_optional_repetition = epc_optional(l, "OptionalRepetition", gdl_repetition_operator);
     epc_parser_set_ast_action(gdl_optional_repetition, GDL_AST_ACTION_CREATE_OPTIONAL);
 
-    epc_parser_t * gdl_expression_factor = epc_and(
-        l, "ExpressionFactor", 2, gdl_primary_expression, gdl_optional_repetition
-    );
+    epc_parser_t * gdl_expression_factor
+        = epc_and(l, "ExpressionFactor", 2, gdl_primary_expression, gdl_optional_repetition);
     epc_parser_set_ast_action(gdl_expression_factor, GDL_AST_ACTION_CREATE_EXPRESSION_FACTOR);
 
     // ExpressionTerm: expression_factor+
@@ -368,14 +380,11 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_set_ast_action(gdl_expression_term, GDL_AST_ACTION_CREATE_SEQUENCE);
 
     // DefinitionExpression: expression_term ('|' expression_term)*
-    epc_parser_t * gdl_alternative_part = epc_and(
-        l, "AlternativePart", 2, gdl_pipe, gdl_expression_term
-    );
+    epc_parser_t * gdl_alternative_part = epc_and(l, "AlternativePart", 2, gdl_pipe, gdl_expression_term);
     epc_parser_t * gdl_many_alternatives = epc_many(l, "ManyAlternatives", gdl_alternative_part);
 
-    epc_parser_t * temp_definition_expression = epc_and(
-        l, "DefinitionExpression", 2, gdl_expression_term, gdl_many_alternatives
-    );
+    epc_parser_t * temp_definition_expression
+        = epc_and(l, "DefinitionExpression", 2, gdl_expression_term, gdl_many_alternatives);
     epc_parser_set_ast_action(temp_definition_expression, GDL_AST_ACTION_CREATE_ALTERNATIVE);
 
     // Resolve forward references
@@ -383,9 +392,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_duplicate(gdl_expression_arg, gdl_definition_expression);
 
     // --- Semantic action: '@' identifier ---
-    epc_parser_t * gdl_semantic_action = epc_and(
-        l, "SemanticAction", 2, gdl_at, gdl_identifier
-    );
+    epc_parser_t * gdl_semantic_action = epc_and(l, "SemanticAction", 2, gdl_at, gdl_identifier);
     epc_parser_set_ast_action(gdl_semantic_action, GDL_AST_ACTION_CREATE_SEMANTIC_ACTION);
 
     epc_parser_t * gdl_optional_semantic_action = epc_optional(l, "OptionalSemanticAction", gdl_semantic_action);

@@ -771,7 +771,7 @@ handle_create_raw_char_literal(
 
     if (count > 0)
     {
-        epc_ast_builder_set_error(ctx, "Create raw char literal expects 0 child, got %d", count);
+        epc_ast_builder_set_error(ctx, "Create raw char literal expects no children, got %d", count);
         for (int i = 0; i < count; ++i)
         {
             gdl_ast_node_free(children[i], user_data);
@@ -933,28 +933,6 @@ handle_create_char_range(
 #endif
 
     (void)node;
-    if (count == 0)
-    {
-        char * text = get_cpt_node_text(node);
-        if (text == NULL || strlen(text) < 4 || text[0] != '[')
-        {
-            epc_ast_builder_set_error(ctx, "Char range token expects format [x-y], got '%s'", text ? text : "");
-            free(text);
-            return;
-        }
-        char start_char = text[1];
-        char end_char = text[3];
-        gdl_ast_node_t * char_range_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_CHAR_RANGE);
-        if (char_range_node)
-        {
-            char_range_node->data.char_range.start_char = start_char;
-            char_range_node->data.char_range.end_char = end_char;
-            epc_ast_push(ctx, char_range_node);
-        }
-        free(text);
-        return;
-    }
-
     if (count != 2)
     {
         epc_ast_builder_set_error(ctx, "Char range expects 2 children (start_char, end_char), got %d", count);
