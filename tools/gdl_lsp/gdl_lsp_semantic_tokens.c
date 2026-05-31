@@ -161,7 +161,7 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
     gdl_document_cache_t * cache = cache_add(svr, uri);
     if (token_count > 0)
     {
-        cache->tokens = malloc(token_count * sizeof(gdl_token_entry_t));
+        cache->tokens = malloc(token_count * sizeof(*cache->tokens));
         cache->token_count = (int)token_count;
 
         for (size_t i = 0; i < token_count; i++)
@@ -169,20 +169,21 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
             epc_token_id_t id;
             epc_parser_input_view_t view;
             epc_token_list_get(tokenizer_ctx.tokens, i, &id, &view);
+            gdl_token_entry_t * entry = &cache->tokens[i];
 
-            cache->tokens[i].id = id;
-            cache->tokens[i].offset = view.offset;
-            cache->tokens[i].line = view.line_number > 0 ? view.line_number - 1 : 0;
-            cache->tokens[i].column = view.column_number > 0 ? view.column_number - 1 : 0;
-            cache->tokens[i].length = view.len;
-            cache->tokens[i].lsp_type = token_id_to_lsp_type(id);
+            entry->id = id;
+            entry->offset = view.offset;
+            entry->line = view.line_number > 0 ? view.line_number - 1 : 0;
+            entry->column = view.column_number > 0 ? view.column_number - 1 : 0;
+            entry->length = view.len;
+            entry->lsp_type = token_id_to_lsp_type(id);
         }
     }
 
     // Heuristic pass: refine types based on token stream patterns.
     // IDENTIFIER followed by '='  → rule definition (function)
     // '@' followed by IDENTIFIER → semantic action (decorator)
-    cache->ast_token_types = calloc((size_t)cache->token_count, sizeof(int));
+    cache->ast_token_types = calloc((size_t)cache->token_count, sizeof(*cache->ast_token_types));
     for (int i = 0; i < cache->token_count; i++)
     {
         cache->ast_token_types[i] = cache->tokens[i].lsp_type;
@@ -195,14 +196,19 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
         {
             cache->ast_token_types[i] = LSP_TYPE_FUNCTION;
         }
-        if (cache->tokens[i].id == TOKEN_AT && cache->tokens[i + 1].id == TOKEN_IDENTIFIER)
+        if (cache->tokens[i].id == TOKEN_AT)
         {
             cache->ast_token_types[i] = LSP_TYPE_DECORATOR;
-            cache->ast_token_types[i + 1] = LSP_TYPE_DECORATOR;
+            if (cache->tokens[i + 1].id == TOKEN_IDENTIFIER)
+            {
+                cache->ast_token_types[i + 1] = LSP_TYPE_DECORATOR;
+            }
         }
     }
 
+#ifdef NOTYET
     // Level 2: attempt full parse + AST build (validation only, doesn't affect coloring)
+    /* I'm not sure there is anything a level 2 process would add. */
     epc_ast_hook_registry_t * grammar_reg = epc_ast_hook_registry_create(GDL_AST_ACTION_MAX);
     gdl_ast_hook_registry_init(grammar_reg, NULL);
 
@@ -218,6 +224,8 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
     }
 
     epc_ast_hook_registry_free(grammar_reg);
+#endif
+
     epc_parse_session_destroy(&session);
     epc_ast_hook_registry_free(reg);
     epc_token_list_free(tokenizer_ctx.tokens);

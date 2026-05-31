@@ -4,9 +4,7 @@ const vscode = require("vscode");
 let client = null;
 
 function activate(context) {
-  const serverPath = context.asAbsolutePath(
-    path.join("..", "..", "..", "c_tools", "gdl_lsp_server", "gdl_lsp")
-  );
+  const serverPath = "/full/path/to/the/gdl/server/gdl_lsp";
 
   const serverOptions = {
     command: serverPath,

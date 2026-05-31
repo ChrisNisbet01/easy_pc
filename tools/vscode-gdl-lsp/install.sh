@@ -24,3 +24,5 @@ echo "==> Done!"
 echo ""
 echo "The extension is installed. Please restart VSCode, then open a .gdl file."
 echo "To verify it's loaded, open the Output panel and select 'GDL Language Server' from the dropdown."
+echo "Set the path to the GDL LSP server in ${VSCODE_EXT_DIR}/extension.js, serverPath variable."
+echo
