@@ -234,6 +234,11 @@ The `easy_pc` library comes with several example applications demonstrating its 
 *   **GDL Compiler:** A tool located in `tools/gdl_compiler/` that allows you to define grammars using the Grammar Definition Language (GDL) and automatically generates C parser code. This simplifies the process of creating complex parsers without writing boilerplate `easy_pc` code by hand.
     *   [Learn more about the GDL Language and its usage here.](docs/GDL_Language_Description.md)
 
+*   **GDL LSP Server:** Located in [tools/gdl_lsp/](tools/gdl_lsp/)
+    A Language Server Protocol (LSP) implementation for GDL files. It provides IDE features like syntax highlighting (semantic tokens) for `.gdl` grammar files in any LSP-compatible editor (VS Code, Neovim, etc.). A VS Code extension is available at [tools/vscode-gdl-lsp/](tools/vscode-gdl-lsp/).
+    *   Requires `libjson-c-dev` and `libubox` (build with `-DBUILD_GDL_LSP=ON`).
+    *   [Learn more about the GDL Language and its usage here.](docs/GDL_Language_Description.md)
+
 *   **Arithmetic Parser:** Located in [examples/arithmetic_parser/](examples/arithmetic_parser/)
     This example demonstrates how to build a parser for simple arithmetic expressions, including support for basic operations (+, -, *, /), parentheses, and integer/double numbers. It also includes an AST builder and evaluator.
 
