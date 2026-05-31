@@ -1,5 +1,6 @@
 #pragma once
 
+#include "documents.h"
 #include "framing.h"
 #include "rpc.h"
 
@@ -40,6 +41,7 @@ struct rpc_server_st
     size_t buf_len;
     size_t buf_cap;
 
+    documents_ctx_st * documents;
     framing_st * framing;
 
     transport_msg_cb on_transport_msg;
@@ -56,7 +58,8 @@ struct rpc_server_st
 #include "gdl_token_ids.h"
 #include "gdl_tokenizer_actions.h"
 
-typedef struct {
+typedef struct
+{
     epc_token_id_t id;
     size_t offset;
     size_t line;
@@ -65,7 +68,8 @@ typedef struct {
     int lsp_type;
 } gdl_token_entry_t;
 
-typedef struct {
+typedef struct
+{
     char uri[4096];
     gdl_token_entry_t * tokens;
     int token_count;
@@ -73,7 +77,8 @@ typedef struct {
     int * ast_token_types;
 } gdl_document_cache_t;
 
-typedef struct {
+typedef struct
+{
     rpc_server_st base;
 
     epc_parser_list * parser_list;

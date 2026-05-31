@@ -88,6 +88,7 @@ content_length_encode(framing_st * f, char const * body, size_t body_len, size_t
 
     memcpy(framed, header, (size_t)hdr_len);
     memcpy(framed + (size_t)hdr_len, body, body_len);
+
     return framed;
 }
 
@@ -112,6 +113,7 @@ framing_content_length_create(void)
     fl->base.destroy = content_length_destroy;
     fl->in_header = true;
     fl->content_length = -1;
+
     return &fl->base;
 }
 
@@ -156,6 +158,7 @@ newline_encode(framing_st * f, char const * body, size_t body_len, size_t * fram
 
     memcpy(framed, body, body_len);
     framed[body_len] = '\n';
+
     return framed;
 }
 
@@ -178,5 +181,6 @@ framing_newline_create(void)
     fl->base.decode = newline_decode;
     fl->base.encode = newline_encode;
     fl->base.destroy = newline_destroy;
+
     return &fl->base;
 }

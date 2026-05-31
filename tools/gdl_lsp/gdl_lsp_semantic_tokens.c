@@ -12,14 +12,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LSP_TYPE_KEYWORD   0
-#define LSP_TYPE_STRING    1
-#define LSP_TYPE_NUMBER    2
-#define LSP_TYPE_VARIABLE  3
-#define LSP_TYPE_OPERATOR  4
-#define LSP_TYPE_PARAMETER 5
-#define LSP_TYPE_FUNCTION  6
-#define LSP_TYPE_DECORATOR 7
+typedef enum
+{
+    LSP_TYPE_KEYWORD = 0,
+    LSP_TYPE_STRING = 1,
+    LSP_TYPE_NUMBER = 2,
+    LSP_TYPE_VARIABLE = 3,
+    LSP_TYPE_OPERATOR = 4,
+    LSP_TYPE_PARAMETER = 5,
+    LSP_TYPE_FUNCTION = 6,
+    LSP_TYPE_DECORATOR = 7
+} lsp_token_type_t;
 
 static int
 token_id_to_lsp_type(epc_token_id_t id)
@@ -77,6 +80,7 @@ cache_lookup(gdl_lsp_server_st * svr, char const * uri)
             return &svr->caches[i];
         }
     }
+
     return NULL;
 }
 
@@ -94,6 +98,7 @@ cache_add(gdl_lsp_server_st * svr, char const * uri)
     strncpy(cache->uri, uri, sizeof(cache->uri) - 1);
     cache->uri[sizeof(cache->uri) - 1] = '\0';
     svr->cache_count++;
+
     return cache;
 }
 
@@ -108,6 +113,7 @@ gdl_clear_document_cache(gdl_lsp_server_st * svr, char const * uri)
             free(svr->caches[i].ast_token_types);
             svr->caches[i] = svr->caches[svr->cache_count - 1];
             svr->cache_count--;
+
             return;
         }
     }
@@ -133,6 +139,7 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
         epc_parse_session_destroy(&session);
         epc_ast_hook_registry_free(reg);
         epc_token_list_free(tokenizer_ctx.tokens);
+
         return false;
     }
 
@@ -144,6 +151,7 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
         epc_parse_session_destroy(&session);
         epc_ast_hook_registry_free(reg);
         epc_token_list_free(tokenizer_ctx.tokens);
+
         return false;
     }
 
@@ -189,7 +197,7 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
         }
         if (cache->tokens[i].id == TOKEN_AT && cache->tokens[i + 1].id == TOKEN_IDENTIFIER)
         {
-            cache->ast_token_types[i]     = LSP_TYPE_DECORATOR;
+            cache->ast_token_types[i] = LSP_TYPE_DECORATOR;
             cache->ast_token_types[i + 1] = LSP_TYPE_DECORATOR;
         }
     }
@@ -222,7 +230,7 @@ gdl_encode_semantic_tokens(gdl_lsp_server_st * svr, char const * uri, struct jso
 {
     gdl_document_cache_t * cache = cache_lookup(svr, uri);
 
-    if (!cache)
+    if (cache == NULL)
     {
         rpc_send_error(&svr->base, id, -32603, "No cached tokens for document");
         return;
@@ -237,9 +245,7 @@ gdl_encode_semantic_tokens(gdl_lsp_server_st * svr, char const * uri, struct jso
     for (int i = 0; i < cache->token_count; i++)
     {
         gdl_token_entry_t * tok = &cache->tokens[i];
-        int lsp_type = cache->ast_available && cache->ast_token_types
-                           ? cache->ast_token_types[i]
-                           : tok->lsp_type;
+        int lsp_type = cache->ast_available && cache->ast_token_types ? cache->ast_token_types[i] : tok->lsp_type;
 
         size_t delta_line = tok->line - prev_line;
         size_t delta_col;

@@ -47,6 +47,7 @@ handle_initialize(rpc_server_st * base, struct json_object * params, struct json
     json_object_object_add(result, "capabilities", capabilities);
 
     rpc_send_response(base, id, result);
+
     return true;
 }
 
@@ -56,6 +57,7 @@ handle_initialized(rpc_server_st * base, struct json_object * params, struct jso
     (void)base;
     (void)params;
     (void)id;
+
     return true;
 }
 
@@ -65,6 +67,7 @@ handle_shutdown(rpc_server_st * base, struct json_object * params, struct json_o
     (void)params;
     base->shutdown_requested = true;
     rpc_send_response(base, id, NULL);
+
     return true;
 }
 
@@ -101,8 +104,8 @@ debounce_cb(struct uloop_timeout * t)
 
     fprintf(stderr, "[LSP] debounce fired for %s\n", uri);
 
-    document_st * doc = documents_lookup(uri);
-    if (doc)
+    document_st * doc = documents_lookup(svr->base.documents, uri);
+    if (doc != NULL)
     {
         gdl_tokenize_document(svr, uri, doc->text);
     }
@@ -132,7 +135,7 @@ handle_text_document_did_open(rpc_server_st * base, struct json_object * params,
         return false;
     }
 
-    documents_update(json_object_get_string(uri_obj), json_object_get_string(text_obj));
+    documents_update(base->documents, json_object_get_string(uri_obj), json_object_get_string(text_obj));
 
     gdl_lsp_server_st * svr = (gdl_lsp_server_st *)base;
     free(svr->pending_uri);
@@ -177,7 +180,7 @@ handle_text_document_did_change(rpc_server_st * base, struct json_object * param
     }
 
     char const * uri_str = json_object_get_string(uri_obj);
-    documents_update(uri_str, json_object_get_string(text_obj));
+    documents_update(base->documents, uri_str, json_object_get_string(text_obj));
 
     gdl_lsp_server_st * svr = (gdl_lsp_server_st *)base;
     fprintf(stderr, "[LSP] didChange: uri=%s, debounce timer set\n", uri_str);
@@ -208,7 +211,7 @@ handle_text_document_did_close(rpc_server_st * base, struct json_object * params
     }
 
     char const * uri_str = json_object_get_string(uri_obj);
-    documents_remove(uri_str);
+    documents_remove(base->documents, uri_str);
     gdl_lsp_server_st * svr = (gdl_lsp_server_st *)base;
     gdl_clear_document_cache(svr, uri_str);
 
@@ -243,7 +246,7 @@ handle_semantic_tokens_full(rpc_server_st * base, struct json_object * params, s
         char * pending = svr->pending_uri;
         svr->pending_uri = NULL;
 
-        document_st * doc = documents_lookup(pending);
+        document_st * doc = documents_lookup(base->documents, pending);
         if (doc)
         {
             gdl_tokenize_document(svr, pending, doc->text);
@@ -252,6 +255,7 @@ handle_semantic_tokens_full(rpc_server_st * base, struct json_object * params, s
     }
 
     gdl_encode_semantic_tokens(svr, uri_str, id);
+
     return true;
 }
 

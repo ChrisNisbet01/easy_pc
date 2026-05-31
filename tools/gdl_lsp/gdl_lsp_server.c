@@ -1,6 +1,5 @@
 #include "gdl_lsp_server.h"
 
-#include "documents.h"
 #include "gdl_ast.h"
 #include "gdl_compiler_ast_actions.h"
 #include "gdl_lsp_handlers.h"
@@ -13,6 +12,7 @@
 #include <libubox/uloop.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void
 run_gdl_lsp_server(gdl_lsp_server_st * const svr, int const in_fd, int const out_fd)
@@ -23,7 +23,7 @@ run_gdl_lsp_server(gdl_lsp_server_st * const svr, int const in_fd, int const out
 
     svr->base.framing = framing_content_length_create();
 
-    documents_init();
+    svr->base.documents = documents_init();
 
     uloop_init();
 
@@ -53,7 +53,7 @@ run_gdl_lsp_server(gdl_lsp_server_st * const svr, int const in_fd, int const out
     uloop_run();
 
     rpc_cleanup_registry(&svr->base);
-    documents_cleanup();
+    documents_cleanup(svr->base.documents);
     transport_cleanup(&svr->base);
 
     free(svr->pending_uri);

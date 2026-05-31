@@ -126,8 +126,6 @@ stdin_cb(struct uloop_fd * u, unsigned int events)
         return;
     }
 
-    fprintf(stderr, "[LSP] read %zu bytes from stdin\n", (size_t)n);
-
     if (!append_to_buffer(svr, tmp, (size_t)n))
     {
         uloop_end();
@@ -193,8 +191,6 @@ transport_cleanup(rpc_server_st * svr)
 void
 transport_send(rpc_server_st * svr, char const * data, size_t len)
 {
-    fprintf(stderr, "[LSP] queued %zu bytes for send\n", len);
-
     write_queue_entry_st * entry = malloc(sizeof(*entry));
     entry->len = len;
     entry->buf = malloc(len);

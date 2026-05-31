@@ -9,11 +9,13 @@ typedef struct document_st
     char * text;
 } document_st;
 
-void documents_init(void);
-void documents_cleanup(void);
+typedef struct documents_ctx_st documents_ctx_st;
 
-document_st * documents_lookup(char const * uri);
+documents_ctx_st * documents_init(void);
+void documents_cleanup(documents_ctx_st * docs);
 
-void documents_add(document_st * doc);
-void documents_remove(char const * uri);
-void documents_update(char const * uri, char const * text);
+document_st * documents_lookup(documents_ctx_st * docs, char const * uri);
+
+void documents_add(documents_ctx_st * docs, document_st * doc);
+void documents_remove(documents_ctx_st * docs, char const * uri);
+void documents_update(documents_ctx_st * docs, char const * uri, char const * text);

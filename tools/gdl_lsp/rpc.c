@@ -76,7 +76,7 @@ rpc_send_error(rpc_server_st * svr, struct json_object * id, int code, char cons
     json_object_object_add(error, "message", json_object_new_string(message));
     json_object_object_add(msg, "error", error);
 
-    if (id)
+    if (id != NULL)
     {
         json_object_object_add(msg, "id", json_object_get(id));
     }
