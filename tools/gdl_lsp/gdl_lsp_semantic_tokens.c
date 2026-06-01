@@ -4,7 +4,7 @@
 #include "gdl_compiler_ast_actions.h"
 #include "gdl_tokenizer_actions.h"
 #include "gdl_tokenizer_parser.h"
-#include "rpc.h"
+#include "gdl_lsp_server.h"
 
 #include <easy_pc/easy_pc.h>
 #include <easy_pc/easy_pc_ast.h>
@@ -181,8 +181,8 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
     }
 
     // Heuristic pass: refine types based on token stream patterns.
-    // IDENTIFIER followed by '='  → rule definition (function)
-    // '@' followed by IDENTIFIER → semantic action (decorator)
+    // IDENTIFIER followed by '='  -> rule definition (function)
+    // '@' followed by IDENTIFIER -> semantic action (decorator)
     cache->ast_token_types = calloc((size_t)cache->token_count, sizeof(*cache->ast_token_types));
     for (int i = 0; i < cache->token_count; i++)
     {
@@ -206,26 +206,6 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
         }
     }
 
-#ifdef NOTYET
-    // Level 2: attempt full parse + AST build (validation only, doesn't affect coloring)
-    /* I'm not sure there is anything a level 2 process would add. */
-    epc_ast_hook_registry_t * grammar_reg = epc_ast_hook_registry_create(GDL_AST_ACTION_MAX);
-    gdl_ast_hook_registry_init(grammar_reg, NULL);
-
-    bool reparse_ok = epc_parse_session_reparse(&session, svr->grammar_parser, tokenizer_ctx.tokens);
-
-    if (reparse_ok && !session.result.is_error)
-    {
-        fprintf(stderr, "[LSP] full parse %s: success\n", uri);
-    }
-    else
-    {
-        fprintf(stderr, "[LSP] full parse %s: parse failed\n", uri);
-    }
-
-    epc_ast_hook_registry_free(grammar_reg);
-#endif
-
     epc_parse_session_destroy(&session);
     epc_ast_hook_registry_free(reg);
     epc_token_list_free(tokenizer_ctx.tokens);
@@ -233,15 +213,14 @@ gdl_tokenize_document(gdl_lsp_server_st * svr, char const * uri, char const * te
     return true;
 }
 
-void
-gdl_encode_semantic_tokens(gdl_lsp_server_st * svr, char const * uri, struct json_object * id)
+struct json_object *
+gdl_encode_semantic_tokens(gdl_lsp_server_st * svr, char const * uri)
 {
     gdl_document_cache_t * cache = cache_lookup(svr, uri);
 
     if (cache == NULL)
     {
-        rpc_send_error(&svr->base, id, -32603, "No cached tokens for document");
-        return;
+        return NULL;
     }
 
     struct json_object * result = json_object_new_object();
@@ -277,5 +256,6 @@ gdl_encode_semantic_tokens(gdl_lsp_server_st * svr, char const * uri, struct jso
     }
 
     json_object_object_add(result, "data", data_arr);
-    rpc_send_response(&svr->base, id, result);
+
+    return result;
 }

@@ -2,12 +2,11 @@
 
 #include "documents.h"
 #include "gdl_lsp_semantic_tokens.h"
-#include "rpc.h"
-#include "transport.h"
+#include "gdl_lsp_server.h"
 #include "utils.h"
 
 #include <json-c/json.h>
-#include <libubox/uloop.h>
+#include <rpc2/rpc2.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,10 +15,8 @@
 /* --- Lifecycle handlers --- */
 
 static bool
-handle_initialize(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_initialize(struct rpc_request * req)
 {
-    (void)params;
-
     struct json_object * result = json_object_new_object();
     struct json_object * capabilities = json_object_new_object();
 
@@ -46,53 +43,41 @@ handle_initialize(rpc_server_st * base, struct json_object * params, struct json
 
     json_object_object_add(result, "capabilities", capabilities);
 
-    rpc_send_response(base, id, result);
+    rpc_ok(req, result);
 
     return true;
 }
 
 static bool
-handle_initialized(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_initialized(struct rpc_request * req)
 {
-    (void)base;
-    (void)params;
-    (void)id;
-
+    UNUSED_PARAM(req);
     return true;
 }
 
 static bool
-handle_shutdown(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_shutdown(struct rpc_request * req)
 {
-    (void)params;
-    base->shutdown_requested = true;
-    rpc_send_response(base, id, NULL);
-
+    rpc_ok(req, NULL);
     return true;
 }
 
 static bool
-handle_exit(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_exit(struct rpc_request * req)
 {
-    (void)params;
-    (void)id;
+    rpc_ctx * ctx = rpc_request_ctx(req);
 
-    transport_close_stdin(base);
-
-    if (transport_can_exit(base))
-    {
-        uloop_end();
-    }
-
+    rpc_ctx_close_stdin(ctx);
     return true;
 }
 
 /* --- Debounce callback --- */
 
 static void
-debounce_cb(struct uloop_timeout * t)
+debounce_cb(rpc_timer * t, void * user_data)
 {
-    gdl_lsp_server_st * svr = container_of(t, gdl_lsp_server_st, debounce_timer);
+    UNUSED_PARAM(t);
+    gdl_lsp_server_st * svr = user_data;
 
     if (!svr->pending_uri)
     {
@@ -104,7 +89,7 @@ debounce_cb(struct uloop_timeout * t)
 
     fprintf(stderr, "[LSP] debounce fired for %s\n", uri);
 
-    document_st * doc = documents_lookup(svr->base.documents, uri);
+    document_st * doc = documents_lookup(svr->documents, uri);
     if (doc != NULL)
     {
         gdl_tokenize_document(svr, uri, doc->text);
@@ -116,9 +101,9 @@ debounce_cb(struct uloop_timeout * t)
 /* --- Document sync handlers --- */
 
 static bool
-handle_text_document_did_open(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_text_document_did_open(struct rpc_request * req)
 {
-    (void)id;
+    struct json_object * params = rpc_params(req);
     struct json_object * text_document = NULL;
 
     if (!json_object_object_get_ex(params, "textDocument", &text_document))
@@ -135,20 +120,21 @@ handle_text_document_did_open(rpc_server_st * base, struct json_object * params,
         return false;
     }
 
-    documents_update(base->documents, json_object_get_string(uri_obj), json_object_get_string(text_obj));
+    gdl_lsp_server_st * svr = rpc_handler_data(req);
 
-    gdl_lsp_server_st * svr = (gdl_lsp_server_st *)base;
+    documents_update(svr->documents, json_object_get_string(uri_obj), json_object_get_string(text_obj));
+
     free(svr->pending_uri);
     svr->pending_uri = strdup(json_object_get_string(uri_obj));
-    uloop_timeout_set(&svr->debounce_timer, 100);
+    rpc_timer_start(svr->ctx, &svr->debounce_timer, 100);
 
     return true;
 }
 
 static bool
-handle_text_document_did_change(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_text_document_did_change(struct rpc_request * req)
 {
-    (void)id;
+    struct json_object * params = rpc_params(req);
     struct json_object * text_document = NULL;
 
     if (!json_object_object_get_ex(params, "textDocument", &text_document))
@@ -179,23 +165,24 @@ handle_text_document_did_change(rpc_server_st * base, struct json_object * param
         return false;
     }
 
+    gdl_lsp_server_st * svr = rpc_handler_data(req);
     char const * uri_str = json_object_get_string(uri_obj);
-    documents_update(base->documents, uri_str, json_object_get_string(text_obj));
 
-    gdl_lsp_server_st * svr = (gdl_lsp_server_st *)base;
+    documents_update(svr->documents, uri_str, json_object_get_string(text_obj));
+
     fprintf(stderr, "[LSP] didChange: uri=%s, debounce timer set\n", uri_str);
 
     free(svr->pending_uri);
     svr->pending_uri = strdup(uri_str);
-    uloop_timeout_set(&svr->debounce_timer, 100);
+    rpc_timer_start(svr->ctx, &svr->debounce_timer, 100);
 
     return true;
 }
 
 static bool
-handle_text_document_did_close(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_text_document_did_close(struct rpc_request * req)
 {
-    (void)id;
+    struct json_object * params = rpc_params(req);
     struct json_object * text_document = NULL;
 
     if (!json_object_object_get_ex(params, "textDocument", &text_document))
@@ -210,17 +197,19 @@ handle_text_document_did_close(rpc_server_st * base, struct json_object * params
         return false;
     }
 
+    gdl_lsp_server_st * svr = rpc_handler_data(req);
     char const * uri_str = json_object_get_string(uri_obj);
-    documents_remove(base->documents, uri_str);
-    gdl_lsp_server_st * svr = (gdl_lsp_server_st *)base;
+
+    documents_remove(svr->documents, uri_str);
     gdl_clear_document_cache(svr, uri_str);
 
     return true;
 }
 
 static bool
-handle_semantic_tokens_full(rpc_server_st * base, struct json_object * params, struct json_object * id)
+handle_semantic_tokens_full(struct rpc_request * req)
 {
+    struct json_object * params = rpc_params(req);
     struct json_object * text_document = NULL;
 
     if (!json_object_object_get_ex(params, "textDocument", &text_document))
@@ -235,18 +224,18 @@ handle_semantic_tokens_full(rpc_server_st * base, struct json_object * params, s
         return false;
     }
 
+    gdl_lsp_server_st * svr = rpc_handler_data(req);
     char const * uri_str = json_object_get_string(uri_obj);
-    gdl_lsp_server_st * svr = (gdl_lsp_server_st *)base;
 
     fprintf(stderr, "[LSP] semanticTokens: uri=%s\n", uri_str);
 
     if (svr->pending_uri && strcmp(svr->pending_uri, uri_str) == 0)
     {
-        uloop_timeout_cancel(&svr->debounce_timer);
+        rpc_timer_cancel(&svr->debounce_timer);
         char * pending = svr->pending_uri;
         svr->pending_uri = NULL;
 
-        document_st * doc = documents_lookup(base->documents, pending);
+        document_st * doc = documents_lookup(svr->documents, pending);
         if (doc)
         {
             gdl_tokenize_document(svr, pending, doc->text);
@@ -254,7 +243,16 @@ handle_semantic_tokens_full(rpc_server_st * base, struct json_object * params, s
         free(pending);
     }
 
-    gdl_encode_semantic_tokens(svr, uri_str, id);
+    struct json_object * result = gdl_encode_semantic_tokens(svr, uri_str);
+
+    if (result)
+    {
+        rpc_ok(req, result);
+    }
+    else
+    {
+        rpc_err(req, -32603, "No cached tokens for document");
+    }
 
     return true;
 }
@@ -264,16 +262,14 @@ handle_semantic_tokens_full(rpc_server_st * base, struct json_object * params, s
 void
 gdl_lsp_register_handlers(gdl_lsp_server_st * svr)
 {
-    rpc_server_st * base = &svr->base;
+    rpc_timer_init(&svr->debounce_timer, debounce_cb, svr);
 
-    svr->debounce_timer.cb = debounce_cb;
-
-    rpc_register_method(base, "initialize", handle_initialize);
-    rpc_register_method(base, "initialized", handle_initialized);
-    rpc_register_method(base, "shutdown", handle_shutdown);
-    rpc_register_method(base, "exit", handle_exit);
-    rpc_register_method(base, "textDocument/didOpen", handle_text_document_did_open);
-    rpc_register_method(base, "textDocument/didChange", handle_text_document_did_change);
-    rpc_register_method(base, "textDocument/didClose", handle_text_document_did_close);
-    rpc_register_method(base, "textDocument/semanticTokens/full", handle_semantic_tokens_full);
+    rpc_add_handler(svr->ctx, "initialize", handle_initialize, 0, NULL, svr);
+    rpc_add_handler(svr->ctx, "initialized", handle_initialized, 0, NULL, NULL);
+    rpc_add_handler(svr->ctx, "shutdown", handle_shutdown, 0, NULL, NULL);
+    rpc_add_handler(svr->ctx, "exit", handle_exit, 0, NULL, NULL);
+    rpc_add_handler(svr->ctx, "textDocument/didOpen", handle_text_document_did_open, 0, NULL, svr);
+    rpc_add_handler(svr->ctx, "textDocument/didChange", handle_text_document_did_change, 0, NULL, svr);
+    rpc_add_handler(svr->ctx, "textDocument/didClose", handle_text_document_did_close, 0, NULL, svr);
+    rpc_add_handler(svr->ctx, "textDocument/semanticTokens/full", handle_semantic_tokens_full, 0, NULL, svr);
 }
