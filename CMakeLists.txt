@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(easy_pc VERSION 0.2.0 LANGUAGES C)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 include(FetchContent)
 include(CTest)
 include(GNUInstallDirs)
