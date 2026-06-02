@@ -9,3 +9,4 @@ build/
 /install_test/
 /temp/
 /tools/vscode-gdl-lsp/node_modules/
+/.cache/
