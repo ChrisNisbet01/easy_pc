@@ -148,6 +148,7 @@ epc_unparsed_error_result(size_t input_offset, char const * message, char const 
 {
     epc_parse_result_t result = {
         .is_error = true,
+        .error_type = EPC_RESULT_FAIL_BACKTRACK,
         .data.error = epc_parser_error_alloc(NULL, input_offset, message, expected, found),
     };
     return result;
@@ -185,7 +186,7 @@ EASY_PC_HIDDEN
 epc_parse_result_t
 epc_parse_result_copy(epc_parser_ctx_t * ctx, epc_parse_result_t result)
 {
-    epc_parse_result_t copy = {.is_error = result.is_error};
+    epc_parse_result_t copy = {.is_error = result.is_error, .error_type = result.error_type};
     if (result.is_error)
     {
         copy.data.error = epc_parser_error_copy(ctx, result.data.error);
@@ -223,6 +224,7 @@ epc_parser_error_result(
 {
     epc_parse_result_t result = {
         .is_error = true,
+        .error_type = EPC_RESULT_FAIL_BACKTRACK,
         .data.error = epc_parser_error_alloc(ctx, token_offset, message, expected, found),
     };
     update_furthest_error(ctx, result.data.error);
@@ -260,6 +262,7 @@ epc_parser_error_result_token_list(
 
     epc_parse_result_t result = {
         .is_error = true,
+        .error_type = EPC_RESULT_FAIL_BACKTRACK,
         .data.error = epc_parser_error_alloc(ctx, token_offset, message, expected, found_buf),
     };
     update_furthest_error(ctx, result.data.error);
@@ -271,6 +274,7 @@ epc_parse_result_t
 epc_parser_success_result(epc_cpt_node_t * success_node)
 {
     epc_parse_result_t result = {
+        .error_type = EPC_RESULT_SUCCESS,
         .data.success = success_node,
     };
 

@@ -157,10 +157,24 @@ typedef struct
                     */
 } epc_ast_semantic_action_t;
 
+/**
+ * @brief The type of result from a parsing attempt.
+ *
+ * Two failure types exist: FAIL_BACKTRACK (standard failure, parent alternatives may be tried)
+ * and FAIL_COMMITTED (hard failure, alternatives must be skipped).
+ */
+typedef enum
+{
+    EPC_RESULT_SUCCESS = 0,        /**< @brief Parsing succeeded. */
+    EPC_RESULT_FAIL_BACKTRACK = 1, /**< @brief Standard failure: parent combinators may backtrack. */
+    EPC_RESULT_FAIL_COMMITTED = 2, /**< @brief Hard failure: parent combinators must abort alternatives immediately. */
+} epc_result_type_t;
+
 // The Result of a Parse Attempt
 struct epc_parse_result_t
 {
-    bool is_error; /**< @brief A flag: false for success, true for error. */
+    bool is_error;             /**< @brief A flag: false for success, true for error. */
+    epc_result_type_t error_type; /**< @brief Distinguishes between backtrackable and committed failures. */
     union
     {
         epc_cpt_node_t * success;   /**< @brief Pointer to the root of the generated CPT on successful parsing. */
