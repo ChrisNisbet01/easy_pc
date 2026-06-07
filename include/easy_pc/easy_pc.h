@@ -936,6 +936,12 @@ EASY_PC_API void epc_parser_duplicate(epc_parser_t * dst, epc_parser_t const * s
 EASY_PC_API void epc_parser_set_ast_action(epc_parser_t * p, int action_type);
 
 /**
+ * @brief Marks a parser as a commit boundary, so that FAIL_COMMITTED errors
+ *        from within the parser are converted to FAIL_BACKTRACK at its level.
+ */
+EASY_PC_API void epc_parser_set_commit_boundary(epc_parser_t * p);
+
+/**
  * @brief Retrieves the user-defined context pointer from the parser context.
  *        This is the pointer passed in when initiating a parse session (e.g., via `epc_parse_str()`, `epc_parse_fp()`,
  * etc.) and is accessible within parser callbacks (e.g. epc_wrap callbacks).

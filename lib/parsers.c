@@ -328,6 +328,11 @@ parse(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
     ctx->depth++;
     epc_parse_result_t result = self->parse_fn(self, ctx, token_offset);
 
+    if (self->is_commit_boundary && result.is_error && result.error_type == EPC_RESULT_FAIL_COMMITTED)
+    {
+        result.error_type = EPC_RESULT_FAIL_BACKTRACK;
+    }
+
     ctx->depth--;
 
 #if WITH_PARSE_DEBUG
@@ -4079,6 +4084,7 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
 {
     dst->parse_fn = src->parse_fn;
     dst->ast_config = src->ast_config;
+    dst->is_commit_boundary = src->is_commit_boundary;
     string_set(&dst->name, src->name);
     dst->tag = src->tag;
 
@@ -4477,6 +4483,15 @@ epc_parser_set_ast_action(epc_parser_t * p, int action_type)
     }
     p->ast_config.action = action_type;
     p->ast_config.assigned = true;
+}
+
+EASY_PC_API void
+epc_parser_set_commit_boundary(epc_parser_t * p)
+{
+    if (p != NULL)
+    {
+        p->is_commit_boundary = true;
+    }
 }
 
 EASY_PC_HIDDEN

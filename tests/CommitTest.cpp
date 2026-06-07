@@ -260,32 +260,44 @@ TEST(CommitTest, IfStatementPattern)
 
 TEST(CommitTest, CommitBoundaryContainsCommitted)
 {
-    /* Simulating LHS ^: wrap the body in a boundary that converts FAIL_COMMITTED → FAIL_BACKTRACK.
-       In generated code this is automatic; here we test the manual pattern:
-         if (result.error_type == EPC_RESULT_FAIL_COMMITTED)
-             result.error_type = EPC_RESULT_FAIL_BACKTRACK; */
-    epc_parser_t * p_char_x = epc_char(list, "X", 'x');
-    epc_parser_t * p_char_y = epc_char(list, "Y", 'y');
-    epc_parser_t * p_seq = epc_and(list, "SEQ", 2, p_char_x, p_char_y);
-    epc_parser_t * p_commit = epc_commit(list, "COMMIT", p_seq);
+    /* IfStmt = seq('i','f') commit(seq(LParen, Expr, RParen, Body))
+       The commit boundary on the rule converts FAIL_COMMITTED → FAIL_BACKTRACK
+       so the parent OR still tries the second alternative. */
+    epc_parser_t * p_kw_if = epc_string(list, "if", "if");
+    epc_parser_t * p_lparen = epc_char(list, "LParen", '(');
+    epc_parser_t * p_expr = epc_identifier(list, "Expr");
+    epc_parser_t * p_rparen = epc_char(list, "RParen", ')');
+    epc_parser_t * p_body = epc_char(list, "Body", '{');
+    epc_parser_t * p_commit_tail = epc_commit(list, "COMMIT", epc_and(list, "TAIL", 2, p_expr, p_rparen));
+    epc_parser_t * p_if_stmt = epc_and(list, "IfStmt", 4, p_kw_if, p_lparen, p_commit_tail, p_body);
 
-    /* Parse manually to test the boundary pattern */
-    void * user_ctx = NULL;
-    epc_parse_session_t s = epc_parse_str(p_commit, "x", user_ctx);
+    /* Set commit boundary on IfStmt — as the GDL compiler would for a rule with ^ */
+    epc_parser_set_commit_boundary(p_if_stmt);
 
-    CHECK_TRUE(s.result.is_error);
-    CHECK_EQUAL(EPC_RESULT_FAIL_COMMITTED, s.result.error_type);
+    /* OtherStmt = 'x' */
+    epc_parser_t * p_other = epc_char(list, "Other", 'x');
 
-    /* Apply boundary: convert to FAIL_BACKTRACK */
-    epc_result_type_t original_type = s.result.error_type;
-    if (s.result.is_error && s.result.error_type == EPC_RESULT_FAIL_COMMITTED)
-    {
-        epc_parse_result_t boundary_result = s.result;
-        boundary_result.error_type = EPC_RESULT_FAIL_BACKTRACK;
-        CHECK_EQUAL(EPC_RESULT_FAIL_BACKTRACK, boundary_result.error_type);
-    }
+    /* Stmt = IfStmt | OtherStmt */
+    epc_parser_t * p_stmt = epc_or(list, "Stmt", 2, p_if_stmt, p_other);
 
-    epc_parse_session_destroy(&s);
+    /* Case 1: "if(foo){ " → full match, IfStmt succeeds */
+    result = parse(p_stmt, "if(foo){");
+    CHECK_FALSE(result.is_error);
+    CHECK_EQUAL(EPC_RESULT_SUCCESS, result.error_type);
+
+    /* Case 2: "if(" → IfStmt matches "if(", then commit fails on Expr at EOF.
+       FAIL_COMMITTED propagates to the boundary, where it becomes FAIL_BACKTRACK.
+       The OR then tries OtherStmt, which fails. The overall parse fails with
+       the original backtrack error info. */
+    result = parse(p_stmt, "if(");
+    CHECK_TRUE(result.is_error);
+    CHECK_EQUAL(EPC_RESULT_FAIL_BACKTRACK, result.error_type);
+
+    /* Case 3: "x" → IfStmt fails on "i" at offset 0 (no "if" prefix → backtrack),
+       OR tries OtherStmt → matches 'x'. */
+    result = parse(p_stmt, "x");
+    CHECK_FALSE(result.is_error);
+    CHECK_EQUAL(EPC_RESULT_SUCCESS, result.error_type);
 }
 
 TEST(CommitTest, SuccessResultHasCorrectErrorType)

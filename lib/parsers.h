@@ -137,6 +137,8 @@ struct epc_parser_t
                                   */
 
     epc_ast_semantic_action_t ast_config;
+
+    bool is_commit_boundary;
 };
 
 void epc_parser_free(epc_parser_t * parser);
