@@ -59,6 +59,7 @@ static keyword_entry_t const keywords[] = {
     {.name = "memoize", .id = TOKEN_KW_MEMOIZE},
     {.name = "satisfy", .id = TOKEN_KW_SATISFY},
     {.name = "wrap", .id = TOKEN_KW_WRAP},
+    {.name = "commit", .id = TOKEN_KW_COMMIT},
 
     // Lexeme flags
     {.name = "ws", .id = TOKEN_KW_WS},
@@ -142,6 +143,9 @@ handle_simple_token(epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** 
             break;
         case '?':
             id = TOKEN_QUESTION;
+            break;
+        case '^':
+            id = TOKEN_CARET;
             break;
         case '[':
             id = TOKEN_LBRACKET;

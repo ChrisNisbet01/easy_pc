@@ -15,6 +15,7 @@ RawSemicolonChar = lexeme(';');
 RawPipeChar = lexeme('|');
 RawAtSign = lexeme('@');
 RawMinusChar = lexeme('-'); // Used in char ranges
+RawCaret = lexeme('^'); // Used for commit boundary on rule definitions
 
 // ---------------------------------------------------------------------------------------------------------------------
 // 2. Core Lexical Elements
@@ -89,10 +90,11 @@ KW_chainl1 = lexeme("chainl1");
 KW_chainr1 = lexeme("chainr1");
 KW_memoize = lexeme("memoize");
 KW_optional_combinator = lexeme("optional"); // Renamed to avoid clash with repetition operator
+KW_commit = lexeme("commit");
 
 GDLKeyword = KW_digit | KW_alpha | KW_alphanum | KW_identifier | KW_int | KW_octal | KW_double | KW_space | KW_hex_digit | KW_hex | KW_eoi | KW_fail | KW_succeed
            | KW_oneof | KW_none_of | KW_count | KW_between | KW_delimited | KW_delimited_flex | KW_lookahead | KW_not | KW_lexeme
-           | KW_skip | KW_chainl1 | KW_chainr1 | KW_memoize | KW_optional_combinator
+           | KW_skip | KW_chainl1 | KW_chainr1 | KW_memoize | KW_optional_combinator | KW_commit
            @AST_ACTION_CREATE_KEYWORD;
 
 // Terminal: string_literal | char_literal | keyword | identifier (non-keyword)
@@ -152,13 +154,16 @@ SkipCall = KW_skip RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_SKI
 MemoizeCall = KW_memoize RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_MEMOIZE_CALL;
 OptionalCall = KW_optional_combinator RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_OPTIONAL_CALL;
 
+// CommitCall: 'commit' '(' ExpressionArgFwd ')'
+CommitCall = KW_commit RawLParen UnaryCombinatorArg RawRParen @AST_ACTION_CREATE_COMMIT_CALL;
+
 // Chain Combinator Calls (chainl1, chainr1)
 ChainArgs = ExpressionArgFwd RawComma ExpressionArgFwd;
 ChainL1Call = KW_chainl1 RawLParen ChainArgs RawRParen @AST_ACTION_CREATE_CHAINL1_CALL;
 ChainR1Call = KW_chainr1 RawLParen ChainArgs RawRParen @AST_ACTION_CREATE_CHAINR1_CALL;
 
 CombinatorCall = OneofCall | NoneofCall | CountCall | BetweenCall | DelimitedCall | DelimitedFlexCall | LookaheadCall
-               | NotCall | LexemeCall | SkipCall | MemoizeCall | ChainL1Call | ChainR1Call | OptionalCall;
+               | NotCall | LexemeCall | SkipCall | MemoizeCall | CommitCall | ChainL1Call | ChainR1Call | OptionalCall;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // 5. Expressions
@@ -186,8 +191,11 @@ DefinitionExpression = ExpressionTerm ManyAlternatives @AST_ACTION_CREATE_ALTERN
 // 6. Rule Definition and Program Structure
 // ---------------------------------------------------------------------------------------------------------------------
 
-// RuleDefinition: Identifier '=' DefinitionExpression SemanticAction? ';'
-RuleDefinition = Identifier RawEqualsChar DefinitionExpression OptionalSemanticAction RawSemicolonChar @AST_ACTION_CREATE_RULE_DEFINITION;
+// OptionalCaret: '^' (commit boundary marker)
+OptionalCaret = RawCaret? @AST_ACTION_CREATE_CARET_BOUNDARY;
+
+// RuleDefinition: '^'? Identifier '=' DefinitionExpression SemanticAction? ';'
+RuleDefinition = OptionalCaret Identifier RawEqualsChar DefinitionExpression OptionalSemanticAction RawSemicolonChar @AST_ACTION_CREATE_RULE_DEFINITION;
 
 // Program: RuleDefinition+ eoi
 ManyRuleDefinitions = RuleDefinition+ @AST_ACTION_CREATE_SEQUENCE;

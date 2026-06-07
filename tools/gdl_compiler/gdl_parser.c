@@ -106,6 +106,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * p_memoize = epc_token(l, "KW_memoize", TOKEN_KW_MEMOIZE);
     epc_parser_t * p_satisfy = epc_token(l, "KW_satisfy", TOKEN_KW_SATISFY);
     epc_parser_t * p_wrap = epc_token(l, "KW_wrap", TOKEN_KW_WRAP);
+    epc_parser_t * p_commit = epc_token(l, "KW_commit", TOKEN_KW_COMMIT);
 
     /* Lexeme flags. */
     epc_parser_t * lexeme_flag_ws = epc_token(l, "KW_ws", TOKEN_KW_WS);
@@ -152,7 +153,7 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * combinator_parser = epc_or(
         l,
         "CombinatorKeyword",
-        23,
+        24,
         p_string,
         p_char_range_kw,
         p_none_of,
@@ -175,7 +176,8 @@ create_gdl_parser(epc_parser_list * l)
         p_skip,
         p_memoize,
         p_satisfy,
-        p_wrap
+        p_wrap,
+        p_commit
     );
     epc_parser_set_ast_action(combinator_parser, GDL_AST_ACTION_CREATE_KEYWORD);
 
@@ -322,11 +324,15 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * wrap_call = epc_and(l, "WrapCall", 4, p_wrap, gdl_lparen, wrap_args, gdl_rparen);
     epc_parser_set_ast_action(wrap_call, GDL_AST_ACTION_CREATE_WRAP_CALL);
 
+    // commit_call: commit '(' expression ')'
+    epc_parser_t * commit_call = epc_and(l, "CommitCall", 4, p_commit, gdl_lparen, gdl_expression_arg, gdl_rparen);
+    epc_parser_set_ast_action(commit_call, GDL_AST_ACTION_CREATE_COMMIT_CALL);
+
     // --- All combinator calls combined ---
     epc_parser_t * gdl_combinator_call = epc_or(
         l,
         "CombinatorCall",
-        20,
+        21,
         none_of_call,
         count_call,
         count_range_call,
@@ -346,7 +352,8 @@ create_gdl_parser(epc_parser_list * l)
         skip_call,
         memoize_call,
         satisfy_call,
-        wrap_call
+        wrap_call,
+        commit_call
     );
 
     // --- Expression grammar ---
@@ -400,11 +407,17 @@ create_gdl_parser(epc_parser_list * l)
     epc_parser_t * gdl_optional_semantic_action = epc_optional(l, "OptionalSemanticAction", gdl_semantic_action);
     epc_parser_set_ast_action(gdl_optional_semantic_action, GDL_AST_ACTION_CREATE_OPTIONAL_SEMANTIC_ACTION);
 
-    // --- RuleDefinition: identifier '=' definition_expression semantic_action? ';' ---
+    // --- Caret marker for commit boundary: '^' ---
+    epc_parser_t * gdl_caret_marker = epc_token(l, "CaretMarker", TOKEN_CARET);
+    epc_parser_set_ast_action(gdl_caret_marker, GDL_AST_ACTION_CREATE_CARET_BOUNDARY);
+    epc_parser_t * gdl_optional_caret = epc_optional(l, "OptionalCaret", gdl_caret_marker);
+
+    // --- RuleDefinition: '^'? identifier '=' definition_expression semantic_action? ';' ---
     epc_parser_t * gdl_rule_definition = epc_and(
         l,
         "RuleDefinition",
-        5,
+        6,
+        gdl_optional_caret,
         gdl_identifier,
         gdl_equals,
         gdl_definition_expression,

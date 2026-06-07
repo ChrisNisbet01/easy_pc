@@ -48,6 +48,8 @@ typedef enum epc_ast_user_defined_action_gdl
     GDL_AST_ACTION_CREATE_WRAP_CALL,
     GDL_AST_ACTION_CREATE_MEMOIZE_CALL,
     GDL_AST_ACTION_CREATE_TOKEN_LITERAL,
+    GDL_AST_ACTION_CREATE_COMMIT_CALL,
+    GDL_AST_ACTION_CREATE_CARET_BOUNDARY,
     GDL_AST_ACTION_MAX,
 } epc_ast_user_defined_action_gdl;
 
@@ -95,6 +97,8 @@ typedef enum
     GDL_AST_NODE_TYPE_SATISFY_CALL,
     GDL_AST_NODE_TYPE_WRAP_CALL,
     GDL_AST_NODE_TYPE_TOKEN_LITERAL,
+    GDL_AST_NODE_TYPE_COMBINATOR_COMMIT,
+    GDL_AST_NODE_TYPE_CARET_MARKER,
 } gdl_ast_node_type_t;
 
 // Forward declaration for gdl_ast_node_t
@@ -125,6 +129,7 @@ typedef struct
     char const * name;
     gdl_ast_node_t * definition;
     gdl_ast_node_t * semantic_action; // Optional
+    bool has_commit_boundary;
 } gdl_ast_rule_definition_t;
 
 typedef struct

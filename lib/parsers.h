@@ -99,6 +99,7 @@ typedef enum parser_data_type_t
     PARSER_DATA_TYPE_MEMOIZE,
     PARSER_DATA_TYPE_BYTE,
     PARSER_DATA_TYPE_TOKEN,
+    PARSER_DATA_TYPE_COMMIT,
 } parser_data_type_t;
 
 typedef struct parser_data_type_st

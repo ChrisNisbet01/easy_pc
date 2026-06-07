@@ -189,6 +189,7 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
     case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
+    case GDL_AST_NODE_TYPE_COMBINATOR_COMMIT:
         gdl_ast_node_free(node->data.unary_combinator_call.expr, user_data);
         break;
 
@@ -249,6 +250,7 @@ gdl_ast_node_free(void * node_ptr, void * user_data)
     case GDL_AST_NODE_TYPE_REPETITION_OPERATOR: // No dynamic data to free
     case GDL_AST_NODE_TYPE_RAW_CHAR_LITERAL:    // No dynamic data to free
     case GDL_AST_NODE_TYPE_PLACEHOLDER:         // Placeholder has no data
+    case GDL_AST_NODE_TYPE_CARET_MARKER:        // Marker has no data
         break;
     }
 
@@ -865,11 +867,11 @@ handle_create_rule_definition(
 #endif
 
     (void)node;
-    if (count < 2 || count > 3)
+    if (count < 2 || count > 4)
     {
         epc_ast_builder_set_error(
             ctx,
-            "Rule definition expects 2 or 3 children (identifier, definition, optional_semantic_action), got %d",
+            "Rule definition expects 2-4 children (optional caret, identifier, definition, optional_semantic_action), got %d",
             count
         );
         for (int i = 0; i < count; ++i)
@@ -879,13 +881,25 @@ handle_create_rule_definition(
         return;
     }
 
-    gdl_ast_node_t * identifier_ref_node = (gdl_ast_node_t *)children[0];
-    gdl_ast_node_t * definition_node = (gdl_ast_node_t *)children[1];
+    bool has_caret = false;
+    int offset = 0;
+
+    // Check if first child is a caret marker
+    if (count > 2 && children[0] != NULL
+        && ((gdl_ast_node_t *)children[0])->type == GDL_AST_NODE_TYPE_CARET_MARKER)
+    {
+        has_caret = true;
+        offset = 1;
+        gdl_ast_node_free(children[0], user_data); // Free the caret marker
+    }
+
+    gdl_ast_node_t * identifier_ref_node = (gdl_ast_node_t *)children[offset];
+    gdl_ast_node_t * definition_node = (gdl_ast_node_t *)children[offset + 1];
     gdl_ast_node_t * semantic_action_node = NULL;
 
-    if (count == 3)
+    if (count - offset == 3)
     {
-        semantic_action_node = (gdl_ast_node_t *)children[2];
+        semantic_action_node = (gdl_ast_node_t *)children[offset + 2];
     }
 
     if (identifier_ref_node->type != GDL_AST_NODE_TYPE_IDENTIFIER_REF)
@@ -904,6 +918,7 @@ handle_create_rule_definition(
         identifier_ref_node->data.identifier_ref.name = NULL;                              // Prevent double free
         rule_def_node->data.rule_def.definition = definition_node;
         rule_def_node->data.rule_def.semantic_action = semantic_action_node;
+        rule_def_node->data.rule_def.has_commit_boundary = has_caret;
         epc_ast_push(ctx, rule_def_node);
     }
     gdl_ast_node_free(identifier_ref_node, user_data); // Free wrapper node (IdentifierRef node)
@@ -1987,6 +2002,40 @@ handle_create_wrap_call(
     epc_ast_push(ctx, wrap_node);
 }
 
+static void
+handle_create_caret_boundary(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    (void)node;
+    (void)children;
+    (void)user_data;
+
+    if (count > 0)
+    {
+        epc_ast_builder_set_error(ctx, "Caret boundary expects 0 children, got %d", count);
+        for (int i = 0; i < count; ++i)
+        {
+            gdl_ast_node_free(children[i], user_data);
+        }
+        return;
+    }
+
+    gdl_ast_node_t * marker_node = gdl_ast_node_alloc(ctx, GDL_AST_NODE_TYPE_CARET_MARKER);
+    if (marker_node != NULL)
+    {
+        epc_ast_push(ctx, marker_node);
+    }
+}
+
+static void
+handle_create_commit_call(
+    epc_ast_builder_ctx_t * ctx, epc_cpt_node_t * node, void ** children, int count, void * user_data
+)
+{
+    handle_unary_combinator_call(ctx, node, children, count, user_data, GDL_AST_NODE_TYPE_COMBINATOR_COMMIT);
+}
+
 // --- Registry Initialization ---
 void
 gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
@@ -2050,4 +2099,6 @@ gdl_ast_hook_registry_init(epc_ast_hook_registry_t * registry, void * user_data)
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_SATISFY_CALL, handle_create_satisfy_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_WRAP_CALL, handle_create_wrap_call);
     epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_TOKEN_LITERAL, handle_create_token_literal);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_COMMIT_CALL, handle_create_commit_call);
+    epc_ast_hook_registry_set_action(registry, GDL_AST_ACTION_CREATE_CARET_BOUNDARY, handle_create_caret_boundary);
 }

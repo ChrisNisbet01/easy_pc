@@ -32,6 +32,7 @@ typedef enum
     TOKEN_STAR,
     TOKEN_PLUS,
     TOKEN_QUESTION,
+    TOKEN_CARET,
 
     // Keywords — terminal parsers
     TOKEN_KW_CHAR,
@@ -79,6 +80,7 @@ typedef enum
     TOKEN_KW_MEMOIZE,
     TOKEN_KW_SATISFY,
     TOKEN_KW_WRAP,
+    TOKEN_KW_COMMIT,
 
     // Keywords — lexeme flags
     TOKEN_KW_WS,
@@ -135,6 +137,8 @@ gdl_token_id_name(epc_token_id_t id)
         return "PLUS";
     case TOKEN_QUESTION:
         return "QUESTION";
+    case TOKEN_CARET:
+        return "CARET";
     case TOKEN_KW_CHAR:
         return "KW_CHAR";
     case TOKEN_KW_DIGIT:
@@ -221,6 +225,8 @@ gdl_token_id_name(epc_token_id_t id)
         return "KW_SATISFY";
     case TOKEN_KW_WRAP:
         return "KW_WRAP";
+    case TOKEN_KW_COMMIT:
+        return "KW_COMMIT";
     case TOKEN_KW_WS:
         return "KW_WS";
     case TOKEN_KW_ALL:

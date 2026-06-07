@@ -364,6 +364,29 @@ add_test(
     COMMAND WrapTest
 )
 
+add_executable(CommitTest
+    AllTests.cpp
+    CommitTest.cpp
+)
+
+add_dependencies(all_unit_tests CommitTest)
+
+target_include_directories(CommitTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+)
+
+target_link_libraries(CommitTest PRIVATE
+    easy_pc_shared
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME CommitTest
+    COMMAND CommitTest
+)
+
 add_executable(MemoizeTest
     AllTests.cpp
     MemoizeTest.cpp

@@ -444,6 +444,7 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_COMBINATOR_NOT:
     case GDL_AST_NODE_TYPE_COMBINATOR_SKIP:
     case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
+    case GDL_AST_NODE_TYPE_COMBINATOR_COMMIT:
     {
         traverse_expression_for_references(
             expression_node->data.unary_combinator_call.expr, current_rule_info, all_rules
@@ -501,6 +502,7 @@ traverse_expression_for_references(
     case GDL_AST_NODE_TYPE_RULE_DEFINITION: // Should not happen here
     case GDL_AST_NODE_TYPE_ARGUMENT_LIST:   // Should be handled by FUNCTION_CALL
     case GDL_AST_NODE_TYPE_PLACEHOLDER:
+    case GDL_AST_NODE_TYPE_CARET_MARKER:
         // These nodes do not contain further rule references in this context
         break;
     }
@@ -539,6 +541,38 @@ gdl_analyze_rule_dependencies(gdl_ast_node_t * ast_root, gdl_rule_list_t * rule_
     }
 
     return true;
+}
+
+// --- Commit Boundary Callback Generation ---
+static void
+generate_commit_boundary_callbacks(FILE * source_file, gdl_rule_list_t const * rule_list)
+{
+    gdl_rule_info_t * current = rule_list->head;
+    while (current != NULL)
+    {
+        if (current->ast_node->data.rule_def.has_commit_boundary)
+        {
+            char * pascal = to_pascal_case(current->name);
+            fprintf(source_file,
+                "static epc_parse_result_t\n"
+                "%s_boundary_exit(epc_parse_result_t result, void * user_data)\n"
+                "{\n"
+                "    (void)user_data;\n"
+                "    if (result.error_type == EPC_RESULT_FAIL_COMMITTED)\n"
+                "    {\n"
+                "        result.error_type = EPC_RESULT_FAIL_BACKTRACK;\n"
+                "    }\n"
+                "    return result;\n"
+                "}\n\n"
+                "static epc_wrap_callbacks_t const %s_boundary_cb = {\n"
+                "    NULL, %s_boundary_exit, NULL,\n"
+                "};\n\n",
+                pascal, pascal, pascal
+            );
+            free(pascal);
+        }
+        current = current->next;
+    }
 }
 
 // --- Main Code Generation Logic ---
@@ -612,6 +646,9 @@ gdl_generate_c_code(
     fprintf(source_file, "#include <stddef.h>\n"); // For NULL, size_t, etc.
     fprintf(source_file, "#include <stdio.h>\n");  // For debugging, if needed
     fprintf(source_file, "\n");
+
+    // Emit commit boundary callbacks at file scope
+    generate_commit_boundary_callbacks(source_file, &rule_dependencies);
 
     fprintf(source_file, "epc_parser_t * create_%s_parser(epc_parser_list * list)\n", base_name);
     fprintf(source_file, "{\n");
@@ -700,18 +737,43 @@ generate_rule_definition_code(
         return false;
     }
 
+    bool has_boundary = rule_node->data.rule_def.has_commit_boundary;
+
     if (!current_rule_info->needs_forward_declaration)
     {
-        // If no forward declaration was needed, define it directly (epc_parser_t * RuleName = ...)
-        fprintf(source_file, "%*sepc_parser_t * %s = ", indent_level * 4, "", pascal_rule_name);
-        if (!generate_expression_code(
-                source_file, rule_node->data.rule_def.definition, indent_level, rule_list, pascal_rule_name
-            ))
+        if (has_boundary)
         {
-            free(pascal_rule_name);
-            return false;
+            // Generate inner expression for boundary wrapping
+            fprintf(source_file, "%*sepc_parser_t * %s_inner = ", indent_level * 4, "", pascal_rule_name);
+            if (!generate_expression_code(
+                    source_file, rule_node->data.rule_def.definition, indent_level, rule_list, pascal_rule_name
+                ))
+            {
+                free(pascal_rule_name);
+                return false;
+            }
+            fprintf(source_file, ";\n");
+
+            // Wrap with commit boundary
+            fprintf(
+                source_file,
+                "%*sepc_parser_t * %s = epc_wrap(list, \"%s\", %s_inner, %s_boundary_cb, NULL);\n",
+                indent_level * 4, "", pascal_rule_name, pascal_rule_name, pascal_rule_name, pascal_rule_name
+            );
         }
-        fprintf(source_file, ";\n");
+        else
+        {
+            // If no forward declaration was needed, define it directly (epc_parser_t * RuleName = ...)
+            fprintf(source_file, "%*sepc_parser_t * %s = ", indent_level * 4, "", pascal_rule_name);
+            if (!generate_expression_code(
+                    source_file, rule_node->data.rule_def.definition, indent_level, rule_list, pascal_rule_name
+                ))
+            {
+                free(pascal_rule_name);
+                return false;
+            }
+            fprintf(source_file, ";\n");
+        }
 
         // Apply semantic action if present
         if (rule_node->data.rule_def.semantic_action != NULL
@@ -735,13 +797,29 @@ generate_rule_definition_code(
         // If a forward declaration was made, define it using a _def temporary and duplicate
         fprintf(source_file, "%*sepc_parser_t * %s_def = ", indent_level * 4, "", pascal_rule_name);
 
-        // Generate code for the definition part of the rule
-        if (!generate_expression_code(
-                source_file, rule_node->data.rule_def.definition, indent_level, rule_list, pascal_rule_name
-            ))
+        if (has_boundary)
         {
-            free(pascal_rule_name);
-            return false;
+            // Generate inner expression for boundary wrapping
+            fprintf(source_file, "epc_wrap(list, \"%s\", ", pascal_rule_name);
+            if (!generate_expression_code(
+                    source_file, rule_node->data.rule_def.definition, indent_level, rule_list, pascal_rule_name
+                ))
+            {
+                free(pascal_rule_name);
+                return false;
+            }
+            fprintf(source_file, ", %s_boundary_cb, NULL)", pascal_rule_name);
+        }
+        else
+        {
+            // Generate code for the definition part of the rule
+            if (!generate_expression_code(
+                    source_file, rule_node->data.rule_def.definition, indent_level, rule_list, pascal_rule_name
+                ))
+            {
+                free(pascal_rule_name);
+                return false;
+            }
         }
         fprintf(source_file, ";\n"); // End of definition assignment
 
@@ -1193,6 +1271,19 @@ generate_expression_code(
     case GDL_AST_NODE_TYPE_COMBINATOR_MEMOIZE:
     {
         fprintf(source_file, "epc_memoize(list, %s%s%s, ", q, expr_name, q);
+        if (!generate_expression_code(
+                source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
+            ))
+        {
+            return false;
+        }
+        fprintf(source_file, ")");
+        break;
+    }
+
+    case GDL_AST_NODE_TYPE_COMBINATOR_COMMIT:
+    {
+        fprintf(source_file, "epc_commit(list, %s%s%s, ", q, expr_name, q);
         if (!generate_expression_code(
                 source_file, expression_node->data.unary_combinator_call.expr, indent_level + 1, rule_list, NULL
             ))

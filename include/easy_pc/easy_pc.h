@@ -882,6 +882,20 @@ EASY_PC_API epc_parser_t * epc_wrap(
 EASY_PC_API epc_parser_t * epc_memoize(epc_parser_list * list, char const * name, epc_parser_t * p_to_memoize);
 
 /**
+ * @brief Creates a parser that converts FAIL_BACKTRACK to FAIL_COMMITTED in the child's result.
+ *
+ * If the child parser fails with a standard backtrackable error, this combinator changes it to
+ * a committed failure. In an ordered choice (`epc_or`), a committed failure causes the remaining
+ * alternatives to be skipped. This enables "commit point" semantics for error reporting and
+ * control flow.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param parser The parser to wrap with commit semantics.
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_commit(epc_parser_list * list, char const * name, epc_parser_t * parser);
+
+/**
  * @brief Allocates and initializes a new parser object within the grammar's memory context.
  *
  * This function is typically used to create a forward reference to a parser that is needed to

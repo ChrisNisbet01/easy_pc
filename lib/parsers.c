@@ -210,6 +210,7 @@ parser_data_free(parser_data_type_st * data)
     case PARSER_DATA_TYPE_PREDICATE:
     case PARSER_DATA_TYPE_WRAP:
     case PARSER_DATA_TYPE_MEMOIZE:
+    case PARSER_DATA_TYPE_COMMIT:
         /* Nothing to do. */
         break;
 
@@ -1578,10 +1579,14 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_of
 
                 return epc_parser_success_result(or_node);
             }
-            else
+
+            if (child_result.error_type == EPC_RESULT_FAIL_COMMITTED)
             {
-                epc_parser_result_cleanup(&child_result);
+                epc_parser_error_free(original_furthest_error);
+                return child_result;
             }
+
+            epc_parser_result_cleanup(&child_result);
         }
     }
 
@@ -2022,9 +2027,21 @@ pskip_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_
     while (1)
     {
         epc_parser_error_t * original_furthest_error = parser_furthest_error_copy(ctx);
+        size_t skip_start_input_offset = current_token_offset;
         epc_parse_result_t child_result = parse(parser_to_skip, ctx, current_token_offset);
         if (child_result.is_error)
         {
+            if (child_result.error_type == EPC_RESULT_FAIL_COMMITTED)
+            {
+                epc_parser_token_t const * start_tok = parse_ctx_get_token_at_offset(ctx, skip_start_input_offset);
+                size_t start_char_off = start_tok ? start_tok->view.offset : 0;
+                size_t err_char_off = child_result.data.error ? child_result.data.error->view.offset : 0;
+                if (err_char_off > start_char_off)
+                {
+                    epc_parser_error_free(original_furthest_error);
+                    return child_result;
+                }
+            }
             parser_furthest_error_restore(ctx, &original_furthest_error);
             epc_parser_result_cleanup(&child_result);
             break;
@@ -2135,6 +2152,17 @@ pplus_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_
         }
         else
         {
+            if (child_result.error_type == EPC_RESULT_FAIL_COMMITTED)
+            {
+                epc_parser_token_t const * start_tok = parse_ctx_get_token_at_offset(ctx, loop_start_input_offset);
+                size_t start_char_off = start_tok ? start_tok->view.offset : 0;
+                size_t err_char_off = child_result.data.error ? child_result.data.error->view.offset : 0;
+                if (err_char_off > start_char_off)
+                {
+                    child_list_release(&children);
+                    return child_result;
+                }
+            }
             epc_parser_result_cleanup(&child_result);
             break;
         }
@@ -2403,6 +2431,19 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_
         epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_token_offset);
         if (child_result.is_error)
         {
+            if (child_result.error_type == EPC_RESULT_FAIL_COMMITTED)
+            {
+                /* Only propagate if the child made some progress before failing.
+                   If it failed at the same position (e.g., EOF), treat as normal termination. */
+                epc_parser_token_t const * start_tok = parse_ctx_get_token_at_offset(ctx, loop_start_input_offset);
+                size_t start_char_off = start_tok ? start_tok->view.offset : 0;
+                size_t err_char_off = child_result.data.error ? child_result.data.error->view.offset : 0;
+                if (err_char_off > start_char_off)
+                {
+                    child_list_release(&children);
+                    return child_result;
+                }
+            }
             epc_parser_result_cleanup(&child_result);
             break;
         }
@@ -2506,6 +2547,17 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token
 
         if (child_result.is_error)
         {
+            if (child_result.error_type == EPC_RESULT_FAIL_COMMITTED)
+            {
+                epc_parser_token_t const * start_tok = parse_ctx_get_token_at_offset(ctx, current_token_offset);
+                size_t start_char_off = start_tok ? start_tok->view.offset : 0;
+                size_t err_char_off = child_result.data.error ? child_result.data.error->view.offset : 0;
+                if (err_char_off > start_char_off)
+                {
+                    child_list_release(&children);
+                    return child_result;
+                }
+            }
             if (match_count < min_matches)
             {
                 child_list_release(&children);
@@ -2990,6 +3042,13 @@ poptional_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t to
         parent_node->semantic_end_offset = child_result.data.success->semantic_end_offset;
 
         return epc_parser_success_result(parent_node);
+    }
+
+    // Child failed with a hard commit — propagate immediately
+    if (child_result.error_type == EPC_RESULT_FAIL_COMMITTED)
+    {
+        epc_parser_error_free(original_furthest_error);
+        return child_result;
     }
 
     // Child failed, p_optional still succeeds, consuming no input.
@@ -4364,6 +4423,49 @@ EASY_PC_API epc_parser_t *
 epc_memoize(epc_parser_list * list, char const * name, epc_parser_t * p_to_memoize)
 {
     return epc_parser_list_add(list, _epc_memoize(name, p_to_memoize));
+}
+
+// --- epc_commit combinator ---
+
+static epc_parse_result_t
+pcommit_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
+{
+    epc_parser_t * wrapped_parser = self->data.parser;
+    if (wrapped_parser == NULL)
+    {
+        return epc_parser_error_result(
+            ctx, token_offset, "epc_commit received NULL child parser", epc_parser_get_name(self), "NULL"
+        );
+    }
+
+    epc_parse_result_t result = parse(wrapped_parser, ctx, token_offset);
+
+    if (result.error_type == EPC_RESULT_FAIL_BACKTRACK)
+    {
+        result.error_type = EPC_RESULT_FAIL_COMMITTED;
+    }
+
+    return result;
+}
+
+static epc_parser_t *
+_epc_commit(char const * name, epc_parser_t * parser)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "commit", pcommit_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+    p->data.parser = parser;
+    p->data.type = PARSER_DATA_TYPE_COMMIT;
+
+    return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_commit(epc_parser_list * list, char const * name, epc_parser_t * parser)
+{
+    return epc_parser_list_add(list, _epc_commit(name, parser));
 }
 
 void

@@ -83,6 +83,8 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     epc_parser_set_ast_action(plus, TOKENIZER_ACTION_STRUCTURAL);
     epc_parser_t * question = epc_char(l, "QuChar", '?');
     epc_parser_set_ast_action(question, TOKENIZER_ACTION_STRUCTURAL);
+    epc_parser_t * caret = epc_char(l, "Carret", '^');
+    epc_parser_set_ast_action(caret, TOKENIZER_ACTION_STRUCTURAL);
 
     // --- CharRange: [char-char] ---
     epc_parser_t * cr_escape = epc_and(l, "CREscape", 2, epc_char(l, "CRBS", '\\'), epc_any(l, "CRAny"));
@@ -101,7 +103,7 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     epc_parser_t * raw_token = epc_or(
         l,
         "RawToken",
-        19,
+        18,
         string_literal,
         char_literal,
         token_literal,
@@ -118,6 +120,7 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
         star,
         plus,
         question,
+        caret,
         identifier
     );
 
