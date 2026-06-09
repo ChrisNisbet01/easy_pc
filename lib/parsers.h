@@ -79,8 +79,8 @@ typedef struct epc_byte_data_t
 
 typedef struct epc_token_data_t
 {
-    char const * str;   /* The token ID represented as a string (e.g. "token(256)") */
-    epc_token_id_t id;  /* The token ID value; */
+    char const * str;  /* The token ID represented as a string (e.g. "token(256)") */
+    epc_token_id_t id; /* The token ID value; */
 } epc_token_data_t;
 
 typedef enum parser_data_type_t
@@ -99,7 +99,6 @@ typedef enum parser_data_type_t
     PARSER_DATA_TYPE_MEMOIZE,
     PARSER_DATA_TYPE_BYTE,
     PARSER_DATA_TYPE_TOKEN,
-    PARSER_DATA_TYPE_COMMIT,
 } parser_data_type_t;
 
 typedef struct parser_data_type_st
@@ -130,10 +129,12 @@ struct epc_parser_t
     // Parser-specific data
     parser_data_type_st data;
 
-    char const * name; /**< @brief Must be freed when parser is destroyed. */
-    char const * tag;  /**< @brief Unique tag for each parser type. Must _not_ be freed when the parser is destroyed. */
-    char const * expected_value; /**< @brief Optional string to use in preference to name or tag when reporting parse
-                                  * errors. Must _not_ be freed when the parser is destroyed.
+    char const * name;           /**< @brief Must be freed when parser is destroyed. */
+    char const * tag;            /**< @brief Unique tag for each parser type. Must _not_ be
+                                    freed when the parser is destroyed. */
+    char const * expected_value; /**< @brief Optional string to use in preference to name
+                                  * or tag when reporting parse errors. Must _not_ be
+                                  * freed when the parser is destroyed.
                                   */
 
     epc_ast_semantic_action_t ast_config;

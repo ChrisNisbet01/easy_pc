@@ -32,8 +32,8 @@ get_semantic_end_offset(epc_cpt_node_t ** children, size_t const count)
     size_t semantic_end_offset = 0;
 
     /*
-     * Work through the children in reverse order to find the first one that has a len > 0, then take the semantic
-     * offset of that child.
+     * Work through the children in reverse order to find the first one that has a
+     * len > 0, then take the semantic offset of that child.
      */
     if (children != NULL)
     {
@@ -57,8 +57,8 @@ get_semantic_start_offset(epc_cpt_node_t ** children, size_t const count)
     size_t semantic_start_offset = 0;
 
     /*
-     * Work through the children in order to find the first one that has a len > 0, then take the semantic
-     * offset of that child.
+     * Work through the children in order to find the first one that has a len >
+     * 0, then take the semantic offset of that child.
      */
     if (children != NULL)
     {
@@ -210,7 +210,6 @@ parser_data_free(parser_data_type_st * data)
     case PARSER_DATA_TYPE_PREDICATE:
     case PARSER_DATA_TYPE_WRAP:
     case PARSER_DATA_TYPE_MEMOIZE:
-    case PARSER_DATA_TYPE_COMMIT:
         /* Nothing to do. */
         break;
 
@@ -827,7 +826,8 @@ pint_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_o
 
             if (parsed_len < current_len)
             {
-                // If it parsed 0 but the first char is a minus sign, we wait for more digits.
+                // If it parsed 0 but the first char is a minus sign, we wait for more
+                // digits.
                 if (parsed_len > 0 || temp_buffer[0] != '-')
                 {
                     break;
@@ -1550,7 +1550,8 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_of
             epc_parse_result_t child_result = parse(current_parser, ctx, token_offset);
             if (!child_result.is_error)
             {
-                // Return the child's success, but mark the CPT node with this 'or' parser
+                // Return the child's success, but mark the CPT node with this 'or'
+                // parser
                 epc_cpt_node_t * or_node = epc_node_alloc(ctx, self, self->tag);
                 if (or_node == NULL)
                 {
@@ -2227,7 +2228,8 @@ pchar_range_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
     parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
 
     {
-        char expected_str[EPC_ERROR_EXPECTED_MAX_LEN]; // e.g., "character in range [a-z]"
+        char expected_str[EPC_ERROR_EXPECTED_MAX_LEN]; // e.g., "character in range
+                                                       // [a-z]"
         if (isascii(range->start) && isascii(range->end))
         {
             snprintf(expected_str, sizeof(expected_str), "character in range [%c-%c]", range->start, range->end);
@@ -2438,8 +2440,11 @@ pmany_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_
         {
             if (child_result.error_type == EPC_RESULT_FAIL_COMMITTED)
             {
-                /* Only propagate if the child made some progress before failing.
-                   If it failed at the same position (e.g., EOF), treat as normal termination. */
+                /*
+                 * Only propagate if the child made some progress before failing.
+                 * If it failed at the same position (e.g., EOF), treat as normal
+                 * termination.
+                 */
                 epc_parser_token_t const * start_tok = parse_ctx_get_token_at_offset(ctx, loop_start_input_offset);
                 size_t start_char_off = start_tok ? start_tok->view.offset : 0;
                 size_t err_char_off = child_result.data.error ? child_result.data.error->view.offset : 0;
@@ -2594,7 +2599,8 @@ pcount_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token
 
     if (min_matches > 0 && max_matches > 0 && match_count == max_matches)
     {
-        /* Matched exactly max times. The next parse needs to fail for this to be called a success. */
+        /* Matched exactly max times. The next parse needs to fail for this to be
+         * called a success. */
         epc_parse_result_t child_result = parse(parser_to_repeat, ctx, current_token_offset);
 
         if (!child_result.is_error)
@@ -2727,7 +2733,8 @@ pbetween_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
         return wrapped_result;
     }
     current_token_offset += wrapped_result.data.success->token.count;
-    /* Don't clean up the wrapped result as that is what gets returned on success. */
+    /* Don't clean up the wrapped result as that is what gets returned on success.
+     */
 
     // 3. Match 'close'
     epc_parse_result_t close_result = parse(p_close, ctx, current_token_offset);
@@ -3753,10 +3760,9 @@ pchainl1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
         epc_parse_result_t right_result = parse(item_parser, ctx, current_token_offset);
         if (right_result.is_error)
         {
-            epc_parser_result_cleanup(&op_result); // op succeeded, but not used in a final success
-            epc_parser_result_cleanup(
-                &left_result
-            ); // accumulated left part needs to be freed. It's not part of the final CPT.
+            epc_parser_result_cleanup(&op_result);          // op succeeded, but not used in a final success
+            epc_parser_result_cleanup(&left_result);        // accumulated left part needs to be freed. It's not
+                                                            // part of the final CPT.
             epc_parser_error_free(original_furthest_error); // Cleanup in error path
             return right_result;                            // Item after operator failed, so chain fails
         }
@@ -3942,12 +3948,14 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
     // Build the CPT for right-associativity
     epc_cpt_node_t * final_cpt_node = first_item_result.data.success; // Default if no operators
 
-    // If there are collected (op item) pairs, construct the right-associative tree
+    // If there are collected (op item) pairs, construct the right-associative
+    // tree
     if (pair_count > 0)
     {
-        // The initial right-hand side of the innermost expression is the rightmost item.
-        // Example: 1 ^ 2 ^ 3. The innermost is (2 ^ 3). So '3' is the initial right-hand side for (2 ^ 3).
-        // The last item from the 'pairs' is the base for the right-hand side construction.
+        // The initial right-hand side of the innermost expression is the rightmost
+        // item. Example: 1 ^ 2 ^ 3. The innermost is (2 ^ 3). So '3' is the initial
+        // right-hand side for (2 ^ 3). The last item from the 'pairs' is the base
+        // for the right-hand side construction.
         epc_cpt_node_t * current_right_operand = pairs[pair_count - 1].item_node;
 
         // Loop backwards from the second-to-last operator/item pair
@@ -3975,12 +3983,14 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
             epc_cpt_node_t * left_operand_node;
             if (i == 0)
             {
-                // For the outermost operation, the left operand is the very first item matched
+                // For the outermost operation, the left operand is the very first item
+                // matched
                 left_operand_node = first_item_result.data.success;
             }
             else
             {
-                // For inner operations, the left operand is the item from the previous pair (i-1)
+                // For inner operations, the left operand is the item from the previous
+                // pair (i-1)
                 left_operand_node = pairs[i - 1].item_node;
             }
             epc_cpt_node_t * operator_node = pairs[i].op_node;
@@ -4017,13 +4027,14 @@ pchainr1_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
             new_parent_node->semantic_start_offset = left_operand_node->semantic_start_offset;
             new_parent_node->semantic_end_offset = current_right_operand->semantic_end_offset;
 
-            current_right_operand
-                = new_parent_node; // This newly formed node becomes the right operand for the next outer iteration
+            current_right_operand = new_parent_node; // This newly formed node becomes the right operand
+                                                     // for the next outer iteration
         }
         final_cpt_node = current_right_operand; // The fully built right-associative tree
     }
 
-    free(pairs); // Free the array of op_item_pair_t structs, not the nodes they point to
+    free(pairs); // Free the array of op_item_pair_t structs, not the nodes they
+                 // point to
 
     // Restore furthest error before returning final success
     parser_furthest_error_restore(ctx, &original_furthest_error);
@@ -4185,8 +4196,8 @@ psatisfy_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offs
             ctx, token_offset, "Predicate failed", parser_get_expected_str(self), error_message
         );
         /*
-         *  Result cleanup must be done after the error result is created in case the error_message refers to the
-         *  error message in the result node.
+         *  Result cleanup must be done after the error result is created in case
+         * the error_message refers to the error message in the result node.
          */
         epc_parser_result_cleanup(&token_result);
 
@@ -4275,7 +4286,8 @@ pwrap_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
     {
         // If on_exit returns false, we treat it as a failure of the wrapper parser.
         char found_str[FOUND_BUFFER_SIZE];
-        if (!result.is_error) /* The callback wishes to override the child parse success to be an error. */
+        if (!result.is_error) /* The callback wishes to override the child parse
+                                 success to be an error. */
         {
             snprintf(
                 found_str,
@@ -4463,7 +4475,7 @@ _epc_commit(char const * name, epc_parser_t * parser)
         return NULL;
     }
     p->data.parser = parser;
-    p->data.type = PARSER_DATA_TYPE_COMMIT;
+    p->data.type = PARSER_DATA_TYPE_PARSER;
 
     return p;
 }
