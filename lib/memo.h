@@ -37,9 +37,3 @@ void epc_memo_table_cleanup(epc_parser_ctx_t * ctx);
 
 EASY_PC_HIDDEN
 void epc_memo_table_reset(epc_parser_ctx_t * ctx);
-
-#define INCLUDE_MEMOIZATION_DEBUG 0
-#if INCLUDE_MEMOIZATION_DEBUG
-EASY_PC_HIDDEN
-void epc_memo_table_print(epc_parser_ctx_t * ctx);
-#endif

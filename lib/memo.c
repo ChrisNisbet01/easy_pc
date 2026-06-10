@@ -1,6 +1,7 @@
+#include "memo.h"
+
 #include "easy_pc_private.h"
 #include "epc_parser_ctx.h"
-#include "memo.h"
 #include "result.h"
 
 #include <stdio.h>
@@ -193,46 +194,3 @@ epc_memo_table_cleanup(epc_parser_ctx_t * ctx)
     table->bucket_count = 0;
     table->entry_count = 0;
 }
-
-#if INCLUDE_MEMOIZATION_DEBUG
-EASY_PC_HIDDEN
-void
-epc_memo_table_print(epc_parser_ctx_t * ctx)
-{
-    epc_memo_table_t * table = epc_parser_ctx_get_memo_table(ctx);
-    if (table == NULL || table->entry_count == 0)
-    {
-        return;
-    }
-
-    printf("\n--- Memo Table Debug ---\n");
-    printf("%-30s | %-10s | %-10s\n", "Parser Name", "Offset", "Hit Count");
-    printf("------------------------------------------------------------\n");
-
-    size_t max_bucket_length = 0;
-    for (size_t i = 0; i < table->bucket_count; ++i)
-    {
-        size_t current_length = 0;
-        epc_memo_entry_t * current = table->buckets[i];
-
-        while (current != NULL)
-        {
-            printf(
-                "%-30s | %-10zu | %-10zu\n",
-                epc_parser_get_name(current->parser),
-                current->input_offset,
-                current->hit_count
-            );
-            current = current->next;
-            current_length++;
-        }
-
-        if (current_length > max_bucket_length)
-        {
-            max_bucket_length = current_length;
-        }
-    }
-    printf("Maximum bucket length: %zu\n", max_bucket_length);
-    printf("------------------------------------------------------------\n\n");
-}
-#endif

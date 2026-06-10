@@ -17,6 +17,7 @@ epc_get_version(void)
 #include <poll.h>
 #include <pthread.h>
 #endif
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,8 +73,10 @@ internal_streaming_init_thread(
         != 0)
     {
         ctx->streaming.parsing_thread_active = false;
+
         return false;
     }
+
     return true;
 }
 
@@ -84,12 +87,14 @@ internal_streaming_join_thread(epc_parser_ctx_t * ctx)
     bool should_join = false;
 
     pthread_mutex_lock(&ctx->streaming.mutex);
+
     if (ctx->streaming.is_streaming && !ctx->streaming.parsing_thread_joined)
     {
         thread = ctx->streaming.parsing_thread;
         should_join = true;
         ctx->streaming.parsing_thread_joined = true;
     }
+
     pthread_mutex_unlock(&ctx->streaming.mutex);
 
     if (should_join)
@@ -174,6 +179,7 @@ error_pool_append_error(epc_error_pool_t * pool, epc_parser_error_t * error)
     {
         size_t const new_capacity = pool->capacity == 0 ? 1024 : pool->capacity * 2;
         epc_parser_error_t ** new_errors = realloc(pool->errors, new_capacity * sizeof(*new_errors));
+
         if (new_errors == NULL)
         {
             /* If we can't store it in free errors, we just leak it in the arena. */
@@ -228,6 +234,7 @@ static void
 epc_add_input_token(epc_parser_ctx_t * ctx, unsigned token_id, size_t input_offset, size_t len)
 {
     epc_parser_token_t * new_token = &ctx->input_tokens.start[ctx->input_tokens.count++];
+
     *new_token = (epc_parser_token_t){
         .id = token_id,
         .view = {
@@ -315,13 +322,6 @@ internal_destroy_parse_ctx(epc_parser_ctx_t * ctx)
 
     epc_parser_error_free(ctx->furthest_error);
 
-#if INCLUDE_MEMOIZATION_DEBUG
-    /*
-     *   Be careful not to clean up the parsers before printing this table, as it contains pointers to
-     *   memory owned by them.
-     */
-    epc_memo_table_print(ctx);
-#endif
     epc_memo_table_cleanup(ctx);
 
 #ifdef WITH_INPUT_STREAM_SUPPORT
@@ -397,15 +397,18 @@ internal_init_parse_ctx(size_t input_buffer_len)
     }
 
     size_t const mmap_input_buffer_size = input_buffer_len + 1;
+
     ctx->mmap_buffer = create_mmap_input_buffer(mmap_input_buffer_size);
     if (ctx->mmap_buffer.buffer == NULL)
     {
         internal_destroy_parse_ctx(ctx);
         return NULL;
     }
+
     ctx->input_start = ctx->mmap_buffer.buffer;
 
     size_t const token_count = sizeof(epc_parser_token_t) * mmap_input_buffer_size;
+
     ctx->mmap_token_buffer = create_mmap_input_buffer(token_count);
     if (ctx->mmap_token_buffer.buffer == NULL)
     {
@@ -435,6 +438,7 @@ internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
     {
         memcpy((void *)ctx->input_start, buf, len);
     }
+
     *(char *)&ctx->input_start[len] = '\0';
 
     add_tokens_from_character_input(ctx, ctx->input_start, len);
@@ -453,6 +457,7 @@ internal_create_parse_ctx_from_string(char const * input_start)
     char const * start = input_start == NULL ? "" : input_start;
 
     epc_parser_ctx_t * ctx = internal_create_parse_ctx_from_buffer(start, input_len);
+
     if (ctx == NULL)
     {
         return NULL;
@@ -484,6 +489,7 @@ internal_create_parse_ctx_from_fp(FILE * fp)
     {
         return NULL;
     }
+
     rewind(fp);
 
     epc_parser_ctx_t * ctx = internal_init_parse_ctx(file_size);
@@ -494,6 +500,7 @@ internal_create_parse_ctx_from_fp(FILE * fp)
     }
 
     size_t total_read = fread((void *)ctx->input_start, 1, (size_t)file_size, fp);
+
     if (total_read != (size_t)file_size)
     {
         internal_destroy_parse_ctx(ctx);
@@ -564,7 +571,7 @@ parse_ctx_alloc_node(epc_parser_ctx_t * ctx)
     /* Resort to the arena if the pool is empty. */
     if (node == NULL)
     {
-        node = epc_arena_alloc(&ctx->node_arena, sizeof(epc_cpt_node_t));
+        node = epc_arena_alloc(&ctx->node_arena, sizeof(*node));
     }
 
     if (node != NULL)
@@ -612,7 +619,7 @@ parse_ctx_alloc_error(epc_parser_ctx_t * ctx)
     /* Resort to the arena if the pool is empty. */
     if (error == NULL)
     {
-        error = epc_arena_alloc(&ctx->node_arena, sizeof(epc_parser_error_t));
+        error = epc_arena_alloc(&ctx->node_arena, sizeof(*error));
     }
 
     if (error != NULL)
@@ -747,6 +754,7 @@ parse_ctx_get_input_len(epc_parser_ctx_t const * ctx)
     {
         return 0;
     }
+
     return ctx->input_len;
 }
 
@@ -760,6 +768,7 @@ parse_ctx_get_offset_from_input(epc_parser_ctx_t * const ctx, char const * const
     {
         return 0;
     }
+
     return (size_t)(input_position - ctx->input_start);
 }
 
@@ -838,7 +847,9 @@ internal_streaming_consume_available(epc_parse_session_t * session, bool once)
 
             return STREAM_CONSUME_ERROR;
         }
+
         ssize_t bytes_read = read(fd, (void *)(ctx->input_start + ctx->input_len), space_left);
+
         if (bytes_read > 0)
         {
             pthread_mutex_lock(&ctx->streaming.mutex);
@@ -900,6 +911,7 @@ epc_streaming_notify_eof(epc_parse_session_t * session)
     }
 
     epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+
     pthread_mutex_lock(&ctx->streaming.mutex);
     ctx->streaming.is_eof = true;
     pthread_cond_broadcast(&ctx->streaming.cond);
@@ -915,6 +927,7 @@ epc_streaming_notify_error(epc_parse_session_t * session, int error_code)
     }
 
     epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+
     pthread_mutex_lock(&ctx->streaming.mutex);
     ctx->streaming.input_error = error_code;
     pthread_cond_broadcast(&ctx->streaming.cond);
@@ -931,7 +944,7 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
 
     epc_parser_ctx_t * ctx = session->internal_parse_ctx;
 
-    /* 1. Ensure the previous thread is joined. */
+    /* Ensure the previous thread is joined. */
     internal_streaming_join_thread(ctx);
 
     /* Can't advance if the input file is closed or experienced an error. */
@@ -940,7 +953,7 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
         return false;
     }
 
-    /* 2. Determine how much was consumed. */
+    /* Determine how much was consumed. */
     size_t consumed = 0;
 
     if (!session->result.is_error)
@@ -957,7 +970,7 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
 
     pthread_mutex_lock(&ctx->streaming.mutex);
 
-    /* 3. Compact the buffer. */
+    /* Compact the buffer. */
     if (consumed > 0 && consumed <= ctx->input_len)
     {
         size_t leftover = ctx->input_len - consumed;
@@ -980,7 +993,7 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
         ctx->input_len = leftover;
     }
 
-    /* 4. Reset internal state. */
+    /* Reset internal state. */
     epc_parser_result_cleanup(&session->result);
     epc_parser_result_cleanup(&ctx->streaming.pending_result);
     epc_parser_error_free(ctx->furthest_error);
@@ -988,7 +1001,7 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
 
     epc_memo_table_reset(ctx);
 
-    /* 5. Prepare and restart the consumer thread. */
+    /* Prepare and restart the consumer thread. */
     if (!internal_streaming_init_thread(
             ctx, next_parser, ctx->streaming.fd, ctx->streaming.on_complete, ctx->streaming.cb_user_data
         ))
@@ -1015,6 +1028,7 @@ epc_parse_session_is_active(epc_parse_session_t const * session)
     pthread_mutex_lock(&ctx->streaming.mutex);
     bool const active = ctx->streaming.parsing_thread_active;
     pthread_mutex_unlock(&ctx->streaming.mutex);
+
     return active;
 }
 
@@ -1136,6 +1150,7 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
         session.result = epc_unparsed_error_result(0, "Failed to create parse context.", "valid parse context", "NULL");
         return session;
     }
+
     session.internal_parse_ctx = ctx;
     ctx->user_ctx = user_ctx;
 
@@ -1159,6 +1174,7 @@ epc_parse_input(epc_parser_t * top_parser, epc_parse_input_t input, void * user_
 
         /* Ensure the FD is in non-blocking mode. */
         int flags = fcntl(fd, F_GETFL, 0);
+
         if (flags != -1)
         {
             fcntl(fd, F_SETFL, flags | O_NONBLOCK);
@@ -1257,6 +1273,7 @@ EASY_PC_API epc_parse_session_t
 epc_parse_bytes(epc_parser_t * top_parser, char const * buf, size_t len, void * user_ctx)
 {
     epc_parse_input_t input = {.type = EPC_PARSE_TYPE_BUFFER, .buffer = {.buf = buf, .len = len}};
+
     return epc_parse_input(top_parser, input, user_ctx);
 }
 
@@ -1286,6 +1303,7 @@ epc_parse_session_reparse(epc_parse_session_t * session, epc_parser_t * new_pars
     }
 
     epc_parser_ctx_t * ctx = session->internal_parse_ctx;
+
     if (ctx == NULL)
     {
         return false;
@@ -1309,6 +1327,7 @@ epc_parse_session_reparse(epc_parse_session_t * session, epc_parser_t * new_pars
     {
         return false;
     }
+
     ctx->input_tokens.start = (epc_parser_token_t *)src;
     ctx->input_tokens.count = token_count;
 
@@ -1364,6 +1383,7 @@ epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session)
         fprintf(fp, "NULL session\n");
         return;
     }
+
     if (session->result.is_error)
     {
         epc_parser_error_t * err = session->result.data.error;
@@ -1375,8 +1395,10 @@ epc_parse_session_print_cpt(FILE * fp, epc_parse_session_t const * session)
     else
     {
         fprintf(fp, "Parsing successful!\n");
+
         char * cpt_str = epc_cpt_to_string(session->internal_parse_ctx, session->result.data.success);
-        if (cpt_str)
+
+        if (cpt_str != NULL)
         {
             fprintf(fp, "Concrete Parse Tree (CPT):\n%s\n", cpt_str);
             free(cpt_str);
@@ -1388,27 +1410,30 @@ EASY_PC_API epc_parser_list *
 epc_parser_list_create(void)
 {
     epc_parser_list * list = calloc(1, sizeof(*list));
-    if (!list)
+
+    if (list == NULL)
     {
         return NULL;
     }
 
     list->capacity = 20; // Initial capacity
     list->parsers = calloc(list->capacity, sizeof(*list->parsers));
-    if (!list->parsers)
+
+    if (list->parsers == NULL)
     {
         free(list);
         return NULL;
     }
 
     list->count = 0;
+
     return list;
 }
 
 EASY_PC_HIDDEN epc_parser_t *
 epc_parser_list_add(epc_parser_list * list, epc_parser_t * parser)
 {
-    if (!list || !parser)
+    if (list == NULL || parser == NULL)
     {
         return NULL; // Return NULL if list or parser is NULL
     }
@@ -1417,7 +1442,7 @@ epc_parser_list_add(epc_parser_list * list, epc_parser_t * parser)
     {
         size_t new_capacity = list->capacity * 2;
         epc_parser_t ** new_parsers = realloc(list->parsers, new_capacity * sizeof(*new_parsers));
-        if (!new_parsers)
+        if (new_parsers == NULL)
         {
             epc_parser_free(parser);
             return NULL; // Reallocation failed
@@ -1427,13 +1452,14 @@ epc_parser_list_add(epc_parser_list * list, epc_parser_t * parser)
     }
 
     list->parsers[list->count++] = parser;
+
     return parser;
 }
 
 EASY_PC_API void
 epc_parser_list_free(epc_parser_list * list)
 {
-    if (!list)
+    if (list == NULL)
     {
         return;
     }
@@ -1450,21 +1476,22 @@ epc_parser_list_free(epc_parser_list * list)
 static void
 pt_visit_recursive(epc_cpt_node_t * node, epc_cpt_visitor_t * visitor)
 {
-    if (!node || !visitor)
+    if (node == NULL || visitor == NULL)
     {
         return;
     }
 
-    if (visitor->enter_node)
+    if (visitor->enter_node != NULL)
     {
         visitor->enter_node(node, visitor->user_data);
     }
+
     for (int i = 0; i < node->children_count; ++i)
     {
         pt_visit_recursive(node->children[i], visitor);
     }
 
-    if (visitor->exit_node)
+    if (visitor->exit_node != NULL)
     {
         visitor->exit_node(node, visitor->user_data);
     }
@@ -1473,9 +1500,10 @@ pt_visit_recursive(epc_cpt_node_t * node, epc_cpt_visitor_t * visitor)
 EASY_PC_API void
 epc_cpt_visit_nodes(epc_cpt_node_t * root, epc_cpt_visitor_t * visitor)
 {
-    if (!root || !visitor)
+    if (root == NULL || visitor == NULL)
     {
         return;
     }
+
     pt_visit_recursive(root, visitor);
 }
