@@ -513,6 +513,59 @@ TEST(TerminalParsersNew, CComment_FailsOnNullInput)
     check_failure("Input string is NULL");
 }
 
+// --- epc_comment parsers with UTF-8 content ---
+TEST(TerminalParsersNew, CppComment_MatchesUtf8Content)
+{
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
+    session = parse(p, "// π comment\nNext line");
+
+    CHECK_FALSE(session.result.is_error);
+    CHECK_TRUE(session.result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+    STRNCMP_EQUAL("// π comment\n", content, 14);
+    LONGS_EQUAL(13, session.result.data.success->token.count);
+}
+
+TEST(TerminalParsersNew, CppComment_FailsOnUtf8Start)
+{
+    /* A UTF-8 character must not be mistaken for the "//" opener. */
+    epc_parser_t * p = epc_cpp_comment(list, NULL);
+    session = parse(p, "π // not a comment");
+    check_failure("Expected '//'");
+}
+
+TEST(TerminalParsersNew, CComment_MatchesUtf8Content)
+{
+    epc_parser_t * p = epc_c_comment(list, NULL);
+    session = parse(p, "/* π */ after");
+
+    CHECK_FALSE(session.result.is_error);
+    CHECK_TRUE(session.result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+    STRNCMP_EQUAL("/* π */", content, 8);
+    LONGS_EQUAL(7, session.result.data.success->token.count);
+}
+
+TEST(TerminalParsersNew, CComment_FailsOnUtf8Start)
+{
+    /* A UTF-8 character must not be mistaken for the "/*" opener. */
+    epc_parser_t * p = epc_c_comment(list, NULL);
+    session = parse(p, "π /* not a comment */");
+    check_failure("Expected '/*'");
+}
+
+TEST(TerminalParsersNew, BashComment_MatchesUtf8Content)
+{
+    epc_parser_t * p = epc_bash_comment(list, NULL);
+    session = parse(p, "# π comment\nnext");
+
+    CHECK_FALSE(session.result.is_error);
+    CHECK_TRUE(session.result.data.success != NULL);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+    STRNCMP_EQUAL("# π comment\n", content, 13);
+    LONGS_EQUAL(12, session.result.data.success->token.count);
+}
+
 // --- epc_identifier tests ---
 TEST(TerminalParsersNew, Identifier_MatchesSimpleLetter)
 {

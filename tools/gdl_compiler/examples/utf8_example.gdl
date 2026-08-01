@@ -1,0 +1,27 @@
+// GDL example showing UTF-8 character support
+// This file demonstrates how Unicode characters are used directly in grammar rules
+
+// Match a Greek letter pi symbol
+PI = 'π';
+
+// Match a Japanese hiragana character
+HiraganaA = 'あ';
+
+// Match a Chinese character for "morning"
+Morning = '早';  // "zen" in Japanese, meaning morning
+
+// Match an emoji flag (grapheme cluster - multiple codepoints)
+FlagJP = '🇯🇵';
+
+// Match a string containing embedded UTF-8 characters
+Greeting = 'hello 世界';  // "world" in Chinese
+
+// Match Greek letters alpha through omega
+// After implementation: this will generate epc_utf8_char_range()
+GreekLower = ['α'-'ω'];
+
+// Match a sequence of Greek letters
+Glyphe = 'γ' λ 'α' φ 'ε';
+
+// Top-level rule
+Program = PI ';' EOI;

@@ -30,6 +30,7 @@ typedef struct
     epc_streaming_complete_cb on_complete;
     void * cb_user_data;
     int fd;
+    size_t carry_len; /**< Number of unconsumed bytes at the tail of the input buffer that begin a UTF-8 char. */
     epc_parse_result_t pending_result;
 } epc_streaming_state_t;
 #endif

@@ -1,0 +1,22 @@
+set(app "utf8_parser")
+
+add_executable(${app} 
+  main.c 
+)
+
+add_dependencies(${app} all_unit_tests)
+
+target_compile_options(${app} PRIVATE -Wall -Wextra -pedantic -Werror)
+
+target_link_libraries(${app} PRIVATE
+    easy_pc_shared
+    m # Link with the math library
+)
+
+target_include_directories(${app} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR} # For ast.h, ast_evaluator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+)
+
+target_compile_features(${app} PRIVATE c_std_11) # Enable C11 features
+

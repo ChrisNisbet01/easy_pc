@@ -49,6 +49,12 @@ typedef enum
     EPC_ERROR_EXPECTED_MAX_LEN = 40,
 } EPC_ERROR_MAX_MESSAGE_LENGTHS;
 
+/* Token ID ranges:
+ *   0 - 127:   ASCII characters (id == codepoint == byte value)
+ *   128 - 299: reserved for internal use
+ *   300+:      user-defined token IDs (EPC_TOKEN_ID_FIRST_USER)
+ */
+#define EPC_TOKEN_ID_UTF8 128 /* Token ID used for multi-byte UTF-8 characters. */
 #define EPC_TOKEN_ID_FIRST_USER 300
 typedef uint32_t epc_token_id_t;
 
@@ -173,7 +179,7 @@ typedef enum
 // The Result of a Parse Attempt
 struct epc_parse_result_t
 {
-    bool is_error;             /**< @brief A flag: false for success, true for error. */
+    bool is_error;                /**< @brief A flag: false for success, true for error. */
     epc_result_type_t error_type; /**< @brief Distinguishes between backtrackable and committed failures. */
     union
     {
@@ -293,6 +299,19 @@ EASY_PC_API epc_parser_t * epc_byte(epc_parser_list * list, char const * name, c
 EASY_PC_API epc_parser_t * epc_token(epc_parser_list * list, char const * name, epc_token_id_t token_id);
 
 /**
+ * @brief Adds a token to the list with Unicode metadata.
+ * @param list The token list to add to.
+ * @param id The token ID (e.g., character code, or custom ID >= EPC_TOKEN_ID_FIRST_USER).
+ * @param view The view describing the token's offset, length, line, and column in the input.
+ * @param codepoint The Unicode codepoint (0 for unknown/non-Unicode tokens).
+ * @param byte_len The UTF-8 byte length (0 for unknown).
+ * @return true on success, false on failure (allocation error).
+ */
+EASY_PC_API bool epc_token_list_add_ex(
+    epc_token_list_t * list, epc_token_id_t id, epc_parser_input_view_t view, uint32_t codepoint, uint8_t byte_len
+);
+
+/**
  * @brief Creates a parser that matches a specific string literal and adds it to the list.
  * @param list The parser list to add to.
  * @param name The name of the parser for debugging/CPT.
@@ -324,6 +343,25 @@ EASY_PC_API epc_parser_t * epc_alpha(epc_parser_list * list, char const * name);
  * @return A new `parser_t` instance, or NULL on error.
  */
 EASY_PC_API epc_parser_t * epc_alphanum(epc_parser_list * list, char const * name);
+
+/**
+ * @brief Creates a parser that matches a single Unicode codepoint character (UTF-8) and adds it to the list.
+ *        The character is specified by its UTF-8 encoded string representation.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param utf8_char A pointer to a null-terminated UTF-8 encoded string containing exactly one character to match.
+ * @return A new `parser_t` instance, or NULL on error (e.g., invalid or multi-character input).
+ */
+EASY_PC_API epc_parser_t * epc_utf8_char(epc_parser_list * list, char const * name, char const * utf8_char);
+
+/**
+ * @brief Creates a parser that matches a Unicode codepoint by its numeric value.
+ * @param list The parser list to add to.
+ * @param name The name of the parser for debugging/CPT.
+ * @param codepoint The Unicode codepoint to match (e.g., 0x03C0 for π).
+ * @return A new `parser_t` instance, or NULL on error.
+ */
+EASY_PC_API epc_parser_t * epc_utf8_char_from_codepoint(epc_parser_list * list, char const * name, uint32_t codepoint);
 
 /**
  * @brief Creates a parser that matches an integer number (e.g., "123", "-45") and adds it to the list.
@@ -1272,8 +1310,28 @@ EASY_PC_API size_t epc_token_list_count(epc_token_list_t const * list);
  * @param out_view Output parameter for the token's view (offset, length, line, column).
  * @return true on success, false if the index is out of range or list is NULL.
  */
-EASY_PC_API bool
-epc_token_list_get(epc_token_list_t const * list, size_t index, epc_token_id_t * out_id, epc_parser_input_view_t * out_view);
+EASY_PC_API bool epc_token_list_get(
+    epc_token_list_t const * list, size_t index, epc_token_id_t * out_id, epc_parser_input_view_t * out_view
+);
+
+/**
+ * @brief Retrieves a token from the list by index with Unicode metadata.
+ * @param list The token list.
+ * @param index The index of the token to retrieve.
+ * @param out_id Output parameter for the token ID.
+ * @param out_view Output parameter for the token's view.
+ * @param out_codepoint Output parameter for the Unicode codepoint.
+ * @param out_byte_len Output parameter for the UTF-8 byte length.
+ * @return true on success, false if the index is out of range or list is NULL.
+ */
+EASY_PC_API bool epc_token_list_get_ex(
+    epc_token_list_t const * list,
+    size_t index,
+    epc_token_id_t * out_id,
+    epc_parser_input_view_t * out_view,
+    uint32_t * out_codepoint,
+    uint8_t * out_byte_len
+);
 
 // --- Reparse API ---
 

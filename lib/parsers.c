@@ -15,6 +15,8 @@
 #define FOUND_BUFFER_SIZE 21
 #define ERROR_MSG_BUFFER_SIZE 64
 
+#define TOKEN_ID_IS_UTF8(token_id) ((token_id) <= 127 || (token_id) == EPC_TOKEN_ID_UTF8)
+
 static char const memory_allocation_error[] = "Memory allocation error";
 static char const infinite_recursion_detected_msg[] = "Infinite recursion detected";
 
@@ -76,8 +78,170 @@ get_semantic_start_offset(epc_cpt_node_t ** children, size_t const count)
     return semantic_start_offset;
 }
 
+/* Strictly decodes the UTF-8 character at `buf`. Returns the byte length (1-4) and sets *out_codepoint on success;
+ * returns 0 on invalid UTF-8 (rejects overlong encodings, surrogate codepoints, > U+10FFFF and invalid
+ * continuation bytes; a trailing NUL terminates the string, so a truncated sequence decodes as invalid). */
+static size_t
+decode_utf8_char_strict(char const * buf, uint32_t * out_codepoint)
+{
+    if (buf == NULL || out_codepoint == NULL || buf[0] == '\0')
+    {
+        return 0;
+    }
+
+    unsigned char first = (unsigned char)buf[0];
+
+    size_t byte_len;
+    if (first < 0x80)
+    {
+        *out_codepoint = first;
+        return 1;
+    }
+    else if ((first & 0xE0) == 0xC0)
+    {
+        byte_len = 2;
+    }
+    else if ((first & 0xF0) == 0xE0)
+    {
+        byte_len = 3;
+    }
+    else if ((first & 0xF8) == 0xF0)
+    {
+        byte_len = 4;
+    }
+    else
+    {
+        return 0;
+    }
+
+    for (size_t i = 1; i < byte_len; i++)
+    {
+        if (((unsigned char)buf[i] & 0xC0) != 0x80)
+        {
+            return 0;
+        }
+    }
+
+    uint32_t codepoint;
+    switch (byte_len)
+    {
+    case 2:
+        codepoint = ((uint32_t)(first & 0x1F) << 6) | (uint32_t)((unsigned char)buf[1] & 0x3F);
+        if (codepoint < 0x80)
+        {
+            return 0; /* Overlong encoding. */
+        }
+        break;
+    case 3:
+        codepoint = ((uint32_t)(first & 0x0F) << 12) | ((uint32_t)((unsigned char)buf[1] & 0x3F) << 6)
+                    | (uint32_t)((unsigned char)buf[2] & 0x3F);
+        if (codepoint < 0x800)
+        {
+            return 0; /* Overlong encoding. */
+        }
+        if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
+        {
+            return 0; /* UTF-16 surrogate, invalid in UTF-8. */
+        }
+        break;
+    case 4:
+        codepoint = ((uint32_t)(first & 0x07) << 18) | ((uint32_t)((unsigned char)buf[1] & 0x3F) << 12)
+                    | ((uint32_t)((unsigned char)buf[2] & 0x3F) << 6) | (uint32_t)((unsigned char)buf[3] & 0x3F);
+        if (codepoint < 0x10000)
+        {
+            return 0; /* Overlong encoding. */
+        }
+        if (codepoint > 0x10FFFF)
+        {
+            return 0; /* Beyond the Unicode range. */
+        }
+        break;
+    default:
+        return 0;
+    }
+
+    *out_codepoint = codepoint;
+    return byte_len;
+}
+
+/* Returns true if the given NUL-terminated string is entirely valid UTF-8. */
+static bool
+utf8_string_is_valid(char const * str)
+{
+    if (str == NULL)
+    {
+        return false;
+    }
+
+    size_t i = 0;
+    while (str[i] != '\0')
+    {
+        uint32_t codepoint;
+        size_t const byte_len = decode_utf8_char_strict(str + i, &codepoint);
+        if (byte_len == 0)
+        {
+            return false;
+        }
+        i += byte_len;
+    }
+
+    return true;
+}
+
+// --- UTF-8 Character Parser Implementations ---
+
+static epc_parse_result_t
+put_utf8_char_parse_fn(epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
+{
+    /* NOTE: `data.string` and `data.utf8_char` overlap in the union, so the codepoint cannot be stored
+     * alongside the string; decode it from the (validated) UTF-8 bytes at parse time instead. */
+    char const * expected_bytes = self->data.string;
+
+    if (expected_bytes == NULL || expected_bytes[0] == '\0')
+    {
+        return epc_parser_error_result(
+            ctx, token_offset, "Invalid UTF-8 parser state", "U+XXXX", "valid UTF-8 character"
+        );
+    }
+
+    uint32_t expected_codepoint;
+    if (decode_utf8_char_strict(expected_bytes, &expected_codepoint) == 0)
+    {
+        return epc_parser_error_result(
+            ctx, token_offset, "Invalid UTF-8 parser state", "U+XXXX", "valid UTF-8 character"
+        );
+    }
+
+    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
+
+    if (input_result.is_eof || input_result.had_error)
+    {
+        return epc_parser_error_result(
+            ctx, token_offset, "Unexpected end of input", "UTF-8 character", "complete character"
+        );
+    }
+
+    epc_parser_token_t const token = input_result.token;
+
+    if (!TOKEN_ID_IS_UTF8(token.id) || token.codepoint != expected_codepoint)
+    {
+        return epc_parser_error_result(ctx, token_offset, "Unexpected UTF-8 character", "U+XXXX", "matching character");
+    }
+
+    epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
+    if (node == NULL)
+    {
+        return epc_parser_error_result(ctx, token_offset, memory_allocation_error, self->name, "N/A");
+    }
+
+    node->token.offset = token_offset;
+    node->token.count = 1;
+
+    return epc_parser_success_result(node);
+}
+
 static match_status_t
-try_match_token(epc_parser_ctx_t * ctx, size_t offset, char expected, epc_parser_token_t * found_out)
+try_match_token(epc_parser_ctx_t * ctx, size_t offset, uint32_t expected_codepoint, epc_parser_token_t * found_out)
 {
     parse_get_input_result_t res = parse_ctx_get_input_at_offset(ctx, offset);
     if (res.is_eof)
@@ -86,7 +250,12 @@ try_match_token(epc_parser_ctx_t * ctx, size_t offset, char expected, epc_parser
     }
     *found_out = res.token;
 
-    return (res.token.id == (unsigned)expected) ? MATCH_OK : MATCH_MISMATCH;
+    if (!TOKEN_ID_IS_UTF8(res.token.id))
+    {
+        return MATCH_MISMATCH;
+    }
+
+    return (res.token.codepoint == expected_codepoint) ? MATCH_OK : MATCH_MISMATCH;
 }
 
 static size_t
@@ -231,6 +400,14 @@ parser_data_free(parser_data_type_st * data)
     case PARSER_DATA_TYPE_TOKEN:
         free((char *)data->token.str);
         data->token.str = NULL;
+        break;
+
+    case PARSER_DATA_TYPE_UTF8_CHAR:
+        if (data->string != NULL)
+        {
+            free((char *)data->string);
+            data->string = NULL;
+        }
         break;
     }
 
@@ -568,10 +745,20 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t toke
 {
     char const * expected_str = parser_get_expected_str(self);
     char const * match_string = self->data.string;
-    size_t expected_len = strlen(match_string);
+    size_t expected_char_len = 0;
 
-    for (size_t matched_tokens = 0; matched_tokens < expected_len; matched_tokens++)
+    size_t byte_pos = 0;
+    size_t matched_tokens = 0;
+    while (match_string[byte_pos] != '\0')
     {
+        uint32_t expected_codepoint;
+        size_t const byte_len = decode_utf8_char_strict(match_string + byte_pos, &expected_codepoint);
+        if (byte_len == 0)
+        {
+            /* The string was validated at construction; this should not happen. */
+            return epc_parser_error_result(ctx, token_offset, "Invalid UTF-8 in parser string", expected_str, "N/A");
+        }
+
         parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset + matched_tokens);
         epc_token_id_t const input = input_result.token.id;
 
@@ -581,22 +768,32 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t toke
             return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", expected_str, found_str);
         }
 
-        if (input != (epc_token_id_t)expected_str[matched_tokens])
+        if (!TOKEN_ID_IS_UTF8(input) || input_result.token.codepoint != expected_codepoint)
         {
             /* Match not found. */
             char found_buffer[FOUND_BUFFER_SIZE];
 
-            if (isascii(input))
+            if (input <= 127)
             {
                 snprintf(found_buffer, sizeof(found_buffer), "%c (pos: %zu)", (char)input, matched_tokens);
             }
             else
             {
-                snprintf(found_buffer, sizeof(found_buffer), "%u (pos: %zu)", input, matched_tokens);
+                snprintf(
+                    found_buffer,
+                    sizeof(found_buffer),
+                    "U+%04X (pos: %zu)",
+                    input_result.token.codepoint,
+                    matched_tokens
+                );
             }
 
             return epc_parser_error_result(ctx, token_offset, "Unexpected string", expected_str, found_buffer);
         }
+
+        byte_pos += byte_len;
+        matched_tokens++;
+        expected_char_len++;
     }
 
     epc_cpt_node_t * node = epc_node_alloc(ctx, self, self->tag);
@@ -607,7 +804,7 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t toke
     }
 
     node->token.offset = token_offset;
-    node->token.count = expected_len;
+    node->token.count = (int)expected_char_len;
 
     return epc_parser_success_result(node);
 }
@@ -615,6 +812,11 @@ pstring_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t toke
 static epc_parser_t *
 _epc_string(char const * name, char const * s)
 {
+    if (s == NULL || !utf8_string_is_valid(s))
+    {
+        return NULL;
+    }
+
     epc_parser_t * p = epc_parser_allocate(name, "string", pstring_parse_fn);
     if (p == NULL)
     {
@@ -1467,8 +1669,8 @@ pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
 
     epc_token_id_t const input = input_result.token.id;
 
-    // First char must be alpha or underscore
-    if (!isalpha(input) && input != '_')
+    // First char must be alpha, underscore, or any UTF-8 character
+    if (!isalpha(input) && input != '_' && input != EPC_TOKEN_ID_UTF8)
     {
         if (isascii(input))
         {
@@ -1490,7 +1692,7 @@ pidentifier_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t 
         {
             break;
         }
-        if (!isalnum(res.token.id) && res.token.id != '_')
+        if (!isalnum(res.token.id) && res.token.id != '_' && res.token.id != EPC_TOKEN_ID_UTF8)
         {
             break;
         }
@@ -2350,22 +2552,45 @@ pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
             return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", expected_str, "EOF");
         }
 
-        epc_token_id_t const input = input_result.token.id;
+        epc_parser_token_t const input_token = input_result.token;
+        epc_token_id_t const input = input_token.id;
 
-        if (strchr(chars_to_avoid, input) != NULL)
+        /* Only character tokens (ASCII or UTF-8) can be excluded; user-defined tokens are not characters. */
+        if (TOKEN_ID_IS_UTF8(input))
         {
-            if (isascii(input))
+            size_t byte_pos = 0;
+            while (chars_to_avoid[byte_pos] != '\0')
             {
-                char found_str[2] = {input, '\0'};
+                uint32_t avoid_codepoint;
+                size_t const byte_len = decode_utf8_char_strict(chars_to_avoid + byte_pos, &avoid_codepoint);
+                if (byte_len == 0)
+                {
+                    /* The set was validated at construction; this should not happen. */
+                    return epc_parser_error_result(
+                        ctx, token_offset, "Invalid UTF-8 in forbidden set", expected_str, "N/A"
+                    );
+                }
 
-                return epc_parser_error_result(
-                    ctx, token_offset, "Character found in forbidden set", expected_str, found_str
-                );
+                if (input_token.codepoint == avoid_codepoint)
+                {
+                    char found_str[32];
+                    if (input <= 127)
+                    {
+                        found_str[0] = (char)input;
+                        found_str[1] = '\0';
+                    }
+                    else
+                    {
+                        snprintf(found_str, sizeof(found_str), "U+%04X", input_token.codepoint);
+                    }
+
+                    return epc_parser_error_result(
+                        ctx, token_offset, "Character found in forbidden set", expected_str, found_str
+                    );
+                }
+
+                byte_pos += byte_len;
             }
-
-            return epc_parser_error_result_token_list(
-                ctx, token_offset, "Token found in forbidden set", expected_str, &input_result.token, 1
-            );
         }
     }
 
@@ -2383,6 +2608,11 @@ pnone_of_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t tok
 static epc_parser_t *
 _epc_none_of(char const * name, char const * chars_to_avoid)
 {
+    if (chars_to_avoid == NULL || !utf8_string_is_valid(chars_to_avoid))
+    {
+        return NULL;
+    }
+
     epc_parser_t * p = epc_parser_allocate(name, "none_of", pnone_of_parse_fn);
     if (p == NULL)
     {
@@ -4130,6 +4360,14 @@ epc_parser_duplicate(epc_parser_t * const dst, epc_parser_t const * const src)
         dst->data.token.str = strdup(src->data.token.str);
         break;
 
+    case PARSER_DATA_TYPE_UTF8_CHAR:
+        dst->data.utf8_char = src->data.utf8_char;
+        if (src->data.string != NULL)
+        {
+            dst->data.string = strdup(src->data.string);
+        }
+        break;
+
     case PARSER_DATA_TYPE_PARSER_LIST:
         dst->data.parser_list = parser_list_duplicate(src->data.parser_list);
         break;
@@ -4526,4 +4764,109 @@ epc_parser_get_name(epc_parser_t const * p)
     {
         return "Unnamed parser";
     }
+}
+
+static epc_parser_t *
+_epc_utf8_char_internal(char const * name, uint32_t codepoint, size_t byte_len, char const * utf8_bytes)
+{
+    epc_parser_t * p = epc_parser_allocate(name, "utf8_char", put_utf8_char_parse_fn);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    p->data.type = PARSER_DATA_TYPE_UTF8_CHAR;
+    p->data.utf8_char.codepoint = codepoint;
+    p->data.utf8_char.byte_len = byte_len;
+
+    char * data = strndup(utf8_bytes, byte_len);
+    if (data == NULL)
+    {
+        free(p);
+        return NULL;
+    }
+
+    p->data.string = data;
+    return p;
+}
+
+EASY_PC_API epc_parser_t *
+epc_utf8_char(epc_parser_list * list, char const * name, char const * utf8_char)
+{
+    if (utf8_char == NULL || utf8_char[0] == '\0')
+    {
+        return NULL;
+    }
+
+    uint32_t codepoint;
+    size_t byte_len = decode_utf8_char_strict(utf8_char, &codepoint);
+
+    if (byte_len == 0 || utf8_char[byte_len] != '\0')
+    {
+        return NULL; /* Not a single valid UTF-8 character. */
+    }
+
+    epc_parser_t * p = _epc_utf8_char_internal(name, codepoint, byte_len, utf8_char);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    p->expected_value = "utf8 char";
+
+    return epc_parser_list_add(list, p);
+}
+
+EASY_PC_API epc_parser_t *
+epc_utf8_char_from_codepoint(epc_parser_list * list, char const * name, uint32_t codepoint)
+{
+    if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
+    {
+        return NULL; /* UTF-16 surrogate, invalid in UTF-8. */
+    }
+
+    size_t byte_len = 0;
+    char utf8_buf[5] = {0};
+
+    if (codepoint < 0x80)
+    {
+        byte_len = 1;
+        utf8_buf[0] = (char)codepoint;
+    }
+    else if (codepoint < 0x800)
+    {
+        byte_len = 2;
+        utf8_buf[0] = (char)(0xC0 | (codepoint >> 6));
+        utf8_buf[1] = (char)(0x80 | (codepoint & 0x3F));
+    }
+    else if (codepoint < 0x10000)
+    {
+        byte_len = 3;
+        utf8_buf[0] = (char)(0xE0 | (codepoint >> 12));
+        utf8_buf[1] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+        utf8_buf[2] = (char)(0x80 | (codepoint & 0x3F));
+    }
+    else if (codepoint < 0x110000)
+    {
+        byte_len = 4;
+        utf8_buf[0] = (char)(0xF0 | (codepoint >> 18));
+        utf8_buf[1] = (char)(0x80 | ((codepoint >> 12) & 0x3F));
+        utf8_buf[2] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+        utf8_buf[3] = (char)(0x80 | (codepoint & 0x3F));
+    }
+
+    if (byte_len == 0)
+    {
+        return NULL;
+    }
+
+    epc_parser_t * p = _epc_utf8_char_internal(name, codepoint, byte_len, utf8_buf);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    p->expected_value = "utf8 codepoint";
+
+    return epc_parser_list_add(list, p);
 }

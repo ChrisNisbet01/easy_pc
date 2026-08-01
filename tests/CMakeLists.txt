@@ -432,3 +432,26 @@ add_test(
     NAME TokenListTest
     COMMAND TokenListTest
 )
+
+add_executable(Utf8ParsersTest
+    AllTests.cpp
+    Utf8ParsersTest.cpp
+)
+
+add_dependencies(all_unit_tests Utf8ParsersTest)
+
+target_include_directories(Utf8ParsersTest PRIVATE
+     ${CMAKE_CURRENT_SOURCE_DIR}/../include
+     ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+)
+
+target_link_libraries(Utf8ParsersTest PRIVATE
+    easy_pc_shared
+    CppUTest
+    CppUTestExt
+)
+
+add_test(
+    NAME Utf8ParsersTest
+    COMMAND Utf8ParsersTest
+)

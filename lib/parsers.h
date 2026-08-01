@@ -83,6 +83,12 @@ typedef struct epc_token_data_t
     epc_token_id_t id; /* The token ID value; */
 } epc_token_data_t;
 
+typedef struct epc_utf8_char_data_t
+{
+    uint32_t codepoint;
+    size_t byte_len;
+} epc_utf8_char_data_t;
+
 typedef enum parser_data_type_t
 {
     PARSER_DATA_TYPE_NONE,
@@ -99,6 +105,7 @@ typedef enum parser_data_type_t
     PARSER_DATA_TYPE_MEMOIZE,
     PARSER_DATA_TYPE_BYTE,
     PARSER_DATA_TYPE_TOKEN,
+    PARSER_DATA_TYPE_UTF8_CHAR,
 } parser_data_type_t;
 
 typedef struct parser_data_type_st
@@ -118,6 +125,7 @@ typedef struct parser_data_type_st
         wrap_data_t wrap;
         epc_byte_data_t byte;
         epc_token_data_t token;
+        epc_utf8_char_data_t utf8_char;
     };
 } parser_data_type_st;
 
@@ -136,7 +144,6 @@ struct epc_parser_t
                                   * or tag when reporting parse errors. Must _not_ be
                                   * freed when the parser is destroyed.
                                   */
-
     epc_ast_semantic_action_t ast_config;
 
     bool is_commit_boundary;

@@ -231,7 +231,10 @@ error_pool_cleanup(epc_error_pool_t * pool)
 }
 
 static void
-epc_add_input_token(epc_parser_ctx_t * ctx, unsigned token_id, size_t input_offset, size_t len)
+epc_add_input_token(
+    epc_parser_ctx_t * ctx, epc_token_id_t token_id, size_t input_offset, size_t len, uint32_t codepoint,
+    uint8_t byte_len
+)
 {
     epc_parser_token_t * new_token = &ctx->input_tokens.start[ctx->input_tokens.count++];
 
@@ -243,6 +246,8 @@ epc_add_input_token(epc_parser_ctx_t * ctx, unsigned token_id, size_t input_offs
             .line_number = ctx->input_tokens.current_line_number,
             .column_number = ctx->input_tokens.current_column_number,
         },
+        .codepoint = codepoint,
+        .byte_len = byte_len,
     };
 
     for (size_t i = 0; i < len; i++)
@@ -259,25 +264,152 @@ epc_add_input_token(epc_parser_ctx_t * ctx, unsigned token_id, size_t input_offs
         }
     }
 
-    /* This is a bit cumbersome, but add a 'Nul' token at the end of the list. */
     new_token[1] = (epc_parser_token_t){
         .id = '\0',
         .view = {
             .offset = input_offset + len,
             .len = 0,
         },
+        .codepoint = 0,
+        .byte_len = 0,
     };
 }
 
-static void
-add_tokens_from_character_input(epc_parser_ctx_t * ctx, char const * input, size_t len)
+/* Returns the number of bytes a complete UTF-8 character starting with `first` occupies, or 0 if `first` cannot
+ * start a UTF-8 character (includes stray continuation bytes and invalid lead bytes 0xF5-0xFF). */
+static size_t
+utf8_lead_byte_len(unsigned char first)
 {
-    for (size_t i = 0; i < len; i++)
+    if (first < 0x80)
     {
-        char ch = input[i];
-
-        epc_add_input_token(ctx, ch, ctx->input_len + i, 1);
+        return 1;
     }
+    else if ((first & 0xE0) == 0xC0)
+    {
+        return 2;
+    }
+    else if ((first & 0xF0) == 0xE0)
+    {
+        return 3;
+    }
+    else if ((first & 0xF8) == 0xF0)
+    {
+        return 4;
+    }
+    return 0;
+}
+
+/* Strict UTF-8 validation of a complete character (all `len` bytes present). Rejects invalid continuation bytes,
+ * overlong encodings, surrogate codepoints (U+D800-DFFF) and codepoints above U+10FFFF. */
+static bool
+utf8_decode_valid(unsigned char const * bytes, size_t len, uint32_t * out_codepoint)
+{
+    if (len < 2 || len > 4)
+    {
+        return false;
+    }
+
+    for (size_t j = 1; j < len; j++)
+    {
+        if ((bytes[j] & 0xC0) != 0x80)
+        {
+            return false;
+        }
+    }
+
+    uint32_t codepoint;
+    switch (len)
+    {
+    case 2:
+        codepoint = ((uint32_t)(bytes[0] & 0x1F) << 6) | (uint32_t)(bytes[1] & 0x3F);
+        if (codepoint < 0x80)
+        {
+            return false; /* Overlong encoding. */
+        }
+        break;
+    case 3:
+        codepoint = ((uint32_t)(bytes[0] & 0x0F) << 12) | ((uint32_t)(bytes[1] & 0x3F) << 6)
+                    | (uint32_t)(bytes[2] & 0x3F);
+        if (codepoint < 0x800)
+        {
+            return false; /* Overlong encoding. */
+        }
+        if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
+        {
+            return false; /* UTF-16 surrogate, invalid in UTF-8. */
+        }
+        break;
+    case 4:
+        codepoint = ((uint32_t)(bytes[0] & 0x07) << 18) | ((uint32_t)(bytes[1] & 0x3F) << 12)
+                    | ((uint32_t)(bytes[2] & 0x3F) << 6) | (uint32_t)(bytes[3] & 0x3F);
+        if (codepoint < 0x10000)
+        {
+            return false; /* Overlong encoding. */
+        }
+        if (codepoint > 0x10FFFF)
+        {
+            return false; /* Beyond the Unicode range. */
+        }
+        break;
+    default:
+        return false;
+    }
+
+    *out_codepoint = codepoint;
+    return true;
+}
+
+/* Adds one token per complete character to the input token buffer.
+ *
+ * Returns the number of bytes processed. A value of (size_t)-1 indicates invalid UTF-8; in that case
+ * *out_error_offset (if non-NULL) is set to the byte offset within `input` of the offending sequence.
+ * Processing stops at an incomplete trailing character (not an error - the caller decides how to handle it). */
+static size_t
+add_tokens_from_character_input(epc_parser_ctx_t * ctx, char const * input, size_t len, size_t * out_error_offset)
+{
+    size_t i = 0;
+
+    while (i < len)
+    {
+        unsigned char const first = (unsigned char)input[i];
+
+        if (first < 0x80)
+        {
+            epc_add_input_token(ctx, first, ctx->input_len + i, 1, first, 1);
+            i++;
+            continue;
+        }
+
+        size_t const char_len = utf8_lead_byte_len(first);
+        if (char_len == 0)
+        {
+            if (out_error_offset != NULL)
+            {
+                *out_error_offset = i;
+            }
+            return (size_t)-1;
+        }
+
+        if (i + char_len > len)
+        {
+            break; /* Incomplete character at the end of the buffer; more bytes may follow. */
+        }
+
+        uint32_t codepoint = 0;
+        if (!utf8_decode_valid((unsigned char const *)input + i, char_len, &codepoint))
+        {
+            if (out_error_offset != NULL)
+            {
+                *out_error_offset = i;
+            }
+            return (size_t)-1;
+        }
+
+        epc_add_input_token(ctx, EPC_TOKEN_ID_UTF8, ctx->input_len + i, char_len, codepoint, (uint8_t)char_len);
+        i += char_len;
+    }
+
+    return i;
 }
 
 static void
@@ -441,7 +573,14 @@ internal_create_parse_ctx_from_buffer(char const * buf, size_t len)
 
     *(char *)&ctx->input_start[len] = '\0';
 
-    add_tokens_from_character_input(ctx, ctx->input_start, len);
+    size_t error_offset = 0;
+    size_t const processed = add_tokens_from_character_input(ctx, ctx->input_start, len, &error_offset);
+    if (processed != len)
+    {
+        /* Invalid or incomplete UTF-8 in a full-buffer input is an error. */
+        internal_destroy_parse_ctx(ctx);
+        return NULL;
+    }
 
     scan_newlines(ctx, ctx->input_start, len);
 
@@ -509,7 +648,14 @@ internal_create_parse_ctx_from_fp(FILE * fp)
 
     *(char *)&ctx->input_start[total_read] = '\0';
 
-    add_tokens_from_character_input(ctx, ctx->input_start, total_read);
+    size_t error_offset = 0;
+    size_t const processed = add_tokens_from_character_input(ctx, ctx->input_start, total_read, &error_offset);
+    if (processed != total_read)
+    {
+        /* Invalid or incomplete UTF-8 in a full-buffer input is an error. */
+        internal_destroy_parse_ctx(ctx);
+        return NULL;
+    }
 
     scan_newlines(ctx, (char *)ctx->input_start, total_read);
 
@@ -836,7 +982,8 @@ internal_streaming_consume_available(epc_parse_session_t * session, bool once)
 
     do
     {
-        size_t space_left = MAX_MMAP_INPUT_SIZE - ctx->input_len - 1;
+        size_t carry_len = ctx->streaming.carry_len;
+        size_t space_left = MAX_MMAP_INPUT_SIZE - ctx->input_len - carry_len - 1;
 
         if (space_left == 0)
         {
@@ -848,27 +995,54 @@ internal_streaming_consume_available(epc_parse_session_t * session, bool once)
             return STREAM_CONSUME_ERROR;
         }
 
-        ssize_t bytes_read = read(fd, (void *)(ctx->input_start + ctx->input_len), space_left);
+        ssize_t bytes_read = read(fd, (void *)(ctx->input_start + ctx->input_len + carry_len), space_left);
 
         if (bytes_read > 0)
         {
             pthread_mutex_lock(&ctx->streaming.mutex);
 
+            size_t const avail = carry_len + (size_t)bytes_read;
+
             /* NUL terminate to help prevent buffer overruns within the parsers. */
             /* cast away constness to write to be able to write into the buffer. */
-            *(uint8_t *)&ctx->input_start[ctx->input_len + bytes_read] = '\0';
+            *(uint8_t *)&ctx->input_start[ctx->input_len + avail] = '\0';
 
-            add_tokens_from_character_input(ctx, ctx->input_start + ctx->input_len, bytes_read);
+            size_t error_offset = 0;
+            size_t const processed = add_tokens_from_character_input(
+                ctx, ctx->input_start + ctx->input_len, avail, &error_offset
+            );
 
-            scan_newlines(ctx, ctx->input_start + ctx->input_len, (size_t)bytes_read);
+            if (processed == (size_t)-1)
+            {
+                ctx->streaming.input_error = EILSEQ;
+                ctx->streaming.carry_len = 0;
+                pthread_cond_broadcast(&ctx->streaming.cond);
+                pthread_mutex_unlock(&ctx->streaming.mutex);
 
-            ctx->input_len += (size_t)bytes_read;
+                return STREAM_CONSUME_ERROR;
+            }
+
+            scan_newlines(ctx, ctx->input_start + ctx->input_len, processed);
+
+            ctx->input_len += processed;
+            ctx->streaming.carry_len = avail - processed;
 
             pthread_cond_broadcast(&ctx->streaming.cond);
             pthread_mutex_unlock(&ctx->streaming.mutex);
         }
         else if (bytes_read == 0)
         {
+            if (ctx->streaming.carry_len > 0)
+            {
+                /* Stream ended in the middle of a UTF-8 character. */
+                pthread_mutex_lock(&ctx->streaming.mutex);
+                ctx->streaming.input_error = EILSEQ;
+                ctx->streaming.carry_len = 0;
+                pthread_cond_broadcast(&ctx->streaming.cond);
+                pthread_mutex_unlock(&ctx->streaming.mutex);
+                return STREAM_CONSUME_ERROR;
+            }
+
             epc_streaming_notify_eof(session);
             return STREAM_CONSUME_EOF;
         }
@@ -987,7 +1161,17 @@ epc_parse_session_advance(epc_parse_session_t * session, epc_parser_t * next_par
         ctx->input_tokens.current_line_number = 1;
         ctx->input_tokens.current_column_number = 1;
 
-        add_tokens_from_character_input(ctx, ctx->input_start, leftover);
+        size_t error_offset = 0;
+        size_t const processed = add_tokens_from_character_input(ctx, ctx->input_start, leftover, &error_offset);
+        if (processed != leftover)
+        {
+            /* The leftover buffer should always be complete, valid UTF-8. */
+            ctx->streaming.input_error = EILSEQ;
+            pthread_cond_broadcast(&ctx->streaming.cond);
+            pthread_mutex_unlock(&ctx->streaming.mutex);
+            return false;
+        }
+
         scan_newlines(ctx, ctx->input_start, leftover);
 
         ctx->input_len = leftover;

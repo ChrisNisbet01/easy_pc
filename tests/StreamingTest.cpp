@@ -298,3 +298,105 @@ TEST(StreamingTest, StreamingCCommentTest)
     STRNCMP_EQUAL("/* first part second part*/", content, 27);
     LONGS_EQUAL(27, session.result.data.success->token.count);
 }
+
+TEST(StreamingTest, StreamingUtf8CharSingleFeed)
+{
+    int fd = start_producer("π", 10);
+
+    epc_parser_t * p = epc_utf8_char(list, NULL, "π");
+    session = parse_fd(p, fd);
+
+    check_is_success(session.result);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("π", content, 2);
+    LONGS_EQUAL(1, session.result.data.success->token.count);
+}
+
+TEST(StreamingTest, StreamingUtf8CharSplitAcrossFeeds)
+{
+    /* "π" is two bytes; send them in separate fragments so the first is carried over. */
+    char const * frags[] = {"\xCF", "\x80"};
+    int delays[] = {10, 10};
+    int fd = start_producer_fragments(2, frags, delays);
+
+    epc_parser_t * p = epc_utf8_char(list, NULL, "π");
+    session = parse_fd(p, fd);
+
+    check_is_success(session.result);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("π", content, 2);
+    LONGS_EQUAL(1, session.result.data.success->token.count);
+}
+
+TEST(StreamingTest, StreamingUtf8CharSplitAcrossManyFeeds)
+{
+    /* "😀" is four bytes; send one byte per fragment. */
+    char const * frags[] = {"\xF0", "\x9F", "\x98", "\x80"};
+    int delays[] = {10, 10, 10, 10};
+    int fd = start_producer_fragments(4, frags, delays);
+
+    epc_parser_t * p = epc_utf8_char(list, NULL, "😀");
+    session = parse_fd(p, fd);
+
+    check_is_success(session.result);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("😀", content, 4);
+    LONGS_EQUAL(1, session.result.data.success->token.count);
+}
+
+TEST(StreamingTest, StreamingUtf8StringMultiChar)
+{
+    char const * frags[] = {"日", "本", "語"};
+    int delays[] = {10, 10, 10};
+    int fd = start_producer_fragments(3, frags, delays);
+
+    epc_parser_t * p = epc_string(list, NULL, "日本語");
+    session = parse_fd(p, fd);
+
+    check_is_success(session.result);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("日本語", content, 9);
+    LONGS_EQUAL(3, session.result.data.success->token.count);
+}
+
+TEST(StreamingTest, StreamingUtf8Identifier)
+{
+    char const * frags[] = {"πα", "ρά", "δειγμα"};
+    int delays[] = {10, 10, 10};
+    int fd = start_producer_fragments(3, frags, delays);
+
+    epc_parser_t * p = epc_identifier(list, NULL);
+    session = parse_fd(p, fd);
+
+    check_is_success(session.result);
+    char const * content = epc_cpt_node_get_content(session.result.data.success);
+
+    STRNCMP_EQUAL("παράδειγμα", content, 20);
+    LONGS_EQUAL(10, session.result.data.success->token.count);
+}
+
+TEST(StreamingTest, StreamingUtf8InvalidByteFails)
+{
+    /* Stray continuation byte is invalid UTF-8. */
+    int fd = start_producer("\x80", 10);
+
+    epc_parser_t * p = epc_utf8_char(list, NULL, "π");
+    session = parse_fd(p, fd);
+
+    CHECK_TRUE(session.result.is_error);
+}
+
+TEST(StreamingTest, StreamingUtf8IncompleteAtEofFails)
+{
+    /* Stream ends in the middle of a multi-byte character. */
+    int fd = start_producer("\xCF", 10);
+
+    epc_parser_t * p = epc_utf8_char(list, NULL, "π");
+    session = parse_fd(p, fd);
+
+    CHECK_TRUE(session.result.is_error);
+}

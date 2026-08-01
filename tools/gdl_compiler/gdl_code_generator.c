@@ -943,9 +943,19 @@ generate_expression_code(
 
     case GDL_AST_NODE_TYPE_CHAR_LITERAL:
     {
-        char * ch = expression_node->data.char_literal.value; /* Actually a string, to deal with escaping. */
+        char const * ch = expression_node->data.char_literal.value;
+        size_t byte_len = strlen(ch);
 
-        fprintf(source_file, "epc_char(list, %s%s%s, '%s')", q, expr_name, q, ch);
+        if (byte_len == 1)
+        {
+            // ASCII character - use epc_char for efficiency
+            fprintf(source_file, "epc_char(list, %s%s%s, '%s')", q, expr_name, q, ch);
+        }
+        else
+        {
+            // UTF-8 character(s) - use epc_utf8_char
+            fprintf(source_file, "epc_utf8_char(list, %s%s%s, \"%s\")", q, expr_name, q, ch);
+        }
         break;
     }
 

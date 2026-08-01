@@ -81,6 +81,14 @@ epc_token_list_free(epc_token_list_t * list)
 bool
 epc_token_list_add(epc_token_list_t * list, epc_token_id_t id, epc_parser_input_view_t view)
 {
+    uint32_t codepoint = (id <= 127) ? id : 0;
+    uint8_t byte_len = (id <= 127) ? 1 : 0;
+    return epc_token_list_add_ex(list, id, view, codepoint, byte_len);
+}
+
+bool
+epc_token_list_add_ex(epc_token_list_t * list, epc_token_id_t id, epc_parser_input_view_t view, uint32_t codepoint, uint8_t byte_len)
+{
     if (list == NULL)
     {
         return false;
@@ -94,6 +102,8 @@ epc_token_list_add(epc_token_list_t * list, epc_token_id_t id, epc_parser_input_
     list->tokens[list->count] = (epc_parser_token_t){
         .id = id,
         .view = view,
+        .codepoint = codepoint,
+        .byte_len = byte_len,
     };
     list->count++;
 
@@ -121,6 +131,22 @@ epc_token_list_get(epc_token_list_t const * list, size_t index, epc_token_id_t *
 
     if (out_id) *out_id = list->tokens[index].id;
     if (out_view) *out_view = list->tokens[index].view;
+    return true;
+}
+
+bool
+epc_token_list_get_ex(epc_token_list_t const * list, size_t index, epc_token_id_t * out_id, epc_parser_input_view_t * out_view, uint32_t * out_codepoint, uint8_t * out_byte_len)
+{
+    if (list == NULL || index >= list->count)
+    {
+        return false;
+    }
+
+    epc_parser_token_t const * token = &list->tokens[index];
+    if (out_id) *out_id = token->id;
+    if (out_view) *out_view = token->view;
+    if (out_codepoint) *out_codepoint = token->codepoint;
+    if (out_byte_len) *out_byte_len = token->byte_len;
     return true;
 }
 

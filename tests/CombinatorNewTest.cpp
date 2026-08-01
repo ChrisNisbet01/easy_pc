@@ -524,6 +524,22 @@ TEST(CombinatorParsersNew, Lexeme_DoesNotConsumeBashCommentsByDefault)
     check_failure("Unexpected string"); // Should fail because # is not consumed
 }
 
+TEST(CombinatorParsersNew, Lexeme_ParsesWithUtf8CppStyleComments)
+{
+    epc_parser_t * p_word = epc_string(list, "word", "hello");
+    epc_parser_t * p_lex = epc_lexeme(list, "lexeme", p_word);
+    session = parse(p_lex, "//π comment\n   hello   //αβ\nworld");
+    check_success("lexeme", "//π comment\n   hello   //αβ\n", 31, 1);
+}
+
+TEST(CombinatorParsersNew, Lexeme_DoesNotConsumeUtf8AfterItem)
+{
+    epc_parser_t * p_word = epc_string(list, "word", "hello");
+    epc_parser_t * p_lex = epc_lexeme(list, "lexeme", p_word);
+    session = parse(p_lex, "helloπ");
+    check_success("lexeme", "hello", 5, 1);
+}
+
 // --- epc_strip tests ---
 TEST(CombinatorParsersNew, Strip_ParsesWithLeadingAndTrailingSpaces)
 {

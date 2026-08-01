@@ -12,10 +12,8 @@ epc_parser_t *
 create_gdl_tokenizer_parser(epc_parser_list * l)
 {
     // --- Identifiers and Keywords ---
-    epc_parser_t * ident_start = epc_or(l, "IdStart", 2, epc_alpha(l, "Alpha"), epc_char(l, "Underscore", '_'));
-    epc_parser_t * ident_cont
-        = epc_or(l, "IdCont", 3, epc_alpha(l, "Alpha"), epc_digit(l, "Digit"), epc_char(l, "Underscore", '_'));
-    epc_parser_t * identifier = epc_and(l, "Identifier", 2, ident_start, epc_many(l, "IdRest", ident_cont));
+    // epc_identifier now supports UTF-8 identifiers
+    epc_parser_t * identifier = epc_identifier(l, "Identifier");
     epc_parser_set_ast_action(identifier, TOKENIZER_ACTION_KEYWORD);
 
     // --- StringLiteral: "..." with escape handling ---
@@ -43,7 +41,7 @@ create_gdl_tokenizer_parser(epc_parser_list * l)
     epc_parser_t * chr_any_char = epc_none_of(l, "ChrAnyChar", "'\\");
     epc_parser_t * chr_char
         = epc_or(l, "ChrChar", 7, chr_esc_sq, chr_esc_dq, chr_esc_bs, chr_esc_n, chr_esc_t, chr_esc_r, chr_any_char);
-    epc_parser_t * chr_content = epc_and(l, "ChrContent", 1, chr_char);
+    epc_parser_t * chr_content = epc_plus(l, "ChrContent", chr_char);  // Allow multiple bytes for UTF-8
     epc_parser_t * chr_open = epc_char(l, "ChrOpen", '\'');
     epc_parser_t * chr_close = epc_char(l, "ChrClose", '\'');
     epc_parser_t * char_literal = epc_and(l, "CharLiteral", 3, chr_open, chr_content, chr_close);
