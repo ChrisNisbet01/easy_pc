@@ -1783,7 +1783,24 @@ por_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_of
                 or_node->children[0] = child_result.data.success;
                 or_node->children_count = 1;
 
-                parser_furthest_error_restore(ctx, &original_furthest_error);
+                /*
+                 * Suppress errors recorded by the failed alternatives, unless one
+                 * of them explored further into the input than any error tracked
+                 * before this 'or'. In that case the deeper error is usually the
+                 * most informative point for the user (the parser got furthest
+                 * there), so keep it rather than restoring the shallower state.
+                 */
+                epc_parser_error_t const * current_furthest = parse_ctx_get_furthest_error(ctx);
+                if (current_furthest == NULL
+                    || (original_furthest_error != NULL
+                        && original_furthest_error->view.offset >= current_furthest->view.offset))
+                {
+                    parser_furthest_error_restore(ctx, &original_furthest_error);
+                }
+                else
+                {
+                    epc_parser_error_free(original_furthest_error);
+                }
 
                 return epc_parser_success_result(or_node);
             }
