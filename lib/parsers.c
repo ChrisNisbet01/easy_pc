@@ -3417,13 +3417,6 @@ epc_lookahead(epc_parser_list * list, char const * name, epc_parser_t * p)
 static epc_parse_result_t
 pnot_parse_fn(struct epc_parser_t * self, epc_parser_ctx_t * ctx, size_t token_offset)
 {
-    parse_get_input_result_t input_result = parse_ctx_get_input_at_offset(ctx, token_offset);
-
-    if (input_result.is_eof)
-    {
-        return epc_parser_error_result(ctx, token_offset, "Unexpected end of input", "not", "EOF");
-    }
-
     epc_parser_t * child_parser = self->data.parser;
 
     if (child_parser == NULL) // Should not happen if grammar is well-formed

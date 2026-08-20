@@ -436,6 +436,14 @@ TEST(CombinatorParsersNew, Not_FailsNullChildParser)
     check_failure("p_not received NULL child parser");
 }
 
+TEST(CombinatorParsersNew, Not_SucceedsAtEndOfInput)
+{
+    epc_parser_t * p_a = epc_char(list, NULL, 'a');
+    epc_parser_t * p_not_a = epc_not(list, NULL, p_a);
+    session = parse(p_not_a, "");
+    check_success("not", "", 0, 0); // At EOI, 'a' fails, so not('a') succeeds
+}
+
 // --- p_fail tests ---
 TEST(CombinatorParsersNew, Fail_AlwaysFailsWithCustomMessage)
 {
